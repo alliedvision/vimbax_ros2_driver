@@ -62,12 +62,15 @@ struct MockLoadedLibrary : public LoadedLibrary
   MOCK_METHOD(void *, resolve_symbol, (const std::string & name), (override));
 };
 
-class APILoaderFixture : public testing::Test
+class APILoader : public testing::Test
 {
 protected:
   void SetUp() override
   {
-    gentl_path_ = getenv("GENICAM_GENTL64_PATH");
+    auto path = getenv("GENICAM_GENTL64_PATH");
+    if (path != nullptr) {
+      gentl_path_ = path;
+    }
 
     Test::SetUp();
   }
@@ -82,7 +85,7 @@ private:
   std::string gentl_path_;
 };
 
-TEST_F(APILoaderFixture, library_load_fail)
+TEST_F(APILoader, library_load_fail)
 {
   ASSERT_EQ(setenv("GENICAM_GENTL64_PATH", "", 1), 0);
 
@@ -97,7 +100,7 @@ TEST_F(APILoaderFixture, library_load_fail)
   ASSERT_FALSE(api);
 }
 
-TEST_F(APILoaderFixture, library_load_env)
+TEST_F(APILoader, library_load_env)
 {
   ASSERT_EQ(setenv("GENICAM_GENTL64_PATH", "", 1), 0);
 
@@ -112,7 +115,7 @@ TEST_F(APILoaderFixture, library_load_env)
   ASSERT_FALSE(api);
 }
 
-TEST_F(APILoaderFixture, symbol_load_fail)
+TEST_F(APILoader, symbol_load_fail)
 {
   ASSERT_EQ(setenv("GENICAM_GENTL64_PATH", "", 1), 0);
 
@@ -129,7 +132,7 @@ TEST_F(APILoaderFixture, symbol_load_fail)
   ASSERT_FALSE(api);
 }
 
-TEST_F(APILoaderFixture, load_sucess_startup_shutdown)
+TEST_F(APILoader, load_sucess_startup_shutdown)
 {
   ASSERT_EQ(setenv("GENICAM_GENTL64_PATH", "", 1), 0);
 
