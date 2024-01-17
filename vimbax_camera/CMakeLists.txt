@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.8)
 project(vimbax_camera)
 
+set(VMB_DIR "" CACHE STRING "Path to VimbaX installation")
+
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
@@ -28,7 +30,8 @@ ament_target_dependencies(
         "image_transport"
         "vimbax_camera_msgs"
 )
-include_directories(/home/dlangenkamp/AVT_DEV/VimbaX/x86_64/VimbaX_2023-4/api/include)
+
+include_directories(${VMB_DIR}/api/include)
 
 install(TARGETS vimbax_camera_node
         DESTINATION lib/${PROJECT_NAME})
