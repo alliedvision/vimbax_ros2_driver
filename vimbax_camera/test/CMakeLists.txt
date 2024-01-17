@@ -1,0 +1,5 @@
+
+find_package(ament_cmake_gtest REQUIRED)
+find_package(ament_cmake_gmock REQUIRED)
+add_subdirectory(library_loader)
+add_subdirectory(api_loader)

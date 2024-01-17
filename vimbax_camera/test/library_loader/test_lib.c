@@ -12,10 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-int main(int argc, char ** argv)
+int test_add_func(int a, int b)
 {
-  (void)argc;
-  (void)argv;
-
-  return 0;
+  return a + b;
 }
