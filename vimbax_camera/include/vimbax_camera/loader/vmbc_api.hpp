@@ -19,6 +19,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 
 #include <vimbax_camera/loader/library_loader.hpp>
 
@@ -70,6 +71,7 @@ class VmbCAPI
 {
 public:
   static std::shared_ptr<VmbCAPI> get_instance(
+    const std::string & searchPath = {},
     std::shared_ptr<LibraryLoader> libraryLoader = LibraryLoader::get_default());
 
   ~VmbCAPI();

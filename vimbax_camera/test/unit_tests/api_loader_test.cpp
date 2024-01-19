@@ -80,7 +80,7 @@ TEST_F(APILoader, library_load_fail)
   EXPECT_CALL(*mock, open("VmbCTest")).Times(1);
 
 
-  auto api = VmbCAPI::get_instance(mock);
+  auto api = VmbCAPI::get_instance({}, mock);
 
   ASSERT_FALSE(api);
 }
@@ -95,7 +95,7 @@ TEST_F(APILoader, library_load_env)
   EXPECT_CALL(*mock, open("VmbCTest")).Times(1);
 
 
-  auto api = VmbCAPI::get_instance(mock);
+  auto api = VmbCAPI::get_instance({}, mock);
 
   ASSERT_FALSE(api);
 }
@@ -113,7 +113,7 @@ TEST_F(APILoader, symbol_load_fail)
   EXPECT_CALL(*loaderMock, open("VmbCTest")).Times(1)
   .WillOnce(Return(ByMove(std::move(libraryMock))));
 
-  auto api = VmbCAPI::get_instance(loaderMock);
+  auto api = VmbCAPI::get_instance({}, loaderMock);
 
   ASSERT_FALSE(api);
 }
@@ -140,7 +140,7 @@ TEST_F(APILoader, load_sucess)
     });
 
 
-  auto api = VmbCAPI::get_instance(loaderMock);
+  auto api = VmbCAPI::get_instance({}, loaderMock);
 
   ASSERT_TRUE(api);
 }
@@ -167,11 +167,11 @@ TEST_F(APILoader, load_sucess_same_instance)
       return libraryMock;
     });
 
-  auto instance1 = VmbCAPI::get_instance(loaderMock);
+  auto instance1 = VmbCAPI::get_instance({}, loaderMock);
 
   ASSERT_TRUE(instance1);
 
-  auto instance2 = VmbCAPI::get_instance(loaderMock);
+  auto instance2 = VmbCAPI::get_instance({}, loaderMock);
 
   EXPECT_EQ(instance1.get(), instance2.get());
 
@@ -179,7 +179,7 @@ TEST_F(APILoader, load_sucess_same_instance)
 
   EXPECT_EQ(instance1.get(), instance3.get());
 
-  auto instance4 = VmbCAPI::get_instance(nullptr);
+  auto instance4 = VmbCAPI::get_instance({}, nullptr);
 
   EXPECT_EQ(instance1.get(), instance4.get());
 }
@@ -206,7 +206,7 @@ TEST_F(APILoader, load_destory)
 
 
   EXPECT_CALL(*apiMock, Startup(_)).Times(1);
-  auto instance = VmbCAPI::get_instance(loaderMock);
+  auto instance = VmbCAPI::get_instance({}, loaderMock);
 
   ASSERT_TRUE(instance);
   EXPECT_TRUE(instance.unique());
@@ -216,14 +216,14 @@ TEST_F(APILoader, load_destory)
 
   instance.reset();
 
-  auto null_instance = VmbCAPI::get_instance(nullptr);
+  auto null_instance = VmbCAPI::get_instance({}, nullptr);
 
   ASSERT_FALSE(null_instance);
   EXPECT_EQ(null_instance.get(), nullptr);
   EXPECT_NE(null_instance.get(), instance_ptr);
 
   EXPECT_CALL(*apiMock, Startup(_)).Times(1);
-  auto new_instance = VmbCAPI::get_instance(loaderMock);
+  auto new_instance = VmbCAPI::get_instance({}, loaderMock);
 
   ASSERT_TRUE(new_instance);
   EXPECT_TRUE(new_instance.unique());

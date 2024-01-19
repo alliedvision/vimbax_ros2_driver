@@ -14,6 +14,8 @@
 
 #include <filesystem>
 
+#include <rclcpp/logging.hpp>
+
 #include <vimbax_camera/loader/vmbc_api.hpp>
 
 #define str(s) #s
@@ -65,7 +67,9 @@ static std::vector<std::string_view> splitString(const std::string_view & str, c
   return resList;
 }
 
-static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(std::shared_ptr<LibraryLoader> libraryLoader)
+static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(
+  std::shared_ptr<LibraryLoader> libraryLoader,
+  rclcpp::Logger & logger)
 {
   auto const libName = libraryLoader->build_library_name("VmbC");
 
@@ -75,6 +79,7 @@ static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(std::shared_ptr<LibraryLoa
   for (auto const & part : vimbaXHomeParts) {
     fs::path vmbcPath = canonical((fs::path{part} / "api" / "lib")) / libName;
     if (fs::exists(vmbcPath)) {
+      RCLCPP_DEBUG(logger, "Loading library %s by VimbaX home", vmbcPath.c_str());
       return libraryLoader->open(vmbcPath);
     }
   }
@@ -85,25 +90,32 @@ static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(std::shared_ptr<LibraryLoa
   for (auto const & part : tlSearchPathParts) {
     fs::path vmbcPath = canonical((fs::path{part} / ".." / "api" / "lib")) / libName;
     if (fs::exists(vmbcPath)) {
+      RCLCPP_DEBUG(logger, "Loading library %s by TL search path", vmbcPath.c_str());
       return libraryLoader->open(vmbcPath);
     }
   }
 
+  RCLCPP_DEBUG(logger, "Loading library %s", libName.c_str());
   return libraryLoader->open(libName);
 }
 
-std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(std::shared_ptr<LibraryLoader> libraryLoader)
+std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(
+  const std::string & searchPath,
+  std::shared_ptr<LibraryLoader> libraryLoader)
 {
   if (instance_.expired()) {
     if (!libraryLoader) {
       return {};
     }
 
+    auto logger = rclcpp::get_logger("VmbCAPI");
+
     std::shared_ptr<VmbCAPI> instance{new VmbCAPI};
 
-    auto library = loadVmbCLibrary(libraryLoader);
+    auto library = loadVmbCLibrary(libraryLoader, logger);
 
     if (!library) {
+      RCLCPP_DEBUG(logger, "Failed to load VmbC library");
       return nullptr;
     }
 
@@ -166,13 +178,16 @@ std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(std::shared_ptr<LibraryLoader> li
 
     instance->libraryHandle_ = std::move(library);
 
-    auto const startupRes = instance->Startup(nullptr);
+    auto const searchPathPtr = searchPath.empty() ? nullptr : searchPath.c_str();
+    auto const startupRes = instance->Startup(searchPathPtr);
     if (startupRes != VmbErrorSuccess) {
+      RCLCPP_ERROR(logger, "VmbStartup failed with %d", startupRes);
       return {};
     }
 
     instance_ = instance;
 
+    RCLCPP_DEBUG(logger, "VmbC loading complete");
     return instance;
   } else {
     return instance_.lock();
