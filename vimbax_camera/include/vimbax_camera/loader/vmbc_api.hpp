@@ -69,24 +69,78 @@ struct FunctionPtr<Ret(Args...)>
 class VmbCAPI
 {
 public:
-  static std::shared_ptr<VmbCAPI> get_default();
-  static std::shared_ptr<VmbCAPI> load(std::shared_ptr<LibraryLoader> libraryLoader);
+  static std::shared_ptr<VmbCAPI> get_instance(
+    std::shared_ptr<LibraryLoader> libraryLoader = LibraryLoader::get_default());
 
-  FunctionPtr<decltype(VmbStartup)> Startup;
-  FunctionPtr<decltype(VmbShutdown)> Shutdown;
+  ~VmbCAPI();
 
-  FunctionPtr<decltype(VmbCamerasList)> CamerasList;
-  FunctionPtr<decltype(VmbCameraOpen)> CameraOpen;
   FunctionPtr<decltype(VmbCameraClose)> CameraClose;
-
   FunctionPtr<decltype(VmbCameraInfoQuery)> CameraInfoQuery;
+  FunctionPtr<decltype(VmbCameraInfoQueryByHandle)> CameraInfoQueryByHandle;
+  FunctionPtr<decltype(VmbCameraOpen)> CameraOpen;
+  FunctionPtr<decltype(VmbCamerasList)> CamerasList;
+  FunctionPtr<decltype(VmbCaptureEnd)> CaptureEnd;
+  FunctionPtr<decltype(VmbCaptureFrameQueue)> CaptureFrameQueue;
+  FunctionPtr<decltype(VmbCaptureFrameWait)> CaptureFrameWait;
+  FunctionPtr<decltype(VmbCaptureQueueFlush)> CaptureQueueFlush;
+  FunctionPtr<decltype(VmbCaptureStart)> CaptureStart;
+  FunctionPtr<decltype(VmbChunkDataAccess)> ChunkDataAccess;
+  FunctionPtr<decltype(VmbFeatureAccessQuery)> FeatureAccessQuery;
+  FunctionPtr<decltype(VmbFeatureBoolGet)> FeatureBoolGet;
+  FunctionPtr<decltype(VmbFeatureBoolSet)> FeatureBoolSet;
+  FunctionPtr<decltype(VmbFeatureCommandIsDone)> FeatureCommandIsDone;
+  FunctionPtr<decltype(VmbFeatureCommandRun)> FeatureCommandRun;
+  FunctionPtr<decltype(VmbFeatureEnumAsInt)> FeatureEnumAsInt;
+  FunctionPtr<decltype(VmbFeatureEnumAsString)> FeatureEnumAsString;
+  FunctionPtr<decltype(VmbFeatureEnumEntryGet)> FeatureEnumEntryGet;
+  FunctionPtr<decltype(VmbFeatureEnumGet)> FeatureEnumGet;
+  FunctionPtr<decltype(VmbFeatureEnumIsAvailable)> FeatureEnumIsAvailable;
+  FunctionPtr<decltype(VmbFeatureEnumRangeQuery)> FeatureEnumRangeQuery;
+  FunctionPtr<decltype(VmbFeatureEnumSet)> FeatureEnumSet;
+  FunctionPtr<decltype(VmbFeatureFloatGet)> FeatureFloatGet;
+  FunctionPtr<decltype(VmbFeatureFloatIncrementQuery)> FeatureFloatIncrementQuery;
+  FunctionPtr<decltype(VmbFeatureFloatRangeQuery)> FeatureFloatRangeQuery;
+  FunctionPtr<decltype(VmbFeatureFloatSet)> FeatureFloatSet;
+  FunctionPtr<decltype(VmbFeatureInfoQuery)> FeatureInfoQuery;
+  FunctionPtr<decltype(VmbFeatureIntGet)> FeatureIntGet;
+  FunctionPtr<decltype(VmbFeatureIntIncrementQuery)> FeatureIntIncrementQuery;
+  FunctionPtr<decltype(VmbFeatureIntRangeQuery)> FeatureIntRangeQuery;
+  FunctionPtr<decltype(VmbFeatureIntSet)> FeatureIntSet;
+  FunctionPtr<decltype(VmbFeatureIntValidValueSetQuery)> FeatureIntValidValueSetQuery;
+  FunctionPtr<decltype(VmbFeatureInvalidationRegister)> FeatureInvalidationRegister;
+  FunctionPtr<decltype(VmbFeatureInvalidationUnregister)> FeatureInvalidationUnregister;
+  FunctionPtr<decltype(VmbFeatureListSelected)> FeatureListSelected;
+  FunctionPtr<decltype(VmbFeatureRawGet)> FeatureRawGet;
+  FunctionPtr<decltype(VmbFeatureRawLengthQuery)> FeatureRawLengthQuery;
+  FunctionPtr<decltype(VmbFeatureRawSet)> FeatureRawSet;
+  FunctionPtr<decltype(VmbFeatureStringGet)> FeatureStringGet;
+  FunctionPtr<decltype(VmbFeatureStringMaxlengthQuery)> FeatureStringMaxlengthQuery;
+  FunctionPtr<decltype(VmbFeatureStringSet)> FeatureStringSet;
+  FunctionPtr<decltype(VmbFeaturesList)> FeaturesList;
+  FunctionPtr<decltype(VmbFrameAnnounce)> FrameAnnounce;
+  FunctionPtr<decltype(VmbFrameRevoke)> FrameRevoke;
+  FunctionPtr<decltype(VmbFrameRevokeAll)> FrameRevokeAll;
+  FunctionPtr<decltype(VmbInterfacesList)> InterfacesList;
+  FunctionPtr<decltype(VmbMemoryRead)> MemoryRead;
+  FunctionPtr<decltype(VmbMemoryWrite)> MemoryWrite;
+  FunctionPtr<decltype(VmbPayloadSizeGet)> PayloadSizeGet;
+  FunctionPtr<decltype(VmbSettingsLoad)> SettingsLoad;
+  FunctionPtr<decltype(VmbSettingsSave)> SettingsSave;
+
+  FunctionPtr<decltype(VmbTransportLayersList)> TransportLayersList;
+  FunctionPtr<decltype(VmbVersionQuery)> VersionQuery;
 
 private:
   VmbCAPI() = default;
 
+
+  // Startup and Shutdown are private, because the lifecycle is manged by the class itself.
+  FunctionPtr<decltype(VmbStartup)> Startup;
+  FunctionPtr<decltype(VmbShutdown)> Shutdown;
+
   std::unique_ptr<LoadedLibrary> libraryHandle_;
 
-  static std::shared_ptr<VmbCAPI> defaultInstance_;
+  static std::weak_ptr<VmbCAPI> instance_;
 };
 
 }  // namespace vimbax_camera

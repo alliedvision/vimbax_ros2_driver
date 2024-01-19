@@ -33,7 +33,7 @@ namespace fs = std::filesystem;
 namespace vimbax_camera
 {
 
-std::shared_ptr<VmbCAPI> VmbCAPI::defaultInstance_{};
+std::weak_ptr<VmbCAPI> VmbCAPI::instance_{};
 
 static std::string_view getenv_safe(const std::string & name)
 {
@@ -92,35 +92,98 @@ static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(std::shared_ptr<LibraryLoa
   return libraryLoader->open(libName);
 }
 
-std::shared_ptr<VmbCAPI> VmbCAPI::get_default()
+std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(std::shared_ptr<LibraryLoader> libraryLoader)
 {
-  if (!defaultInstance_) {
-    defaultInstance_ = load(LibraryLoader::get_default());
-  }
+  if (instance_.expired()) {
+    if (!libraryLoader) {
+      return {};
+    }
 
-  return defaultInstance_;
+    std::shared_ptr<VmbCAPI> instance{new VmbCAPI};
+
+    auto library = loadVmbCLibrary(libraryLoader);
+
+    if (!library) {
+      return nullptr;
+    }
+
+    LOAD_FUNC(instance, CameraClose);
+    LOAD_FUNC(instance, CameraInfoQuery);
+    LOAD_FUNC(instance, CameraInfoQueryByHandle);
+    LOAD_FUNC(instance, CameraOpen);
+    LOAD_FUNC(instance, CamerasList);
+    LOAD_FUNC(instance, CaptureEnd);
+    LOAD_FUNC(instance, CaptureFrameQueue);
+    LOAD_FUNC(instance, CaptureFrameWait);
+    LOAD_FUNC(instance, CaptureQueueFlush);
+    LOAD_FUNC(instance, CaptureStart);
+    LOAD_FUNC(instance, ChunkDataAccess);
+    LOAD_FUNC(instance, FeatureAccessQuery);
+    LOAD_FUNC(instance, FeatureBoolGet);
+    LOAD_FUNC(instance, FeatureBoolSet);
+    LOAD_FUNC(instance, FeatureCommandIsDone);
+    LOAD_FUNC(instance, FeatureCommandRun);
+    LOAD_FUNC(instance, FeatureEnumAsInt);
+    LOAD_FUNC(instance, FeatureEnumAsString);
+    LOAD_FUNC(instance, FeatureEnumEntryGet);
+    LOAD_FUNC(instance, FeatureEnumGet);
+    LOAD_FUNC(instance, FeatureEnumIsAvailable);
+    LOAD_FUNC(instance, FeatureEnumRangeQuery);
+    LOAD_FUNC(instance, FeatureEnumSet);
+    LOAD_FUNC(instance, FeatureFloatGet);
+    LOAD_FUNC(instance, FeatureFloatIncrementQuery);
+    LOAD_FUNC(instance, FeatureFloatRangeQuery);
+    LOAD_FUNC(instance, FeatureFloatSet);
+    LOAD_FUNC(instance, FeatureInfoQuery);
+    LOAD_FUNC(instance, FeatureIntGet);
+    LOAD_FUNC(instance, FeatureIntIncrementQuery);
+    LOAD_FUNC(instance, FeatureIntRangeQuery);
+    LOAD_FUNC(instance, FeatureIntSet);
+    LOAD_FUNC(instance, FeatureIntValidValueSetQuery);
+    LOAD_FUNC(instance, FeatureInvalidationRegister);
+    LOAD_FUNC(instance, FeatureInvalidationUnregister);
+    LOAD_FUNC(instance, FeatureListSelected);
+    LOAD_FUNC(instance, FeatureRawGet);
+    LOAD_FUNC(instance, FeatureRawLengthQuery);
+    LOAD_FUNC(instance, FeatureRawSet);
+    LOAD_FUNC(instance, FeatureStringGet);
+    LOAD_FUNC(instance, FeatureStringMaxlengthQuery);
+    LOAD_FUNC(instance, FeatureStringSet);
+    LOAD_FUNC(instance, FeaturesList);
+    LOAD_FUNC(instance, FrameAnnounce);
+    LOAD_FUNC(instance, FrameRevoke);
+    LOAD_FUNC(instance, FrameRevokeAll);
+    LOAD_FUNC(instance, InterfacesList);
+    LOAD_FUNC(instance, MemoryRead);
+    LOAD_FUNC(instance, MemoryWrite);
+    LOAD_FUNC(instance, PayloadSizeGet);
+    LOAD_FUNC(instance, SettingsLoad);
+    LOAD_FUNC(instance, SettingsSave);
+    LOAD_FUNC(instance, Shutdown);
+    LOAD_FUNC(instance, Startup);
+    LOAD_FUNC(instance, TransportLayersList);
+    LOAD_FUNC(instance, VersionQuery);
+
+    instance->libraryHandle_ = std::move(library);
+
+    auto const startupRes = instance->Startup(nullptr);
+    if (startupRes != VmbErrorSuccess) {
+      return {};
+    }
+
+    instance_ = instance;
+
+    return instance;
+  } else {
+    return instance_.lock();
+  }
 }
 
-std::shared_ptr<VmbCAPI> VmbCAPI::load(std::shared_ptr<LibraryLoader> libraryLoader)
+VmbCAPI::~VmbCAPI()
 {
-  std::shared_ptr<VmbCAPI> instance{new VmbCAPI};
-
-  auto library = loadVmbCLibrary(libraryLoader);
-
-  if (!library) {
-    return nullptr;
+  if (Shutdown) {
+    Shutdown();
   }
-
-  LOAD_FUNC(instance, Startup);
-  LOAD_FUNC(instance, Shutdown);
-  LOAD_FUNC(instance, CamerasList);
-  LOAD_FUNC(instance, CameraOpen);
-  LOAD_FUNC(instance, CameraClose);
-  LOAD_FUNC(instance, CameraInfoQuery);
-
-  instance->libraryHandle_ = std::move(library);
-
-  return instance;
 }
 
 }  // namespace vimbax_camera
