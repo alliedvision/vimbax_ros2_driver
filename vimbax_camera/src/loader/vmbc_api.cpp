@@ -88,7 +88,11 @@ static std::unique_ptr<LoadedLibrary> load_vmbc_library(
 
   auto const tlSearchPathParts = split_string(tlSearchPath, ':');
   for (auto const & part : tlSearchPathParts) {
-    fs::path vmbcPath = canonical((fs::path{part} / ".." / "api" / "lib")) / libName;
+    auto libDir = fs::path{part} / ".." / "api" / "lib";
+    if (!fs::exists(libDir))
+      continue;
+
+    fs::path vmbcPath = fs::canonical(libDir) / libName;
     if (fs::exists(vmbcPath)) {
       RCLCPP_DEBUG(logger, "Loading library %s by TL search path", vmbcPath.c_str());
       return libraryLoader->open(vmbcPath);
@@ -115,7 +119,7 @@ std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(
     auto library = load_vmbc_library(libraryLoader, logger);
 
     if (!library) {
-      RCLCPP_DEBUG(logger, "Failed to load VmbC library");
+      RCLCPP_ERROR(logger, "Failed to load VmbC library");
       return nullptr;
     }
 

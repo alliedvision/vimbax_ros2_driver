@@ -11,30 +11,41 @@ set(vimbax_camera_node_SRCS
         src/vimbax_camera_node.cpp
         src/loader/library_loader_unix.cpp
         src/loader/vmbc_api.cpp
+        src/vimbax_camera.cpp
 )
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(vimbax_camera_msgs REQUIRED)
 
-add_executable(vimbax_camera_node ${vimbax_camera_node_SRCS})
-target_include_directories(vimbax_camera_node PUBLIC
+add_library(${PROJECT_NAME} SHARED ${vimbax_camera_node_SRCS})
+target_include_directories(${PROJECT_NAME} PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>)
-target_compile_features(vimbax_camera_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
-        vimbax_camera_node
+        ${PROJECT_NAME}
         "rclcpp"
+        "rclcpp_components"
         "image_transport"
         "vimbax_camera_msgs"
 )
 
+rclcpp_components_register_node(${PROJECT_NAME}
+    PLUGIN "vimbax_camera::VimbaXCameraNode"
+    EXECUTABLE vimbax_camera_node
+)
+
 include_directories(${VMB_DIR}/api/include)
 
-install(TARGETS vimbax_camera_node
-        DESTINATION lib/${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME}
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+)
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
@@ -43,4 +54,5 @@ if(BUILD_TESTING)
     add_subdirectory(test)
 endif()
 
+ament_export_libraries(${PROJECT_NAME})
 ament_package()
