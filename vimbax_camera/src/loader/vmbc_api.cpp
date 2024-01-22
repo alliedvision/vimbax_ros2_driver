@@ -44,7 +44,7 @@ static std::string_view getenv_safe(const std::string & name)
   return val == nullptr ? "" : val;
 }
 
-static std::vector<std::string_view> splitString(const std::string_view & str, const char c)
+static std::vector<std::string_view> split_string(const std::string_view & str, const char c)
 {
   if (str.empty()) {
     return {};
@@ -67,7 +67,7 @@ static std::vector<std::string_view> splitString(const std::string_view & str, c
   return resList;
 }
 
-static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(
+static std::unique_ptr<LoadedLibrary> load_vmbc_library(
   std::shared_ptr<LibraryLoader> libraryLoader,
   rclcpp::Logger & logger)
 {
@@ -75,7 +75,7 @@ static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(
 
   auto const vimbaXHome = getenv_safe("VIMBA_X_HOME");
 
-  auto const vimbaXHomeParts = splitString(vimbaXHome, ':');
+  auto const vimbaXHomeParts = split_string(vimbaXHome, ':');
   for (auto const & part : vimbaXHomeParts) {
     fs::path vmbcPath = canonical((fs::path{part} / "api" / "lib")) / libName;
     if (fs::exists(vmbcPath)) {
@@ -86,7 +86,7 @@ static std::unique_ptr<LoadedLibrary> loadVmbCLibrary(
 
   auto const tlSearchPath = getenv_safe("GENICAM_GENTL64_PATH");
 
-  auto const tlSearchPathParts = splitString(tlSearchPath, ':');
+  auto const tlSearchPathParts = split_string(tlSearchPath, ':');
   for (auto const & part : tlSearchPathParts) {
     fs::path vmbcPath = canonical((fs::path{part} / ".." / "api" / "lib")) / libName;
     if (fs::exists(vmbcPath)) {
@@ -112,7 +112,7 @@ std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(
 
     std::shared_ptr<VmbCAPI> instance{new VmbCAPI};
 
-    auto library = loadVmbCLibrary(libraryLoader, logger);
+    auto library = load_vmbc_library(libraryLoader, logger);
 
     if (!library) {
       RCLCPP_DEBUG(logger, "Failed to load VmbC library");
