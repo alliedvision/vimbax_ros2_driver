@@ -136,7 +136,7 @@ private:
   VmbCAPI() = default;
 
 
-  // Startup and Shutdown are private, because the lifecycle is manged by the class itself.
+  // Startup and Shutdown are private, because the lifecycle is managed by the class itself.
   FunctionPtr<decltype(VmbStartup)> Startup;
   FunctionPtr<decltype(VmbShutdown)> Shutdown;
 
