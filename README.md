@@ -22,6 +22,7 @@
    
 4. Run the actual build 
     ```shell
+    cd ~/ros2_ws/
     colcon build --cmake-args -DVMB_DIR=<path to VimbaX installation>
     ```  
     The optional VMB_DIR cmake argument can be used to specify the path to the Vimba X installation 
