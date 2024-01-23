@@ -37,3 +37,11 @@
     ```shell
     colcon test-result --verbose
     ```  
+
+## Debug Instructions (VSCode)
+* Install ROS extension (from Microsoft) within VSCode
+* Type CTRL-SHIFT-p to open the command palette
+* Search and execute "ROS: Start"
+* Search and execute "ROS: Update C++ properties"
+* Type CTRL-SHIFT-b and select "colcon" to build the project
+* Tpye CTRL-SHIFT-d and select "ROS: Lauch" to start debug session
