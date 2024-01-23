@@ -44,4 +44,4 @@
 * Search and execute "ROS: Start"
 * Search and execute "ROS: Update C++ properties"
 * Type CTRL-SHIFT-b and select "colcon" to build the project
-* Tpye CTRL-SHIFT-d and select "ROS: Lauch" to start debug session
+* Type CTRL-SHIFT-d and select "ROS: Lauch" to start debug session
