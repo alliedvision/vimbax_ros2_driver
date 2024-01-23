@@ -27,6 +27,10 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
 {
   auto const logger = rclcpp::get_logger("vimbax_camera");
 
+  auto checkAccess = [](const VmbCameraInfo_t & info) {
+      return (info.permittedAccess & VmbAccessModeType::VmbAccessModeExclusive) != 0;
+    };
+
   auto openCamera =
     [&](const std::string & idStr) -> std::optional<VmbHandle_t> {
       VmbHandle_t cameraHandle;
@@ -41,7 +45,7 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
       return cameraHandle;
     };
 
-  auto listCameras =
+  auto const availableCameras =
     [&]() -> std::vector<VmbCameraInfo_t> {
       uint32_t availableCamerasCount{0};
       auto const countError = api->CamerasList(nullptr, 0, &availableCamerasCount, 0);
@@ -64,23 +68,21 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
       }
 
       return cameraList;
-    };
+    }();
 
   if (name.empty()) {
     RCLCPP_INFO(logger, "No camera requested opening first available");
-
-    auto const availableCameras = listCameras();
 
     if (availableCameras.empty()) {
       RCLCPP_ERROR(logger, "List cameras returned 0");
       return nullptr;
     }
 
-    for (auto const & cam : availableCameras) {
-      if ((cam.permittedAccess & VmbAccessModeExclusive) != 0) {
-        RCLCPP_INFO(logger, "Try opening camera with extended id %s", cam.cameraIdExtended);
+    for (auto const & info : availableCameras) {
+      if (checkAccess(info)) {
+        RCLCPP_INFO(logger, "Try opening camera with extended id %s", info.cameraIdExtended);
 
-        auto const optHandle = openCamera(cam.cameraIdExtended);
+        auto const optHandle = openCamera(info.cameraIdExtended);
 
         if (optHandle) {
           return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *optHandle});
@@ -92,25 +94,31 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
 
     return nullptr;
   } else {
-    auto const optHandle = openCamera(name);
-
-    if (optHandle) {
-      return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *optHandle});
-    }
-
-    auto const availableCameras = listCameras();
-
+    auto const checkCameraInfo =
+      [&name](const VmbCameraInfo_t & info) -> bool {
+        return info.cameraIdString == name ||
+               info.cameraIdExtended == name ||
+               info.serialString == name;
+      };
     // Try open by serial number
     if (!availableCameras.empty()) {
-      for (auto const & camera : availableCameras) {
-        if (camera.serialString == name && (camera.permittedAccess & VmbAccessModeExclusive) != 0) {
-          auto const optHandleSerial = openCamera(camera.cameraIdExtended);
+      for (auto const & info : availableCameras) {
+        if (checkCameraInfo(info) && (info.permittedAccess & VmbAccessModeExclusive) != 0) {
+          auto const optHandleSerial = openCamera(info.cameraIdExtended);
 
           if (optHandleSerial) {
             return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *optHandleSerial});
           }
         }
       }
+    }
+
+    RCLCPP_WARN(logger, "No matching camera found, falling back to VmbCameraOpen");
+
+    auto const optHandle = openCamera(name);
+
+    if (optHandle) {
+      return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *optHandle});
     }
 
     RCLCPP_ERROR(logger, "Failed to open given camera %s", name.c_str());

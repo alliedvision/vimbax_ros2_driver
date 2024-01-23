@@ -376,12 +376,104 @@ TEST_F(VimbaXCameraTest, open_by_id_fail)
   EXPECT_FALSE(camera);
 }
 
-TEST_F(VimbaXCameraTest, open_by_id_sucess)
+TEST_F(VimbaXCameraTest, open_by_id_success_fallback)
 {
   uint64_t dummyHandle{};
-  std::string const cameraIdStr = "testCamera1ById";
+  std::string const cameraIdStr = "testCam3ExtId";
 
-  EXPECT_CALL(*api_mock_, CamerasList).Times(0);
+  EXPECT_CALL(*api_mock_, CamerasList).Times(AtLeast(1))
+  .WillRepeatedly(
+    [&](auto, auto, auto numFound, auto) -> VmbError_t {
+      EXPECT_NE(numFound, nullptr);
+
+      if (numFound != nullptr) {
+        *numFound = 0;
+        return VmbErrorSuccess;
+      }
+
+      return VmbErrorUnknown;
+    });
+
+  EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
+
+  EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
+  .Times(1).WillOnce(Return(VmbErrorSuccess));
+
+  EXPECT_CALL(*api_mock_, CameraOpen(Eq(cameraIdStr), _, _))
+  .Times(1).WillOnce(
+    [&](auto, auto, auto handle) -> VmbError_t {
+      *handle = &dummyHandle;
+      return VmbErrorSuccess;
+    });
+
+  auto camera = VimbaXCamera::open(api_, cameraIdStr);
+
+  EXPECT_TRUE(camera);
+}
+
+
+TEST_F(VimbaXCameraTest, open_by_id_success)
+{
+  uint64_t dummyHandle{};
+  std::string const cameraIdStr = "testCam2ExtId";
+
+  std::array<VmbCameraInfo, 2> availableCameras = {
+    VmbCameraInfo{
+      "testCam1Id",
+      "testCam1ExtId",
+      "Test Camera 1",
+      "Test Camera",
+      "1234",
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      0,
+      VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
+    },
+    VmbCameraInfo{
+      "testCam2Id",
+      "testCam2ExtId",
+      "Test Camera 2",
+      "Test Camera",
+      "5678",
+      nullptr,
+      nullptr,
+      nullptr,
+      nullptr,
+      0,
+      VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
+    }
+  };
+
+  EXPECT_CALL(*api_mock_, CamerasList).Times(AtLeast(1))
+  .WillRepeatedly(
+    [&](
+      VmbCameraInfo_t * cameraInfo,
+      VmbUint32_t listLength,
+      VmbUint32_t * numFound,
+      VmbUint32_t sizeofCameraInfo) -> VmbError_t {
+      EXPECT_NE(numFound, nullptr);
+
+      if (cameraInfo == nullptr) {
+        *numFound = availableCameras.size();
+        return VmbErrorSuccess;
+      }
+
+      if (listLength < availableCameras.size()) {
+        return VmbErrorMoreData;
+      }
+
+
+      EXPECT_EQ(sizeofCameraInfo, sizeof(VmbCameraInfo));
+      if (sizeofCameraInfo == sizeof(VmbCameraInfo)) {
+        memcpy(cameraInfo, availableCameras.data(), sizeofCameraInfo * availableCameras.size());
+        *numFound = availableCameras.size();
+        return VmbErrorSuccess;
+      }
+
+      return VmbErrorUnknown;
+    });
 
   EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
@@ -463,8 +555,7 @@ TEST_F(VimbaXCameraTest, open_by_serial)
     });
 
   auto const extIdStr = std::string{availableCameras[1].cameraIdExtended};
-  EXPECT_CALL(*api_mock_, CameraOpen(_, _, _)).Times(AtLeast(1))
-  .WillOnce(Return(VmbErrorUnknown))
+  EXPECT_CALL(*api_mock_, CameraOpen(_, _, _)).Times(1)
   .WillOnce(
     [&](auto, auto, auto cameraHandle) -> VmbError_t {
       *cameraHandle = reinterpret_cast<VmbHandle_t>(&dummyHandle);
