@@ -16,7 +16,10 @@
 #ifndef VIMBAX_CAMERA__VIMBAX_CAMERA_HPP_
 #define VIMBAX_CAMERA__VIMBAX_CAMERA_HPP_
 
+#include <string>
 #include <memory>
+
+#include <rclcpp/logger.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 
@@ -28,8 +31,9 @@ public:
   static std::unique_ptr<VimbaXCamera> open(
     std::shared_ptr<VmbCAPI> api,
     const std::string & name = {});
+
 private:
-  explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api,VmbHandle_t cameraHandle);
+  explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
 
   std::shared_ptr<VmbCAPI> api_;
   VmbHandle_t cameraHandle_;
@@ -38,4 +42,4 @@ private:
 
 }  // namespace vimbax_camera
 
-#endif  // #define VIMBAX_CAMERA__VIMBAX_CAMERA_HPP_
+#endif  // VIMBAX_CAMERA__VIMBAX_CAMERA_HPP_

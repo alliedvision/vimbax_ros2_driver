@@ -21,12 +21,14 @@
 namespace vimbax_camera
 {
 
-std::unique_ptr<VimbaXCamera> VimbaXCamera::open(std::shared_ptr<VmbCAPI> api, const std::string & name)
+std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
+  std::shared_ptr<VmbCAPI> api,
+  const std::string & name)
 {
   auto const logger = rclcpp::get_logger("vimbax_camera");
 
   auto openCamera =
-    [&](const std::string & idStr) -> std::optional<VmbHandle_t >{
+    [&](const std::string & idStr) -> std::optional<VmbHandle_t> {
       VmbHandle_t cameraHandle;
       auto const openError =
         api->CameraOpen(idStr.c_str(), VmbAccessModeType::VmbAccessModeExclusive, &cameraHandle);
@@ -46,7 +48,7 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(std::shared_ptr<VmbCAPI> api, c
 
     auto const countError = api->CamerasList(nullptr, 0, &availableCamerasCount, 0);
 
-    if ( countError!= VmbErrorSuccess) {
+    if (countError != VmbErrorSuccess) {
       RCLCPP_ERROR(logger, "Reading camera list size failed with %d", countError);
       return nullptr;
     }
@@ -103,7 +105,7 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
   if (error == VmbErrorSuccess) {
     RCLCPP_INFO(
       logger_, "Opened camera info model name: %s, camera name: %s, serial: %s",
-      cameraInfo.modelName,cameraInfo.cameraName,cameraInfo.serialString);
+      cameraInfo.modelName, cameraInfo.cameraName, cameraInfo.serialString);
   }
 }
 

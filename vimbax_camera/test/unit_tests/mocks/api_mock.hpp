@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef UNIT_TESTS__API_MOCK__API_MOCK_HPP_
-#define UNIT_TESTS__API_MOCK__API_MOCK_HPP_
+#ifndef UNIT_TESTS__MOCKS__API_MOCK_HPP_
+#define UNIT_TESTS__MOCKS__API_MOCK_HPP_
 
 #include <VmbC/VmbCTypeDefinitions.h>
 
@@ -190,4 +190,4 @@ public:
     VmbChunkAccessCallback chunkAccessCallback, void * userContext), ());
 };
 
-#endif  // UNIT_TESTS__API_MOCK__API_MOCK_HPP_
+#endif  // UNIT_TESTS__MOCKS__API_MOCK_HPP_

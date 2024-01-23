@@ -89,8 +89,9 @@ static std::unique_ptr<LoadedLibrary> load_vmbc_library(
   auto const tlSearchPathParts = split_string(tlSearchPath, ':');
   for (auto const & part : tlSearchPathParts) {
     auto libDir = fs::path{part} / ".." / "api" / "lib";
-    if (!fs::exists(libDir))
+    if (!fs::exists(libDir)) {
       continue;
+    }
 
     fs::path vmbcPath = fs::canonical(libDir) / libName;
     if (fs::exists(vmbcPath)) {

@@ -20,6 +20,7 @@
 #include <functional>
 #include <memory>
 #include <string>
+#include <stdexcept>
 
 #include <vimbax_camera/loader/library_loader.hpp>
 

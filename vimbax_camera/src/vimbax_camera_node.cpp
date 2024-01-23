@@ -29,7 +29,7 @@ VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
   auto cameraIdParamDesc = rcl_interfaces::msg::ParameterDescriptor{};
   cameraIdParamDesc.description = "Id of camera to open";
   cameraIdParamDesc.read_only = true;
-  declare_parameter("camera_id","", cameraIdParamDesc);
+  declare_parameter("camera_id", "", cameraIdParamDesc);
 
   RCLCPP_INFO(get_logger(), "Starting VimbaX camera node ...");
   RCLCPP_INFO(get_logger(), "Loading VimbaX api ...");
@@ -56,9 +56,9 @@ std::string VimbaXCameraNode::get_node_name()
 {
   auto const pidString = [] {
 #ifdef __unix__
-    return std::to_string(getpid());
+      return std::to_string(getpid());
 #endif
-  }();
+    }();
 
   return "vimbax_camera_" + pidString;
 }

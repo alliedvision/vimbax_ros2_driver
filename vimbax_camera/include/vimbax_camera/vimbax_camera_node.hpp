@@ -16,6 +16,7 @@
 #ifndef VIMBAX_CAMERA__VIMBAX_CAMERA_NODE_HPP_
 #define VIMBAX_CAMERA__VIMBAX_CAMERA_NODE_HPP_
 
+#include <string>
 #include <memory>
 
 #include <rclcpp/rclcpp.hpp>
