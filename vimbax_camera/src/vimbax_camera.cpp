@@ -41,30 +41,37 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
       return cameraHandle;
     };
 
-  if (name.empty()) {
-    uint32_t availableCamerasCount{0};
+  auto listCameras =
+    [&]() -> std::vector<VmbCameraInfo_t> {
+      uint32_t availableCamerasCount{0};
+      auto const countError = api->CamerasList(nullptr, 0, &availableCamerasCount, 0);
 
+      if (countError != VmbErrorSuccess) {
+        RCLCPP_ERROR(logger, "Reading camera list size failed with %d", countError);
+        return {};
+      }
+
+      std::vector<VmbCameraInfo_t> cameraList{};
+      cameraList.resize(availableCamerasCount);
+      uint32_t camerasFound = 0;
+
+      auto const error = api->CamerasList(
+        cameraList.data(), availableCamerasCount, &camerasFound, sizeof(VmbCameraInfo_t));
+
+      if (error != VmbErrorSuccess) {
+        RCLCPP_ERROR(logger, "List first camera failed with %d", error);
+        return {};
+      }
+
+      return cameraList;
+    };
+
+  if (name.empty()) {
     RCLCPP_INFO(logger, "No camera requested opening first available");
 
-    auto const countError = api->CamerasList(nullptr, 0, &availableCamerasCount, 0);
+    auto const availableCameras = listCameras();
 
-    if (countError != VmbErrorSuccess) {
-      RCLCPP_ERROR(logger, "Reading camera list size failed with %d", countError);
-      return nullptr;
-    }
-
-
-    std::vector<VmbCameraInfo_t> availableCameras{};
-    availableCameras.resize(availableCamerasCount);
-    uint32_t camerasFound = 0;
-
-    auto const error = api->CamerasList(
-      availableCameras.data(), availableCamerasCount, &camerasFound, sizeof(VmbCameraInfo_t));
-
-    if (error != VmbErrorSuccess) {
-      RCLCPP_ERROR(logger, "List first camera failed with %d", error);
-      return nullptr;
-    } else if (camerasFound == 0) {
+    if (availableCameras.empty()) {
       RCLCPP_ERROR(logger, "List cameras returned 0");
       return nullptr;
     }
@@ -91,6 +98,21 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
       return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *optHandle});
     }
 
+    auto const availableCameras = listCameras();
+
+    // Try open by serial number
+    if (!availableCameras.empty()) {
+      for (auto const & camera : availableCameras) {
+        if (camera.serialString == name && (camera.permittedAccess & VmbAccessModeExclusive) != 0) {
+          auto const optHandleSerial = openCamera(camera.cameraIdExtended);
+
+          if (optHandleSerial) {
+            return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *optHandleSerial});
+          }
+        }
+      }
+    }
+
     RCLCPP_ERROR(logger, "Failed to open given camera %s", name.c_str());
   }
 
@@ -98,7 +120,7 @@ std::unique_ptr<VimbaXCamera> VimbaXCamera::open(
 }
 
 VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle)
-: api_{api}, cameraHandle_{cameraHandle}, logger_{rclcpp::get_logger("vimbax_camera")}
+: api_{std::move(api)}, cameraHandle_{cameraHandle}, logger_{rclcpp::get_logger("vimbax_camera")}
 {
   VmbCameraInfo_t cameraInfo{};
   auto const error = api_->CameraInfoQueryByHandle(cameraHandle_, &cameraInfo, sizeof(cameraInfo));
