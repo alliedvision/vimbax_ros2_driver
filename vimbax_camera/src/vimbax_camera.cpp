@@ -109,4 +109,11 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
   }
 }
 
+VimbaXCamera::~VimbaXCamera()
+{
+  if (api_ && cameraHandle_) {
+    api_->CameraClose(cameraHandle_);
+    cameraHandle_ = nullptr;
+  }
+}
 }  // namespace vimbax_camera

@@ -32,6 +32,10 @@ public:
     std::shared_ptr<VmbCAPI> api,
     const std::string & name = {});
 
+  ~VimbaXCamera();
+
+  VimbaXCamera(const VimbaXCamera &) = delete;
+  VimbaXCamera & operator=(const VimbaXCamera &) = delete;
 private:
   explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
 

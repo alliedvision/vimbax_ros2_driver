@@ -155,6 +155,8 @@ TEST_F(VimbaXCameraTest, open_first_camera)
       return VmbErrorUnknown;
     });
 
+  EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
+
   auto camera = VimbaXCamera::open(api_);
 
   EXPECT_TRUE(camera);
@@ -242,6 +244,8 @@ TEST_F(VimbaXCameraTest, open_second_camera)
 
       return VmbErrorUnknown;
     });
+
+  EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
   auto camera = VimbaXCamera::open(api_);
 
@@ -371,6 +375,8 @@ TEST_F(VimbaXCameraTest, open_by_id_sucess)
   std::string const cameraIdStr = "testCamera1ById";
 
   EXPECT_CALL(*api_mock_, CamerasList).Times(0);
+
+  EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
   .Times(1).WillOnce(Return(VmbErrorSuccess));
