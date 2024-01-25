@@ -17,7 +17,7 @@
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 
-#include "api_mock/api_mock.hpp"
+#include "mocks/library_loader_mock.hpp"
 
 using ::vimbax_camera::LibraryLoader;
 using ::vimbax_camera::LoadedLibrary;
@@ -27,25 +27,6 @@ using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::Return;
 using ::testing::ByMove;
-
-struct MockLibraryLoader : public LibraryLoader
-{
-  MOCK_METHOD(std::unique_ptr<LoadedLibrary>, open, (const std::string & name), (override));
-  MOCK_METHOD(std::string, build_library_name, (const std::string & name), (override));
-};
-
-struct MockLoadedLibrary : public LoadedLibrary
-{
-  MockLoadedLibrary()
-  {
-    ON_CALL(*this, resolve_symbol).WillByDefault(
-      [](const std::string & name) {
-        return APIMock::get_function_ptr(name);
-      });
-  }
-
-  MOCK_METHOD(void *, resolve_symbol, (const std::string & name), (override));
-};
 
 class APILoader : public testing::Test
 {

@@ -12,10 +12,57 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-int main(int argc, char ** argv)
-{
-  (void)argc;
-  (void)argv;
+#ifdef __unix__
+#include <unistd.h>
+#endif
 
-  return 0;
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
+
+#include <vimbax_camera/vimbax_camera_node.hpp>
+
+namespace vimbax_camera
+{
+VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
+: rclcpp::Node(get_node_name(), options)
+{
+  auto cameraIdParamDesc = rcl_interfaces::msg::ParameterDescriptor{};
+  cameraIdParamDesc.description = "Id of camera to open";
+  cameraIdParamDesc.read_only = true;
+  declare_parameter("camera_id", "", cameraIdParamDesc);
+
+  RCLCPP_INFO(get_logger(), "Starting VimbaX camera node ...");
+  RCLCPP_INFO(get_logger(), "Loading VimbaX api ...");
+  api_ = VmbCAPI::get_instance();
+  if (!api_) {
+    RCLCPP_FATAL(get_logger(), "VmbC loading failed!");
+    rclcpp::shutdown();
+    return;
+  }
+
+  VmbVersionInfo_t versionInfo{};
+  if (api_->VersionQuery(&versionInfo, sizeof(versionInfo)) != VmbErrorSuccess) {
+    RCLCPP_WARN(get_logger(), "Reading VmbC version failed!");
+  }
+
+  RCLCPP_INFO(
+    get_logger(), "Successfully loaded VmbC API version %d.%d.%d",
+    versionInfo.major, versionInfo.minor, versionInfo.patch);
+
+  camera_ = VimbaXCamera::open(api_, get_parameter("camera_id").as_string());
 }
+
+std::string VimbaXCameraNode::get_node_name()
+{
+  auto const pidString = [] {
+#ifdef __unix__
+      return std::to_string(getpid());
+#endif
+    }();
+
+  return "vimbax_camera_" + pidString;
+}
+
+}  // namespace vimbax_camera
+
+RCLCPP_COMPONENTS_REGISTER_NODE(vimbax_camera::VimbaXCameraNode);
