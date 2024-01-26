@@ -12,30 +12,60 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 #ifndef VIMBAX_CAMERA__VIMBAX_CAMERA_NODE_HPP_
 #define VIMBAX_CAMERA__VIMBAX_CAMERA_NODE_HPP_
 
 #include <string>
 #include <memory>
+#include <thread>
+#include <mutex>
+#include <memory_resource>
+#include <atomic>
 
 #include <rclcpp/rclcpp.hpp>
+
+#include <image_transport/image_transport.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
 
+
 namespace vimbax_camera
 {
-class VimbaXCameraNode : public rclcpp::Node
+class VimbaXCameraNode
 {
 public:
+  using NodeBaseInterface = rclcpp::node_interfaces::NodeBaseInterface;
+
   explicit VimbaXCameraNode(const rclcpp::NodeOptions & options);
+  ~VimbaXCameraNode();
+
+  NodeBaseInterface::SharedPtr get_node_base_interface() const;
 
 private:
+  using OnSetParametersCallbackHandle = rclcpp::Node::OnSetParametersCallbackHandle;
+
   static std::string get_node_name();
 
+  bool initialize_parameters();
+  bool initialize_api();
+  bool initialize_publisher();
+  bool initialize_camera();
+  bool initialize_graph_notify();
+
+  void start_streaming();
+  void stop_streaming();
+
+  rclcpp::Node::SharedPtr node_;
   std::shared_ptr<VmbCAPI> api_;
-  std::unique_ptr<VimbaXCamera> camera_;
+  std::shared_ptr<VimbaXCamera> camera_;
+
+  image_transport::Publisher image_publisher_;
+
+  OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+
+  std::unique_ptr<std::thread> graph_notify_thread_;
+  std::atomic_bool stop_threads_{false};
 };
 
 }  // namespace vimbax_camera
