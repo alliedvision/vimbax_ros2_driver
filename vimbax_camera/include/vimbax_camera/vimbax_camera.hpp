@@ -25,6 +25,7 @@
 #include <sensor_msgs/image_encodings.hpp>
 #include <sensor_msgs/msg/image.hpp>
 
+#include <vimbax_camera/result.hpp>
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
@@ -38,7 +39,7 @@ public:
     /* *INDENT-OFF* */
   public:
     /* *INDENT-ON* */
-    static std::shared_ptr<Frame> create(
+    static result<std::shared_ptr<Frame>> create(
       std::shared_ptr<VimbaXCamera> camera, size_t size, size_t alignment = 1);
 
     ~Frame();
@@ -93,28 +94,28 @@ public:
   VimbaXCamera(const VimbaXCamera &) = delete;
   VimbaXCamera & operator=(const VimbaXCamera &) = delete;
 
-  int32_t start_streaming(
+  result<void> start_streaming(
     int bufferCount,
     std::function<void(std::shared_ptr<Frame>)> onFrame,
     bool startAcquisition = true);
-  void stop_streaming();
+  result<void> stop_streaming();
 
-  std::optional<VmbCameraInfo> query_camera_info() const;
+  result<VmbCameraInfo> query_camera_info() const;
 
   // Feature access
-  int32_t feature_command_run(const std::string_view & name) const;
+  result<void> feature_command_run(const std::string_view & name) const;
 
-  std::optional<int64_t> feature_int_get(const std::string_view & name) const;
+  result<int64_t> feature_int_get(const std::string_view & name) const;
 
-  std::optional<std::string> feature_enum_get(const std::string_view & name) const;
+  result<std::string> feature_enum_get(const std::string_view & name) const;
 
-  std::optional<int64_t> feature_enum_as_int(
+  result<int64_t> feature_enum_as_int(
     const std::string_view & name,
     const std::string_view & option) const;
 
-  std::optional<VmbPixelFormatType> get_pixel_format() const;
+  result<VmbPixelFormatType> get_pixel_format() const;
 
-  std::optional<VmbFeatureInfo> feature_info_query(const std::string_view & name) const;
+  result<VmbFeatureInfo> feature_info_query(const std::string_view & name) const;
 
   bool is_streaming() const;
 

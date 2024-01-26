@@ -147,7 +147,7 @@ VimbaXCamera::~VimbaXCamera()
   }
 }
 
-int32_t VimbaXCamera::start_streaming(
+result<void> VimbaXCamera::start_streaming(
   int bufferCount,
   std::function<void(std::shared_ptr<Frame>)> onFrame,
   bool startAcquisition)
@@ -160,16 +160,18 @@ int32_t VimbaXCamera::start_streaming(
 
     auto const payloadSizeError = api_->PayloadSizeGet(camera_handle_, &payloadSize);
     if (payloadSizeError != VmbErrorSuccess) {
-      return payloadSizeError;
+      return error{payloadSizeError};
     }
 
     for (auto & frame : frames_) {
-      frame = Frame::create(shared_from_this(), payloadSize, 128);
+      auto newFrame = Frame::create(shared_from_this(), payloadSize, 128);
 
-      if (!frame) {
+      if (!newFrame) {
         RCLCPP_ERROR(get_logger(), "Failed to create frame");
-        return VmbErrorUnknown;
+        return newFrame.error();
       }
+
+      frame = *newFrame;
 
       frame->set_callback(onFrame);
     }
@@ -177,67 +179,69 @@ int32_t VimbaXCamera::start_streaming(
     auto const capStartError = api_->CaptureStart(camera_handle_);
     if (capStartError != VmbErrorSuccess) {
       RCLCPP_ERROR(get_logger(), "Capture start failed with %d", capStartError);
-      return capStartError;
+      return error{capStartError};
     }
 
     for (auto const & frame : frames_) {
       auto const queueError = frame->queue();
       if (queueError != VmbErrorSuccess) {
         RCLCPP_ERROR(get_logger(), "Queue frame failed with %d", queueError);
-        return queueError;
+        return error{queueError};
       }
     }
 
     if (startAcquisition) {
       auto const acqStartError = feature_command_run(SFNCFeatures::AcquisitionStart);
-      if (acqStartError != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Acquisition start failed with %d", acqStartError);
-        return acqStartError;
+      if (!acqStartError) {
+        RCLCPP_ERROR(get_logger(), "Acquisition start failed with %d", acqStartError.error().code);
+        return acqStartError.error();
       }
     }
 
     streaming_ = true;
   }
 
-  return VmbErrorSuccess;
+  return {};
 }
 
-void VimbaXCamera::stop_streaming()
+result<void> VimbaXCamera::stop_streaming()
 {
   if (!streaming_) {
-    return;
+    return {};
   }
 
   auto const acqStopError = feature_command_run(SFNCFeatures::AcquisitionStop);
-  if (acqStopError != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Acquisition stop failed with %d", acqStopError);
-    return;
+  if (!acqStopError) {
+    RCLCPP_ERROR(get_logger(), "Acquisition stop failed with %d", acqStopError.error().code);
+    return acqStopError.error();
   }
 
   auto const capStopError = api_->CaptureEnd(camera_handle_);
   if (capStopError != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "Capture stop failed with %d", capStopError);
-    return;
+    return error{capStopError};
   }
 
   auto const flushError = api_->CaptureQueueFlush(camera_handle_);
   if (flushError != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "Flush capture queue failed with %d", flushError);
-    return;
+    return error{flushError};
   }
 
   auto const revokeError = api_->FrameRevokeAll(camera_handle_);
   if (revokeError != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "Revoking frames failed with %d", revokeError);
-    return;
+    return error{revokeError};
   }
 
   frames_.clear();
 
   streaming_ = false;
+
+  return {};
 }
 
-std::optional<VmbCameraInfo> VimbaXCamera::query_camera_info() const
+result<VmbCameraInfo> VimbaXCamera::query_camera_info() const
 {
   VmbCameraInfo cameraInfo{};
 
@@ -245,18 +249,18 @@ std::optional<VmbCameraInfo> VimbaXCamera::query_camera_info() const
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "Failed to query camera info!");
-    return std::nullopt;
+    return error{err};
   }
 
   return cameraInfo;
 }
 
-int32_t VimbaXCamera::feature_command_run(const std::string_view & name) const
+result<void> VimbaXCamera::feature_command_run(const std::string_view & name) const
 {
   auto const runError = api_->FeatureCommandRun(camera_handle_, name.data());
 
   if (runError != VmbErrorSuccess) {
-    return runError;
+    return error{runError};
   }
 
   bool done{false};
@@ -268,10 +272,10 @@ int32_t VimbaXCamera::feature_command_run(const std::string_view & name) const
     api_->FeatureCommandIsDone(camera_handle_, name.data(), &done);
   }
 
-  return VmbErrorSuccess;
+  return {};
 }
 
-std::optional<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
+result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
 {
   int64_t value{};
   auto const err =
@@ -279,26 +283,26 @@ std::optional<int64_t> VimbaXCamera::feature_int_get(const std::string_view & na
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "Get integer feature failed with %d", err);
-    return std::nullopt;
+    return error{err};
   }
 
   return value;
 }
 
-std::optional<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
+result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
 {
   const char * value;
   auto const err = api_->FeatureEnumGet(camera_handle_, name.data(), &value);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "Get integer feature failed with %d", err);
-    return std::nullopt;
+    return error{err};
   }
 
-  return value;
+  return std::string{value};
 }
 
-std::optional<int64_t> VimbaXCamera::feature_enum_as_int(
+result<int64_t> VimbaXCamera::feature_enum_as_int(
   const std::string_view & name,
   const std::string_view & option) const
 {
@@ -313,47 +317,49 @@ std::optional<int64_t> VimbaXCamera::feature_enum_as_int(
       get_logger(), "Failed to convert enum %s option %s to int with %d",
       name.data(), option.data(), err);
 
-    return std::nullopt;
+    return error{err};
   }
 
   return value;
 }
 
-std::optional<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
+result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
 {
   auto const featureInfoOpt = feature_info_query(SFNCFeatures::PixelFormat);
 
   if (!featureInfoOpt) {
-    return std::nullopt;
+    return featureInfoOpt.error();
+  } else if (featureInfoOpt->sfncNamespace == nullptr) {
+    return error{VmbErrorInvalidAddress};
   } else if (std::string_view{featureInfoOpt->sfncNamespace} != "Standard") {
-    return std::nullopt;
+    return error{VmbErrorNotAvailable};
   }
 
   auto const currentFormatStr = feature_enum_get(SFNCFeatures::PixelFormat);
 
   if (!currentFormatStr) {
-    return std::nullopt;
+    return currentFormatStr.error();
   }
 
   auto const currentFormat = feature_enum_as_int(SFNCFeatures::PixelFormat, *currentFormatStr);
 
   if (!currentFormat) {
-    return std::nullopt;
+    return currentFormat.error();
   }
 
   return static_cast<VmbPixelFormatType>(*currentFormat);
 }
 
-std::optional<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view & name) const
+result<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view & name) const
 {
   VmbFeatureInfo featureInfo{};
 
-  auto const error =
+  auto const err =
     api_->FeatureInfoQuery(camera_handle_, name.data(), &featureInfo, sizeof(featureInfo));
 
-  if (error != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Reading feature info for %s failed with %d", name.data(), error);
-    return std::nullopt;
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "Reading feature info for %s failed with %d", name.data(), err);
+    return error{err};
   }
 
   return featureInfo;
@@ -364,7 +370,7 @@ bool VimbaXCamera::is_streaming() const
   return streaming_;
 }
 
-std::shared_ptr<VimbaXCamera::Frame> VimbaXCamera::Frame::create(
+result<std::shared_ptr<VimbaXCamera::Frame>> VimbaXCamera::Frame::create(
   std::shared_ptr<VimbaXCamera> camera,
   size_t size,
   size_t alignment)
@@ -372,7 +378,7 @@ std::shared_ptr<VimbaXCamera::Frame> VimbaXCamera::Frame::create(
   auto const pixelFormat = camera->get_pixel_format();
 
   if (!pixelFormat) {
-    return {};
+    return pixelFormat.error();
   }
 
   uint32_t const bpp = (*pixelFormat >> 16) & 0xFF;
@@ -380,8 +386,10 @@ std::shared_ptr<VimbaXCamera::Frame> VimbaXCamera::Frame::create(
   auto const width = camera->feature_int_get(SFNCFeatures::Width);
   auto const height = camera->feature_int_get(SFNCFeatures::Height);
 
-  if (!width || height) {
-    return {};
+  if (!width) {
+    return width.error();
+  } else if (!height) {
+    return height.error();
   }
 
   auto const line = *width * bpp / 8;
@@ -409,7 +417,7 @@ std::shared_ptr<VimbaXCamera::Frame> VimbaXCamera::Frame::create(
     camera->api_->FrameAnnounce(camera->camera_handle_, &frame->vmb_frame_, sizeof(vmb_frame_));
 
   if (announceError != VmbErrorSuccess) {
-    return {};
+    return error{announceError};
   }
 
   return frame;
