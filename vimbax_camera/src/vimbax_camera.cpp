@@ -431,6 +431,9 @@ void VimbaXCamera::Frame::vmb_frame_callback(
 
   if (frame->receiveStatus == VmbFrameStatusType::VmbFrameStatusComplete) {
     sharedPtr->on_frame_ready();
+  } else {
+    RCLCPP_WARN(get_logger(), "Frame with status %d received", frame->receiveStatus);
+    sharedPtr->queue();
   }
 }
 
