@@ -57,7 +57,9 @@ VimbaXCameraNode::~VimbaXCameraNode()
 {
   stop_threads_.store(true, std::memory_order::memory_order_relaxed);
 
-  graph_notify_thread_->join();
+  if (graph_notify_thread_) {
+    graph_notify_thread_->join();
+  }
 
   camera_.reset();
 }

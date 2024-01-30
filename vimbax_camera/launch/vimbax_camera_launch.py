@@ -20,8 +20,8 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='vimbax_camera',
-            namespace='avt_vimbax',
+            #namespace='avt_vimbax',
             executable='vimbax_camera_node',
-            name='sim'
+            name='vimbax_camera_test'
         )
     ])
