@@ -72,6 +72,108 @@ protected:
   std::shared_ptr<APIMock> api_mock_;
 };
 
+class VimbaXCameraOpenedTest : public VimbaXCameraTest
+{
+protected:
+  void SetUp() override
+  {
+    VimbaXCameraTest::SetUp();
+
+    std::string const cameraIdStr = "testcam";
+
+    EXPECT_CALL(*api_mock_, CamerasList).Times(AtLeast(1))
+    .WillRepeatedly(
+      [&](auto, auto, auto numFound, auto) -> VmbError_t {
+        EXPECT_NE(numFound, nullptr);
+
+        if (numFound != nullptr) {
+          *numFound = 0;
+          return VmbErrorSuccess;
+        }
+
+        return VmbErrorUnknown;
+      });
+
+    EXPECT_CALL(*api_mock_, CameraClose(&dummy_handle_)).Times(1);
+
+    EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummy_handle_, _, _))
+    .Times(1).WillOnce(Return(VmbErrorSuccess));
+
+    EXPECT_CALL(*api_mock_, CameraOpen(Eq(cameraIdStr), _, _))
+    .Times(1).WillOnce(
+      [&](auto, auto, auto handle) -> VmbError_t {
+        *handle = &dummy_handle_;
+        return VmbErrorSuccess;
+      });
+
+    camera_ = VimbaXCamera::open(api_, cameraIdStr);
+
+    EXPECT_CALL(
+      *api_mock_,
+      FeatureInfoQuery(&dummy_handle_, Eq(VimbaXCamera::SFNCFeatures::PixelFormat), _, _))
+    .Times(AtLeast(0)).WillRepeatedly(
+      [&](auto, auto, VmbFeatureInfo_t * info, auto infoSize) -> int32_t {
+        if (infoSize != sizeof(VmbFeatureInfo)) {
+          return VmbErrorStructSize;
+        }
+        info->sfncNamespace = "Standard";
+        return VmbErrorSuccess;
+      });
+
+    EXPECT_CALL(
+      *api_mock_, FeatureEnumGet(&dummy_handle_, Eq(VimbaXCamera::SFNCFeatures::PixelFormat), _))
+    .Times(AtLeast(0)).WillRepeatedly(
+      [&](auto, auto, const char ** ptr) -> int32_t {
+        *ptr = "Test";
+        return VmbErrorSuccess;
+      });
+
+    EXPECT_CALL(
+      *api_mock_,
+      FeatureEnumAsInt(
+        &dummy_handle_,
+        Eq(VimbaXCamera::SFNCFeatures::PixelFormat),
+        Eq(std::string("Test")), _))
+    .Times(AtLeast(0)).WillRepeatedly(
+      [&](auto, auto, auto, VmbInt64_t * iptr) -> int32_t {
+        *iptr = test_format_;
+        return VmbErrorSuccess;
+      });
+
+    EXPECT_CALL(
+      *api_mock_, FeatureIntGet(_, Eq(VimbaXCamera::SFNCFeatures::Width), _)).Times(AtLeast(0))
+    .WillRepeatedly(
+      [&](auto, auto, VmbInt64_t * ptr) -> int32_t {
+        *ptr = test_width_;
+        return VmbErrorSuccess;
+      });
+    EXPECT_CALL(
+      *api_mock_, FeatureIntGet(_, Eq(VimbaXCamera::SFNCFeatures::Height), _)).Times(AtLeast(0))
+    .WillRepeatedly(
+      [&](auto, auto, VmbInt64_t * ptr) -> int32_t {
+        *ptr = test_height_;
+        return VmbErrorSuccess;
+      });
+
+    ASSERT_TRUE(camera_);
+  }
+
+  void TearDown() override
+  {
+    camera_.reset();
+    VimbaXCameraTest::TearDown();
+  }
+
+  std::shared_ptr<VimbaXCamera> camera_;
+  int32_t test_format_ = VmbPixelFormatRgb8;
+  int32_t test_width_ = 1500;
+  int32_t test_height_ = 1500;
+  int32_t test_line_ = test_width_ * 3;
+  int64_t test_size_ = test_line_ * test_height_;
+
+  uint64_t dummy_handle_{};
+};
+
 TEST_F(VimbaXCameraTest, open_first_camera)
 {
   uint64_t dummyHandle{};
@@ -580,6 +682,73 @@ TEST_F(VimbaXCameraTest, open_by_serial)
   auto camera = VimbaXCamera::open(api_, availableCameras[1].serialString);
 
   EXPECT_TRUE(camera);
+}
+
+TEST_F(VimbaXCameraOpenedTest, frame_create_announce_fail)
+{
+  auto const announceError = VmbErrorMoreData;
+
+  EXPECT_CALL(*api_mock_, FrameAnnounce).Times(1).WillOnce(Return(announceError));
+
+  auto const frameRes = VimbaXCamera::Frame::create(camera_, test_size_);
+
+  EXPECT_FALSE(frameRes);
+  EXPECT_EQ(frameRes.error().code, announceError);
+}
+
+TEST_F(VimbaXCameraOpenedTest, frame_create_format_info_fail)
+{
+  auto const infoError = VmbErrorMoreData;
+
+  EXPECT_CALL(*api_mock_, FeatureInfoQuery(_, Eq(VimbaXCamera::SFNCFeatures::PixelFormat), _, _))
+  .Times(1).WillOnce(Return(infoError));
+
+  EXPECT_CALL(*api_mock_, FrameAnnounce).Times(0);
+
+  auto const frameRes = VimbaXCamera::Frame::create(camera_, test_size_);
+
+  EXPECT_FALSE(frameRes);
+  EXPECT_EQ(frameRes.error().code, infoError);
+}
+
+TEST_F(VimbaXCameraOpenedTest, frame_create_success_by_announce)
+{
+  EXPECT_CALL(*api_mock_, FrameAnnounce).Times(1)
+  .WillOnce(
+    [&](auto, const VmbFrame * frame, auto frameSize) -> int32_t {
+      EXPECT_EQ(frameSize, sizeof(VmbFrame));
+
+      EXPECT_EQ(frame->bufferSize, test_size_);
+      EXPECT_NE(frame->buffer, nullptr);
+
+      return VmbErrorSuccess;
+    });
+
+  auto const frameRes = VimbaXCamera::Frame::create(camera_, test_size_);
+
+  EXPECT_TRUE(frameRes);
+  EXPECT_NE(frameRes->get(), nullptr);
+}
+
+TEST_F(VimbaXCameraOpenedTest, frame_create_success_by_alloc_and_announce)
+{
+  auto const size = test_size_ + 128;
+
+  EXPECT_CALL(*api_mock_, FrameAnnounce).Times(1)
+  .WillOnce(
+    [&](auto, const VmbFrame * frame, auto frameSize) -> int32_t {
+      EXPECT_EQ(frameSize, sizeof(VmbFrame));
+
+      EXPECT_EQ(frame->bufferSize, size);
+      EXPECT_EQ(frame->buffer, nullptr);
+
+      return VmbErrorSuccess;
+    });
+
+  auto const frameRes = VimbaXCamera::Frame::create(camera_, size);
+
+  EXPECT_TRUE(frameRes);
+  EXPECT_NE(frameRes->get(), nullptr);
 }
 
 

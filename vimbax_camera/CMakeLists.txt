@@ -12,6 +12,7 @@ set(vimbax_camera_node_SRCS
         src/loader/library_loader_unix.cpp
         src/loader/vmbc_api.cpp
         src/vimbax_camera.cpp
+        src/vimbax_camera_helper.cpp
 )
 
 # find dependencies

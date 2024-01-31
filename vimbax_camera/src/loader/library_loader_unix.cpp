@@ -16,10 +16,13 @@
 
 #include <rclcpp/logging.hpp>
 
+#include <vimbax_camera/vimbax_camera_helper.hpp>
 #include <vimbax_camera/loader/library_loader.hpp>
 
 namespace vimbax_camera
 {
+using helper::get_logger;
+
 static std::shared_ptr<LibraryLoader> g_defaultLoader{};
 
 class LoadedLibraryUnix : public LoadedLibrary
@@ -41,9 +44,7 @@ public:
       return symbolPtr;
     }
 
-    RCLCPP_ERROR(
-      rclcpp::get_logger("LoadedLibraryUnix"), "Loading symbol %s failed with: %s",
-      name.c_str(), dlerror());
+    RCLCPP_ERROR(get_logger(), "Loading symbol %s failed with: %s", name.c_str(), dlerror());
 
     return nullptr;
   }
@@ -63,8 +64,7 @@ public:
     }
 
     RCLCPP_ERROR(
-      rclcpp::get_logger("LibraryLoaderUnix"), "Loading shared library %s failed with: %s",
-      name.c_str(), dlerror());
+      get_logger(), "Loading shared library %s failed with: %s", name.c_str(), dlerror());
 
     return {};
   }
