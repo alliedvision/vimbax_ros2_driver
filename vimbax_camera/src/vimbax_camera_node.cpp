@@ -65,6 +65,10 @@ VimbaXCameraNode::~VimbaXCameraNode()
     graph_notify_thread_->join();
   }
 
+  if (camera_->is_streaming()) {
+    camera_->stop_streaming();
+  }
+
   camera_.reset();
 }
 
@@ -192,7 +196,8 @@ bool VimbaXCameraNode::initialize_services()
   settings_save_service_ = node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/save", [this](
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
-      const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response) {
+      const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
+    {
       auto const result = camera_->settings_save(request->filename);
       if (!result) {
         response->set__error(result.error().code);
@@ -203,7 +208,8 @@ bool VimbaXCameraNode::initialize_services()
   settings_load_service_ = node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/load", [this](
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
-      const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response) {
+      const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
+    {
       auto const result = camera_->settings_load(request->filename);
       if (!result) {
         response->set__error(result.error().code);

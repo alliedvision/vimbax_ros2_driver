@@ -66,6 +66,7 @@ public:
     static void vmb_frame_callback(const VmbHandle_t, const VmbHandle_t, VmbFrame_t * frame);
     void on_frame_ready();
     void transform();
+    uint64_t timestamp_to_ns(uint64_t timestamp);
 
     Frame(std::shared_ptr<VimbaXCamera> camera, AllocationMode allocationMode);
 
@@ -100,8 +101,6 @@ public:
     bool startAcquisition = true);
   result<void> stop_streaming();
 
-  result<VmbCameraInfo> query_camera_info() const;
-
   // Feature access
   result<void> feature_command_run(const std::string_view & name) const;
 
@@ -132,6 +131,7 @@ private:
   VmbHandle_t camera_handle_;
   std::vector<std::shared_ptr<Frame>> frames_;
   bool streaming_{false};
+  VmbCameraInfo camera_info_;
 };
 
 }  // namespace vimbax_camera
