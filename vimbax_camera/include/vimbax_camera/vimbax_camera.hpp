@@ -117,10 +117,16 @@ public:
 
   result<VmbFeatureInfo> feature_info_query(const std::string_view & name) const;
 
+  result<void> settings_load(const std::string_view & fileName);
+
+  result<void> settings_save(const std::string_view & fileName);
+
   bool is_streaming() const;
 
 private:
   explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
+
+  VmbFeaturePersistSettings get_default_feature_persist_settings() const;
 
   std::shared_ptr<VmbCAPI> api_;
   VmbHandle_t camera_handle_;

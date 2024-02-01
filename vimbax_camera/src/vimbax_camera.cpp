@@ -13,10 +13,13 @@
 // limitations under the License.
 
 #include <optional>
+#include <filesystem>
 
 #include <rclcpp/rclcpp.hpp>
 
 #include <vimbax_camera/vimbax_camera.hpp>
+
+namespace fs = std::filesystem;
 
 namespace vimbax_camera
 {
@@ -364,6 +367,67 @@ result<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view &
 
   return featureInfo;
 }
+
+result<void> VimbaXCamera::settings_load(const std::string_view & fileName)
+{
+  fs::path settings_file_path{fileName};
+
+  if (!fs::exists(settings_file_path)) {
+    return error{VmbErrorNotFound};
+  }
+
+  auto const presist_settings = get_default_feature_persist_settings();
+
+  auto const err = api_->SettingsLoad(
+    camera_handle_,
+    settings_file_path.c_str(),
+    &presist_settings,
+    sizeof(presist_settings));
+
+  if (err != VmbErrorSuccess) {
+    return error{err};
+  }
+
+  return {};
+}
+
+result<void> VimbaXCamera::settings_save(const std::string_view & fileName)
+{
+  fs::path settings_file_path{fileName};
+
+  if (settings_file_path.extension() == "xml") {
+    return error{VmbErrorInvalidValue};
+  }
+
+  if (!fs::exists(settings_file_path.parent_path())) {
+    return error{VmbErrorNotFound};
+  }
+
+  auto const presist_settings = get_default_feature_persist_settings();
+
+  auto const err = api_->SettingsSave(
+    camera_handle_,
+    settings_file_path.c_str(),
+    &presist_settings,
+    sizeof(presist_settings));
+
+  if (err != VmbErrorSuccess) {
+    return error{err};
+  }
+
+  return {};
+}
+
+VmbFeaturePersistSettings VimbaXCamera::get_default_feature_persist_settings() const
+{
+  return {
+    VmbFeaturePersistType::VmbFeaturePersistNoLUT,
+    VmbModulePersistFlagsType::VmbModulePersistFlagsRemoteDevice,
+    10,
+    VmbLogLevel::VmbLogLevelWarn
+  };
+}
+
 
 bool VimbaXCamera::is_streaming() const
 {

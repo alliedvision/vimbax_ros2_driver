@@ -26,6 +26,8 @@
 
 #include <image_transport/image_transport.hpp>
 
+#include <vimbax_camera_msgs/srv/settings_load_save.hpp>
+
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
 
@@ -45,6 +47,10 @@ public:
 private:
   using OnSetParametersCallbackHandle = rclcpp::Node::OnSetParametersCallbackHandle;
 
+  const std::string parameter_camera_id = "camera_id";
+  const std::string parameter_settings_file = "settings_file";
+  const std::string parameter_buffer_count = "buffer_count";
+
   static std::string get_node_name();
 
   bool initialize_parameters();
@@ -52,6 +58,7 @@ private:
   bool initialize_publisher();
   bool initialize_camera();
   bool initialize_graph_notify();
+  bool initialize_services();
 
   void start_streaming();
   void stop_streaming();
@@ -60,7 +67,12 @@ private:
   std::shared_ptr<VmbCAPI> api_;
   std::shared_ptr<VimbaXCamera> camera_;
 
+  // Publishers
   image_transport::Publisher image_publisher_;
+
+  // Services
+  rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr settings_save_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr settings_load_service_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 
