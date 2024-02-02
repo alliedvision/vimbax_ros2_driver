@@ -20,6 +20,7 @@
 #include <rclcpp_components/register_node_macro.hpp>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
+#include <vimbax_camera_msgs/srv/feature_int.hpp>
 
 #include <vimbax_camera/vimbax_camera_node.hpp>
 
@@ -45,6 +46,10 @@ VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
   }
 
   if (!initialize_publisher()) {
+    return;
+  }
+
+  if (!initialize_services()) {
     return;
   }
 
@@ -143,6 +148,25 @@ bool VimbaXCameraNode::initialize_graph_notify()
   if (!graph_notify_thread_) {
     return false;
   }
+
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing feature services ...");
+
+  feature_int_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureInt>(
+    "~/features/int_get", [this](
+      const vimbax_camera_msgs::srv::FeatureInt::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureInt::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_int_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+      }
+    );
 
   return true;
 }

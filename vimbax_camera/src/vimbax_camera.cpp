@@ -17,6 +17,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <vimbax_camera/vimbax_camera.hpp>
+#include <vimbax_camera_msgs/srv/feature_int.hpp>
 
 namespace vimbax_camera
 {
@@ -277,6 +278,7 @@ result<void> VimbaXCamera::feature_command_run(const std::string_view & name) co
 
 result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
 {
+  RCLCPP_DEBUG(get_logger(), "feature_int_get %s", name.data());
   int64_t value{};
   auto const err =
     api_->FeatureIntGet(camera_handle_, name.data(), reinterpret_cast<VmbInt64_t *>(&value));

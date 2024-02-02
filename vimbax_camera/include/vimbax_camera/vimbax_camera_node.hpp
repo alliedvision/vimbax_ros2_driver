@@ -26,6 +26,8 @@
 
 #include <image_transport/image_transport.hpp>
 
+#include <vimbax_camera_msgs/srv/feature_int.hpp>
+
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
 
@@ -51,6 +53,7 @@ private:
   bool initialize_api();
   bool initialize_publisher();
   bool initialize_camera();
+  bool initialize_services();
   bool initialize_graph_notify();
 
   void start_streaming();
@@ -63,6 +66,10 @@ private:
   image_transport::Publisher image_publisher_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+
+
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureInt>::SharedPtr feature_int_get_service_;
+
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};
