@@ -388,6 +388,36 @@ result<void> VimbaXCamera::feature_string_set(const std::string_view & name, con
   return {};
 }
 
+result<bool> VimbaXCamera::feature_bool_get(const std::string_view & name) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
+
+  bool value{};
+  auto const err =
+    api_->FeatureBoolGet(camera_handle_, name.data(), reinterpret_cast<bool *>(&value));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return value;
+}
+
+result<void> VimbaXCamera::feature_bool_set(const std::string_view & name, const bool value) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s, %d)", __FUNCTION__, name.data(), value);
+  auto const err =
+    api_->FeatureBoolSet(camera_handle_, name.data(), value);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return {};
+}
+
 result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
 {
   const char * value;

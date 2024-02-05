@@ -112,6 +112,8 @@ public:
   result<void> feature_float_set(const std::string_view & name, const _Float64 value) const;
   result<std::string> feature_string_get(const std::string_view & name) const;
   result<void> feature_string_set(const std::string_view & name, const std::string_view value) const;
+  result<bool> feature_bool_get(const std::string_view & name) const;
+  result<void> feature_bool_set(const std::string_view & name, const bool value) const;
 
   result<std::string> feature_enum_get(const std::string_view & name) const;
 

@@ -21,6 +21,8 @@ set(vimbax_camera_SRVS
         srv/FeatureFloatSet.srv
         srv/FeatureStringGet.srv
         srv/FeatureStringSet.srv 
+        srv/FeatureBoolGet.srv
+        srv/FeatureBoolSet.srv 
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

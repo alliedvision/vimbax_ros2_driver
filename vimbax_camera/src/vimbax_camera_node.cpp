@@ -241,6 +241,35 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+ feature_bool_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureBoolGet>(
+    "~/features/bool_get", [this](
+      const vimbax_camera_msgs::srv::FeatureBoolGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureBoolGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_bool_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->value = *result;
+        }
+      }
+    );
+
+  feature_bool_set_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureBoolSet>(
+    "~/features/bool_set", [this](
+      const vimbax_camera_msgs::srv::FeatureBoolSet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureBoolSet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_bool_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+      }
+    );
+
+
   return true;
 }
 
