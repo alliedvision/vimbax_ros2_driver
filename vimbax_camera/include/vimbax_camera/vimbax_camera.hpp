@@ -108,6 +108,8 @@ public:
 
   result<int64_t> feature_int_get(const std::string_view & name) const;
   result<void> feature_int_set(const std::string_view & name, const int64_t value) const;
+  result<_Float64> feature_float_get(const std::string_view & name) const;
+  result<void> feature_float_set(const std::string_view & name, const _Float64 value) const;
 
   result<std::string> feature_enum_get(const std::string_view & name) const;
 

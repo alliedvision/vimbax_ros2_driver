@@ -17,6 +17,8 @@ set(vimbax_camera_SRVS
         srv/Dummy.srv #TODO: Delete and replace with actual service definitions
         srv/FeatureIntGet.srv
         srv/FeatureIntSet.srv
+        srv/FeatureFloatGet.srv
+        srv/FeatureFloatSet.srv        
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

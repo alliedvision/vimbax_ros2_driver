@@ -278,13 +278,13 @@ result<void> VimbaXCamera::feature_command_run(const std::string_view & name) co
 
 result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
 {
-  RCLCPP_INFO(get_logger(), "feature_int_get %s", name.data());
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
   int64_t value{};
   auto const err =
     api_->FeatureIntGet(camera_handle_, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Get integer feature failed with %d", err);
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   }
 
@@ -293,12 +293,42 @@ result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) con
 
 result<void> VimbaXCamera::feature_int_set(const std::string_view & name, const int64_t value) const
 {
-  RCLCPP_INFO(get_logger(), "feature_int_set %s", name.data());
+  RCLCPP_INFO(get_logger(), "%s(%s, %ld)", __FUNCTION__, name.data(), value);
   auto const err =
     api_->FeatureIntSet(camera_handle_, name.data(), value);
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Set integer feature failed with %d", err);
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return {};
+}
+
+result<_Float64> VimbaXCamera::feature_float_get(const std::string_view & name) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
+
+  _Float64 value{};
+  auto const err =
+    api_->FeatureFloatGet(camera_handle_, name.data(), reinterpret_cast<_Float64 *>(&value));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return value;
+}
+
+result<void> VimbaXCamera::feature_float_set(const std::string_view & name, const _Float64 value) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s, %lf)", __FUNCTION__, name.data(), value);
+  auto const err =
+    api_->FeatureFloatSet(camera_handle_, name.data(), value);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   }
 
@@ -311,7 +341,7 @@ result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name
   auto const err = api_->FeatureEnumGet(camera_handle_, name.data(), &value);
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Get integer feature failed with %d", err);
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   }
 
