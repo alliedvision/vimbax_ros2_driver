@@ -17,7 +17,6 @@
 #endif
 
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_components/register_node_macro.hpp>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
@@ -28,33 +27,45 @@ namespace vimbax_camera
 
 using helper::get_logger;
 
-VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
+std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::NodeOptions & options)
 {
-  node_ = helper::create_node(get_node_name(), options);
+  auto camera_node = std::shared_ptr<VimbaXCameraNode>(new VimbaXCameraNode{});
 
-  if (!initialize_parameters()) {
-    return;
+  if (!camera_node) {
+    return {};
   }
 
-  if (!initialize_api()) {
-    return;
+  camera_node->node_ = helper::create_node(get_node_name(), options);
+
+  if (!camera_node->node_) {
+    return {};
   }
 
-  if (!initialize_camera()) {
-    return;
+  if (!camera_node->initialize_parameters()) {
+    return {};
   }
 
-  if (!initialize_publisher()) {
-    return;
+  if (!camera_node->initialize_api()) {
+    return {};
   }
 
-  if (!initialize_services()) {
-    return;
+  if (!camera_node->initialize_camera()) {
+    return {};
   }
 
-  if (!initialize_graph_notify()) {
-    return;
+  if (!camera_node->initialize_publisher()) {
+    return {};
   }
+
+  if (!camera_node->initialize_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_graph_notify()) {
+    return {};
+  }
+
+  return camera_node;
 }
 
 VimbaXCameraNode::~VimbaXCameraNode()
@@ -65,7 +76,7 @@ VimbaXCameraNode::~VimbaXCameraNode()
     graph_notify_thread_->join();
   }
 
-  if (camera_->is_streaming()) {
+  if (camera_ && camera_->is_streaming()) {
     camera_->stop_streaming();
   }
 
@@ -204,6 +215,9 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  if (!settings_save_service_) {
+    return false;
+  }
 
   settings_load_service_ = node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/load", [this](
@@ -215,6 +229,10 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  if (!settings_load_service_) {
+    return false;
+  }
 
   return true;
 }
@@ -267,5 +285,3 @@ VimbaXCameraNode::NodeBaseInterface::SharedPtr VimbaXCameraNode::get_node_base_i
 }
 
 }  // namespace vimbax_camera
-
-RCLCPP_COMPONENTS_REGISTER_NODE(vimbax_camera::VimbaXCameraNode)

@@ -38,13 +38,16 @@ class VimbaXCameraNode
 {
 public:
   using NodeBaseInterface = rclcpp::node_interfaces::NodeBaseInterface;
-
-  explicit VimbaXCameraNode(const rclcpp::NodeOptions & options);
   ~VimbaXCameraNode();
+
+  static std::shared_ptr<VimbaXCameraNode> make_shared(
+    const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   NodeBaseInterface::SharedPtr get_node_base_interface() const;
 
 private:
+  VimbaXCameraNode() = default;
+
   using OnSetParametersCallbackHandle = rclcpp::Node::OnSetParametersCallbackHandle;
 
   const std::string parameter_camera_id = "camera_id";
