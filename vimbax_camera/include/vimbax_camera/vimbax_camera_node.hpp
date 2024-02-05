@@ -30,6 +30,8 @@
 #include <vimbax_camera_msgs/srv/feature_int_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_float_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_float_set.hpp>
+#include <vimbax_camera_msgs/srv/feature_string_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_string_set.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
@@ -74,6 +76,8 @@ private:
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntSet>::SharedPtr feature_int_set_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureFloatGet>::SharedPtr feature_float_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureFloatSet>::SharedPtr feature_float_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureStringGet>::SharedPtr feature_string_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureStringSet>::SharedPtr feature_string_set_service_;
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};
