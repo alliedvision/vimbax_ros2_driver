@@ -29,6 +29,7 @@
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
+
 namespace vimbax_camera
 {
 class VimbaXCamera : public std::enable_shared_from_this<VimbaXCamera>
@@ -106,6 +107,7 @@ public:
   result<void> feature_command_run(const std::string_view & name) const;
 
   result<int64_t> feature_int_get(const std::string_view & name) const;
+  result<void> feature_int_set(const std::string_view & name, const int64_t value) const;
 
   result<std::string> feature_enum_get(const std::string_view & name) const;
 

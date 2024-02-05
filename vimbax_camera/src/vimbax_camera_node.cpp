@@ -20,7 +20,8 @@
 #include <rclcpp_components/register_node_macro.hpp>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
-#include <vimbax_camera_msgs/srv/feature_int.hpp>
+#include <vimbax_camera_msgs/srv/feature_int_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_int_set.hpp>
 
 #include <vimbax_camera/vimbax_camera_node.hpp>
 
@@ -137,7 +138,7 @@ bool VimbaXCameraNode::initialize_graph_notify()
 
         if (event->check_and_clear()) {
           if (image_publisher_.getNumSubscribers() > 0 && !camera_->is_streaming()) {
-            start_streaming();
+     //       start_streaming();
           } else if (image_publisher_.getNumSubscribers() == 0 && camera_->is_streaming()) {
             stop_streaming();
           }
@@ -156,17 +157,34 @@ bool VimbaXCameraNode::initialize_services()
 {
   RCLCPP_INFO(get_logger(), "Initializing feature services ...");
 
-  feature_int_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureInt>(
+  feature_int_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureIntGet>(
     "~/features/int_get", [this](
-      const vimbax_camera_msgs::srv::FeatureInt::Request::ConstSharedPtr request,
-      const vimbax_camera_msgs::srv::FeatureInt::Response::SharedPtr response) 
+      const vimbax_camera_msgs::srv::FeatureIntGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureIntGet::Response::SharedPtr response) 
       {
         auto const result = camera_->feature_int_get(request->feature_name);
         if (!result) {
           response->set__error(result.error().code);
         }
+        else
+        {
+          response->value = *result;
+        }
       }
     );
+
+  feature_int_set_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureIntSet>(
+    "~/features/int_set", [this](
+      const vimbax_camera_msgs::srv::FeatureIntSet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureIntSet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_int_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+      }
+    );
+
 
   return true;
 }

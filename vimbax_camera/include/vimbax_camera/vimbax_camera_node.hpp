@@ -26,7 +26,8 @@
 
 #include <image_transport/image_transport.hpp>
 
-#include <vimbax_camera_msgs/srv/feature_int.hpp>
+#include <vimbax_camera_msgs/srv/feature_int_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_int_set.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
@@ -67,9 +68,8 @@ private:
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 
-
-  rclcpp::Service<vimbax_camera_msgs::srv::FeatureInt>::SharedPtr feature_int_get_service_;
-
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntGet>::SharedPtr feature_int_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntSet>::SharedPtr feature_int_set_service_;
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};

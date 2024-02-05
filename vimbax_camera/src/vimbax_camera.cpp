@@ -278,7 +278,7 @@ result<void> VimbaXCamera::feature_command_run(const std::string_view & name) co
 
 result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
 {
-  RCLCPP_DEBUG(get_logger(), "feature_int_get %s", name.data());
+  RCLCPP_INFO(get_logger(), "feature_int_get %s", name.data());
   int64_t value{};
   auto const err =
     api_->FeatureIntGet(camera_handle_, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
@@ -289,6 +289,20 @@ result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) con
   }
 
   return value;
+}
+
+result<void> VimbaXCamera::feature_int_set(const std::string_view & name, const int64_t value) const
+{
+  RCLCPP_INFO(get_logger(), "feature_int_set %s", name.data());
+  auto const err =
+    api_->FeatureIntSet(camera_handle_, name.data(), value);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "Set integer feature failed with %d", err);
+    return error{err};
+  }
+
+  return {};
 }
 
 result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
