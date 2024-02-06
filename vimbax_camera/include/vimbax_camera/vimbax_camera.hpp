@@ -104,8 +104,8 @@ public:
   result<VmbCameraInfo> query_camera_info() const;
 
   // Feature access
+  result<bool> feature_command_is_done(const std::string_view & name) const;
   result<void> feature_command_run(const std::string_view & name) const;
-
   result<int64_t> feature_int_get(const std::string_view & name) const;
   result<void> feature_int_set(const std::string_view & name, const int64_t value) const;
   result<_Float64> feature_float_get(const std::string_view & name) const;

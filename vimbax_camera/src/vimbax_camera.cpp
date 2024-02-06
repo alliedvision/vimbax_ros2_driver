@@ -256,6 +256,22 @@ result<VmbCameraInfo> VimbaXCamera::query_camera_info() const
   return cameraInfo;
 }
 
+result<bool> VimbaXCamera::feature_command_is_done(const std::string_view & name) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
+
+  bool value{};
+  auto const err =
+    api_->FeatureCommandIsDone(camera_handle_, name.data(), reinterpret_cast<bool *>(&value));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return value;
+}
+
 result<void> VimbaXCamera::feature_command_run(const std::string_view & name) const
 {
   auto const runError = api_->FeatureCommandRun(camera_handle_, name.data());

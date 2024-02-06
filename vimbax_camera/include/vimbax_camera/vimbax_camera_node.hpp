@@ -34,6 +34,8 @@
 #include <vimbax_camera_msgs/srv/feature_string_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_bool_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_bool_set.hpp>
+#include <vimbax_camera_msgs/srv/feature_command_is_done.hpp>
+#include <vimbax_camera_msgs/srv/feature_command_run.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
@@ -82,6 +84,8 @@ private:
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureStringSet>::SharedPtr feature_string_set_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureBoolGet>::SharedPtr feature_bool_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureBoolSet>::SharedPtr feature_bool_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureCommandIsDone>::SharedPtr feature_command_is_done_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureCommandRun>::SharedPtr feature_command_run_service_;
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};
