@@ -114,12 +114,10 @@ public:
   result<void> feature_string_set(const std::string_view & name, const std::string_view value) const;
   result<bool> feature_bool_get(const std::string_view & name) const;
   result<void> feature_bool_set(const std::string_view & name, const bool value) const;
-
   result<std::string> feature_enum_get(const std::string_view & name) const;
-
-  result<int64_t> feature_enum_as_int(
-    const std::string_view & name,
-    const std::string_view & option) const;
+  result<void> feature_enum_set(const std::string_view & name, const std::string_view & value) const;
+  result<int64_t> feature_enum_as_int_get(const std::string_view & name, const std::string_view & option) const;
+  result<std::string> feature_enum_as_string_get(const std::string_view & name, const int64_t value) const;
 
   result<VmbPixelFormatType> get_pixel_format() const;
 

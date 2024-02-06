@@ -24,7 +24,12 @@ set(vimbax_camera_SRVS
         srv/FeatureBoolGet.srv
         srv/FeatureBoolSet.srv 
         srv/FeatureCommandIsDone.srv
-        srv/FeatureCommandRun.srv )
+        srv/FeatureCommandRun.srv 
+        srv/FeatureEnumGet.srv
+        srv/FeatureEnumSet.srv 
+        srv/FeatureEnumAsIntGet.srv
+        srv/FeatureEnumAsStringGet.srv         
+)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
         ${vimbax_camera_MSGS}

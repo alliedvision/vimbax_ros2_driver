@@ -297,6 +297,67 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  feature_enum_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureEnumGet>(
+    "~/features/enum_get", [this](
+      const vimbax_camera_msgs::srv::FeatureEnumGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureEnumGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_enum_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->value = *result;
+        }
+      }
+    );
+
+  feature_enum_set_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureEnumSet>(
+    "~/features/enum_set", [this](
+      const vimbax_camera_msgs::srv::FeatureEnumSet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureEnumSet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_enum_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+      }
+    );
+
+  feature_enum_as_int_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsIntGet>(
+    "~/features/enum_as_int_get", [this](
+      const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_enum_as_int_get(request->feature_name, request->option);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->value = *result;
+        }
+      }
+    );
+
+  feature_enum_as_string_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsStringGet>(
+    "~/features/enum_as_string_get", [this](
+      const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_enum_as_string_get(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->option = *result;
+        }
+      }
+    );
+
+
   return true;
 }
 

@@ -436,6 +436,8 @@ result<void> VimbaXCamera::feature_bool_set(const std::string_view & name, const
 
 result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
 {
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
+
   const char * value;
   auto const err = api_->FeatureEnumGet(camera_handle_, name.data(), &value);
 
@@ -447,10 +449,25 @@ result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name
   return std::string{value};
 }
 
-result<int64_t> VimbaXCamera::feature_enum_as_int(
+result<void> VimbaXCamera::feature_enum_set(const std::string_view & name, const std::string_view & value) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s, %s)", __FUNCTION__, name.data(), value.data());
+  auto const err =
+    api_->FeatureEnumSet(camera_handle_, name.data(), value.data());
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return {};
+}
+
+result<int64_t> VimbaXCamera::feature_enum_as_int_get(
   const std::string_view & name,
   const std::string_view & option) const
 {
+  RCLCPP_INFO(get_logger(), "%s(%s, %s)", __FUNCTION__, name.data(), option.data());
   int64_t value{-1};
 
   auto const err = api_->FeatureEnumAsInt(
@@ -459,13 +476,38 @@ result<int64_t> VimbaXCamera::feature_enum_as_int(
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
-      get_logger(), "Failed to convert enum %s option %s to int with %d",
-      name.data(), option.data(), err);
+      get_logger(), "%s failed to convert enum %s option %s to int with error %d",
+      __FUNCTION__, name.data(), option.data(), err);
 
     return error{err};
   }
 
   return value;
+}
+
+result<std::string> VimbaXCamera::feature_enum_as_string_get(const std::string_view & name, const int64_t value) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s, %ld)", __FUNCTION__, name.data(), value);
+  std::string option;
+  const char *stringValue;
+
+  auto const err = api_->FeatureEnumAsString(
+    camera_handle_, name.data(), value,
+    reinterpret_cast<const char **>(&stringValue));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(
+      get_logger(), "Failed to convert enum %s option %s to int with %d",
+      name.data(), option.data(), err);
+
+    return error{err};
+  }
+  else
+  {
+    option.assign(stringValue);
+  }
+
+  return option;
 }
 
 result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
@@ -486,7 +528,7 @@ result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
     return currentFormatStr.error();
   }
 
-  auto const currentFormat = feature_enum_as_int(SFNCFeatures::PixelFormat, *currentFormatStr);
+  auto const currentFormat = feature_enum_as_int_get(SFNCFeatures::PixelFormat, *currentFormatStr);
 
   if (!currentFormat) {
     return currentFormat.error();
