@@ -1,0 +1,20 @@
+---
+int32 error
+bool connected
+string display_name
+string model_name
+string device_firmware_version
+string device_id
+string device_user_id
+string device_serial_number
+string interface_id
+string transport_layer_id
+bool streaming
+uint32 width
+uint32 height
+float64 frame_rate
+string pixel_format
+string trigger_mode
+string trigger_source
+uint64 ip_address
+uint64 mac_address

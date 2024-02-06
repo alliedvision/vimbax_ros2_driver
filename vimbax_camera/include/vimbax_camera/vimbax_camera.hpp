@@ -85,6 +85,40 @@ public:
     static constexpr std::string_view AcquisitionStop = "AcquisitionStop";
     static constexpr std::string_view Width = "Width";
     static constexpr std::string_view Height = "Height";
+    static constexpr std::string_view TriggerMode = "TriggerMode";
+    static constexpr std::string_view TriggerSource = "TriggerSource";
+    static constexpr std::string_view DeviceFirmwareVersion = "DeviceFirmwareVersion";
+    static constexpr std::string_view DeviceUserId = "DeviceUserID";
+    static constexpr std::string_view AcquisitionFrameRate = "AcquisitionFrameRate";
+
+    static constexpr std::string_view InterfaceId = "InterfaceID";
+    static constexpr std::string_view TransportLayerId = "TLID";
+    
+
+    static constexpr std::string_view GevDeviceIPAddress = "GevDeviceIPAddress";
+    static constexpr std::string_view GevDeviceMACAddress = "GevDeviceMACAddress";
+  };
+
+  struct Info
+  {
+    bool connected;
+    std::string display_name;
+    std::string model_name;
+    std::string firmware_version;
+    std::string device_id;
+    std::string device_user_id;
+    std::string device_serial_number;
+    std::string interface_id;
+    std::string transport_layer_id;
+    std::optional<uint64_t> ip_address{std::nullopt};
+    std::optional<uint64_t> mac_address{std::nullopt};
+    bool streaming;
+    uint32_t width;
+    uint32_t height;
+    double frame_rate;
+    std::string pixel_format;
+    std::string trigger_mode;
+    std::string trigger_source;
   };
 
   static std::shared_ptr<VimbaXCamera> open(
@@ -106,6 +140,7 @@ public:
   result<bool> feature_command_is_done(const std::string_view & name) const;
   result<void> feature_command_run(const std::string_view & name) const;
   result<int64_t> feature_int_get(const std::string_view & name) const;
+
   result<void> feature_int_set(const std::string_view & name, const int64_t value) const;
   result<std::array<int64_t, 3>> feature_int_info_get(const std::string_view & name) const;
   result<_Float64> feature_float_get(const std::string_view & name) const;
@@ -147,10 +182,20 @@ public:
 
   result<void> settings_save(const std::string_view & fileName);
 
+  result<Info> camera_info_get() const;
+
   bool is_streaming() const;
 
 private:
   explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
+
+  result<int64_t> feature_int_get(const std::string_view & name, VmbHandle_t handle) const;
+
+  result<_Float64> feature_float_get(const std::string_view & name, VmbHandle_t handle) const;
+
+  result<std::string> feature_enum_get(const std::string_view & name, VmbHandle_t handle) const;
+
+  result<std::string> feature_string_get(const std::string_view & name, VmbHandle_t handle) const;
 
   VmbFeaturePersistSettings get_default_feature_persist_settings() const;
 
