@@ -16,6 +16,9 @@
 
 #include <gmock/gmock.h>
 
+#include <filesystem>
+#include <fstream>
+
 #include "mocks/library_loader_mock.hpp"
 
 using ::vimbax_camera::VmbCAPI;
@@ -751,6 +754,124 @@ TEST_F(VimbaXCameraOpenedTest, frame_create_success_by_alloc_and_announce)
   EXPECT_NE(frameRes->get(), nullptr);
 }
 
+TEST_F(VimbaXCameraOpenedTest, settings_save_invalid_directory)
+{
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "invalid" / "invalid.xml";
+
+  auto const result = camera_->settings_save(test_xml_path.string());
+
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().code, VmbErrorNotFound);
+}
+
+TEST_F(VimbaXCameraOpenedTest, settings_save_invalid_file_name)
+{
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "invalid" / "invalid.json";
+
+  auto const result = camera_->settings_save(test_xml_path.string());
+
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().code, VmbErrorInvalidValue);
+}
+
+TEST_F(VimbaXCameraOpenedTest, settings_save_valid_error)
+{
+  auto const error = VmbErrorCustom;
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "valid.xml";
+
+  if (std::filesystem::exists(test_xml_path)) {
+    std::filesystem::remove(test_xml_path);
+  }
+
+  std::ofstream stream{test_xml_path};
+  stream.close();
+
+  EXPECT_CALL(*api_mock_, SettingsSave(_, Eq(test_xml_path.string()), _, _)).Times(1)
+  .WillOnce(Return(error));
+
+  auto const result = camera_->settings_save(test_xml_path.string());
+
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().code, error);
+}
+
+
+TEST_F(VimbaXCameraOpenedTest, settings_save_valid_ok)
+{
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "valid.xml";
+
+  if (std::filesystem::exists(test_xml_path)) {
+    std::filesystem::remove(test_xml_path);
+  }
+
+  std::ofstream stream{test_xml_path};
+  stream.close();
+
+  EXPECT_CALL(*api_mock_, SettingsSave(_, Eq(test_xml_path.string()), _, _)).Times(1)
+  .WillOnce(Return(VmbErrorSuccess));
+
+  auto const result = camera_->settings_save(test_xml_path.string());
+
+  ASSERT_TRUE(result);
+}
+
+TEST_F(VimbaXCameraOpenedTest, settings_load_invalid)
+{
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "invalid" / "invalid.xml";
+
+  auto const result = camera_->settings_load(test_xml_path.string());
+
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().code, VmbErrorNotFound);
+}
+
+TEST_F(VimbaXCameraOpenedTest, settings_load_valid_error)
+{
+  auto const error = VmbErrorCustom;
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "valid.xml";
+
+  if (std::filesystem::exists(test_xml_path)) {
+    std::filesystem::remove(test_xml_path);
+  }
+
+  std::ofstream stream{test_xml_path};
+  stream.close();
+
+  EXPECT_CALL(*api_mock_, SettingsLoad(_, Eq(test_xml_path.string()), _, _)).Times(1)
+  .WillOnce(Return(error));
+
+  auto const result = camera_->settings_load(test_xml_path.string());
+
+  ASSERT_FALSE(result);
+  EXPECT_EQ(result.error().code, error);
+}
+
+
+TEST_F(VimbaXCameraOpenedTest, settings_load_valid_ok)
+{
+  auto const temp_path = std::filesystem::temp_directory_path();
+  auto const test_xml_path = temp_path / "valid.xml";
+
+  if (std::filesystem::exists(test_xml_path)) {
+    std::filesystem::remove(test_xml_path);
+  }
+
+  std::ofstream stream{test_xml_path};
+  stream.close();
+
+  EXPECT_CALL(*api_mock_, SettingsLoad(_, Eq(test_xml_path.string()), _, _)).Times(1)
+  .WillOnce(Return(VmbErrorSuccess));
+
+  auto const result = camera_->settings_load(test_xml_path.string());
+
+  ASSERT_TRUE(result);
+}
 
 int main(int argc, char ** argv)
 {

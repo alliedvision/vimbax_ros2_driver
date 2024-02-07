@@ -13,10 +13,13 @@
 // limitations under the License.
 
 #include <optional>
+#include <filesystem>
 
 #include <rclcpp/rclcpp.hpp>
 
 #include <vimbax_camera/vimbax_camera.hpp>
+
+namespace fs = std::filesystem;
 
 namespace vimbax_camera
 {
@@ -129,12 +132,16 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
 VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle)
 : api_{std::move(api)}, camera_handle_{cameraHandle}
 {
-  auto const cameraInfo = query_camera_info();
-  if (cameraInfo) {
-    RCLCPP_INFO(
-      get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
-      cameraInfo->modelName, cameraInfo->cameraName, cameraInfo->serialString);
+  auto const err =
+    api_->CameraInfoQueryByHandle(camera_handle_, &camera_info_, sizeof(camera_info_));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "Failed to query camera info!");
   }
+
+  RCLCPP_INFO(
+    get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
+    camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
 }
 
 VimbaXCamera::~VimbaXCamera()
@@ -239,20 +246,6 @@ result<void> VimbaXCamera::stop_streaming()
   streaming_ = false;
 
   return {};
-}
-
-result<VmbCameraInfo> VimbaXCamera::query_camera_info() const
-{
-  VmbCameraInfo cameraInfo{};
-
-  auto const err = api_->CameraInfoQueryByHandle(camera_handle_, &cameraInfo, sizeof(cameraInfo));
-
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Failed to query camera info!");
-    return error{err};
-  }
-
-  return cameraInfo;
 }
 
 result<void> VimbaXCamera::feature_command_run(const std::string_view & name) const
@@ -365,6 +358,67 @@ result<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view &
   return featureInfo;
 }
 
+result<void> VimbaXCamera::settings_load(const std::string_view & fileName)
+{
+  fs::path settings_file_path{fileName};
+
+  if (!fs::exists(settings_file_path)) {
+    return error{VmbErrorNotFound};
+  }
+
+  auto const presist_settings = get_default_feature_persist_settings();
+
+  auto const err = api_->SettingsLoad(
+    camera_handle_,
+    settings_file_path.c_str(),
+    &presist_settings,
+    sizeof(presist_settings));
+
+  if (err != VmbErrorSuccess) {
+    return error{err};
+  }
+
+  return {};
+}
+
+result<void> VimbaXCamera::settings_save(const std::string_view & fileName)
+{
+  fs::path settings_file_path{fileName};
+
+  if (settings_file_path.extension() != ".xml") {
+    return error{VmbErrorInvalidValue};
+  }
+
+  if (!fs::exists(settings_file_path.parent_path())) {
+    return error{VmbErrorNotFound};
+  }
+
+  auto const presist_settings = get_default_feature_persist_settings();
+
+  auto const err = api_->SettingsSave(
+    camera_handle_,
+    settings_file_path.c_str(),
+    &presist_settings,
+    sizeof(presist_settings));
+
+  if (err != VmbErrorSuccess) {
+    return error{err};
+  }
+
+  return {};
+}
+
+VmbFeaturePersistSettings VimbaXCamera::get_default_feature_persist_settings() const
+{
+  return {
+    VmbFeaturePersistType::VmbFeaturePersistNoLUT,
+    VmbModulePersistFlagsType::VmbModulePersistFlagsRemoteDevice,
+    10,
+    VmbLogLevel::VmbLogLevelWarn
+  };
+}
+
+
 bool VimbaXCamera::is_streaming() const
 {
   return streaming_;
@@ -444,7 +498,7 @@ void VimbaXCamera::Frame::on_frame_ready()
   height = vmb_frame_.height;
   is_bigendian = false;
   header.frame_id = std::to_string(vmb_frame_.frameID);
-  std::chrono::microseconds vmbTimeStamp{vmb_frame_.timestamp};
+  std::chrono::nanoseconds vmbTimeStamp{timestamp_to_ns(vmb_frame_.timestamp)};
   auto const seconds = std::chrono::floor<std::chrono::seconds>(vmbTimeStamp);
   auto const nanoseconds =
     std::chrono::duration_cast<std::chrono::nanoseconds>(vmbTimeStamp - seconds);
@@ -457,6 +511,30 @@ void VimbaXCamera::Frame::on_frame_ready()
   if (callback_) {
     callback_(shared_from_this());
   }
+}
+
+uint64_t VimbaXCamera::Frame::timestamp_to_ns(uint64_t timestamp)
+{
+  if (!camera_.expired()) {
+    auto camera = camera_.lock();
+
+    auto const localDeviceHandle = camera->camera_info_.localDeviceHandle;
+    int64_t timestampFrequency{};
+    auto const err = camera->api_->FeatureIntGet(
+      localDeviceHandle, "DeviceTimestampFrequency",
+      reinterpret_cast<VmbInt64_t *>(&timestampFrequency));
+    if (err == VmbErrorSuccess) {
+      RCLCPP_DEBUG(get_logger(), "Using timestamp frequnency %ld", timestampFrequency);
+
+      if (timestampFrequency > std::nano::den) {
+        return timestamp / (timestampFrequency / std::nano::den);
+      } else {
+        return timestamp * (std::nano::den / timestampFrequency);
+      }
+    }
+  }
+
+  return timestamp;
 }
 
 

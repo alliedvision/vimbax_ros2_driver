@@ -18,7 +18,6 @@ set(vimbax_camera_node_SRCS
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_components REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(vimbax_camera_msgs REQUIRED)
 
@@ -30,15 +29,14 @@ target_compile_features(${PROJECT_NAME} PUBLIC c_std_99 cxx_std_17)  # Require C
 ament_target_dependencies(
         ${PROJECT_NAME}
         "rclcpp"
-        "rclcpp_components"
         "image_transport"
         "vimbax_camera_msgs"
 )
 
-rclcpp_components_register_node(${PROJECT_NAME}
-    PLUGIN "vimbax_camera::VimbaXCameraNode"
-    EXECUTABLE vimbax_camera_node
-)
+add_executable(${PROJECT_NAME}_node src/vimbax_camera_main.cpp)
+target_compile_features(${PROJECT_NAME}_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
+
 
 include_directories(${VMB_DIR}/api/include)
 
