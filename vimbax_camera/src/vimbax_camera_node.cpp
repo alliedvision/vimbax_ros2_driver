@@ -386,6 +386,23 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  feature_access_mode_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureAccessModeGet>(
+    "~/features/access_mode_get", [this](
+      const vimbax_camera_msgs::srv::FeatureAccessModeGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureAccessModeGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_access_mode_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->is_readable = (*result)[0];
+          response->is_writeable = (*result)[1];
+        }
+      }
+    );
+
   return true;
 }
 

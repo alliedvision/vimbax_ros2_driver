@@ -553,6 +553,22 @@ result<void> VimbaXCamera::feature_raw_set(const std::string_view & name, const 
   return {};
 }
 
+result<std::array<bool,2>> VimbaXCamera::feature_access_mode_get(const std::string_view & name) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
+ 
+  std::array<bool,2> value;
+  
+  auto const err =
+    api_->FeatureAccessQuery(camera_handle_, name.data(), &value[0], &value[1]);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return value;
+}
 
 result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
 {
