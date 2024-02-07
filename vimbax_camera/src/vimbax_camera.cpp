@@ -510,6 +510,50 @@ result<std::string> VimbaXCamera::feature_enum_as_string_get(const std::string_v
   return option;
 }
 
+result<std::vector<unsigned char>> VimbaXCamera::feature_raw_get(const std::string_view & name) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s)", __FUNCTION__, name.data());
+ 
+  uint32_t length{};
+  uint32_t size_filled{};
+
+  auto err =
+    api_->FeatureRawLengthQuery(camera_handle_, name.data(), &length);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  std::vector<unsigned char> buffer(length);
+  err =
+    api_->FeatureRawGet(camera_handle_, name.data(), reinterpret_cast<char*>(&buffer[0]), length, &size_filled);
+
+  if (err != VmbErrorSuccess)
+  {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return buffer;
+}
+
+result<void> VimbaXCamera::feature_raw_set(const std::string_view & name, const std::vector<unsigned char> buffer) const
+{
+  RCLCPP_INFO(get_logger(), "%s(%s, buffer.size()=%ld)", __FUNCTION__, name.data(), buffer.size());
+ 
+  auto const err =
+    api_->FeatureRawSet(camera_handle_, name.data(), reinterpret_cast<const char*>(buffer.data()), static_cast<uint32_t>(buffer.size()));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return error{err};
+  }
+
+  return {};
+}
+
+
 result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
 {
   auto const featureInfoOpt = feature_info_query(SFNCFeatures::PixelFormat);

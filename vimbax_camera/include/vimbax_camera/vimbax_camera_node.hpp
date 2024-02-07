@@ -40,6 +40,8 @@
 #include <vimbax_camera_msgs/srv/feature_enum_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_enum_as_int_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_enum_as_string_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_raw_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_raw_set.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
@@ -94,6 +96,8 @@ private:
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumSet>::SharedPtr feature_enum_set_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumAsIntGet>::SharedPtr feature_enum_as_int_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumAsStringGet>::SharedPtr feature_enum_as_string_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureRawGet>::SharedPtr feature_raw_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureRawSet>::SharedPtr feature_raw_set_service_;
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};

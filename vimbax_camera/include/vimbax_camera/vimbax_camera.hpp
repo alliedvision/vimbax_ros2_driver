@@ -118,6 +118,8 @@ public:
   result<void> feature_enum_set(const std::string_view & name, const std::string_view & value) const;
   result<int64_t> feature_enum_as_int_get(const std::string_view & name, const std::string_view & option) const;
   result<std::string> feature_enum_as_string_get(const std::string_view & name, const int64_t value) const;
+  result<std::vector<unsigned char>> feature_raw_get(const std::string_view & name) const;
+  result<void> feature_raw_set(const std::string_view & name, const std::vector<unsigned char> buffer) const;
 
   result<VmbPixelFormatType> get_pixel_format() const;
 

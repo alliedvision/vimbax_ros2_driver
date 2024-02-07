@@ -357,6 +357,34 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  feature_raw_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureRawGet>(
+    "~/features/raw_get", [this](
+      const vimbax_camera_msgs::srv::FeatureRawGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureRawGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_raw_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->buffer = *result;
+          response->buffer_size = (*result).size();
+        }
+      }
+    );
+
+  feature_raw_set_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureRawSet>(
+    "~/features/raw_set", [this](
+      const vimbax_camera_msgs::srv::FeatureRawSet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureRawSet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+      }
+    );
 
   return true;
 }
