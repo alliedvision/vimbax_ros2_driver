@@ -37,6 +37,7 @@ set(vimbax_camera_SRVS
         srv/FeatureRawSet.srv
         srv/FeatureRawInfoGet.srv
         srv/FeatureAccessModeGet.srv
+        srv/SettingsLoadSave.srv
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

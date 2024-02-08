@@ -67,6 +67,7 @@ public:
     static void vmb_frame_callback(const VmbHandle_t, const VmbHandle_t, VmbFrame_t * frame);
     void on_frame_ready();
     void transform();
+    uint64_t timestamp_to_ns(uint64_t timestamp);
 
     Frame(std::shared_ptr<VimbaXCamera> camera, AllocationMode allocationMode);
 
@@ -101,8 +102,6 @@ public:
     bool startAcquisition = true);
   result<void> stop_streaming();
 
-  result<VmbCameraInfo> query_camera_info() const;
-
   // Feature access
   result<bool> feature_command_is_done(const std::string_view & name) const;
   result<void> feature_command_run(const std::string_view & name) const;
@@ -128,18 +127,27 @@ public:
   result<std::array<bool,2>> feature_access_mode_get(const std::string_view & name) const;
 
   result<VmbPixelFormatType> get_pixel_format() const;
+  
+  result<VmbCameraInfo> query_camera_info() const;
 
   result<VmbFeatureInfo> feature_info_query(const std::string_view & name) const;
+
+  result<void> settings_load(const std::string_view & fileName);
+
+  result<void> settings_save(const std::string_view & fileName);
 
   bool is_streaming() const;
 
 private:
   explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
 
+  VmbFeaturePersistSettings get_default_feature_persist_settings() const;
+
   std::shared_ptr<VmbCAPI> api_;
   VmbHandle_t camera_handle_;
   std::vector<std::shared_ptr<Frame>> frames_;
   bool streaming_{false};
+  VmbCameraInfo camera_info_;
 };
 
 }  // namespace vimbax_camera

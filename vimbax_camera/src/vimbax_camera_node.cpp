@@ -17,11 +17,8 @@
 #endif
 
 #include <rclcpp/rclcpp.hpp>
-#include <rclcpp_components/register_node_macro.hpp>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
-#include <vimbax_camera_msgs/srv/feature_int_get.hpp>
-#include <vimbax_camera_msgs/srv/feature_int_set.hpp>
 
 #include <vimbax_camera/vimbax_camera_node.hpp>
 
@@ -30,33 +27,45 @@ namespace vimbax_camera
 
 using helper::get_logger;
 
-VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
+std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::NodeOptions & options)
 {
-  node_ = helper::create_node(get_node_name(), options);
+  auto camera_node = std::shared_ptr<VimbaXCameraNode>(new VimbaXCameraNode{});
 
-  if (!initialize_parameters()) {
-    return;
+  if (!camera_node) {
+    return {};
   }
 
-  if (!initialize_api()) {
-    return;
+  camera_node->node_ = helper::create_node(get_node_name(), options);
+
+  if (!camera_node->node_) {
+    return {};
   }
 
-  if (!initialize_camera()) {
-    return;
+  if (!camera_node->initialize_parameters()) {
+    return {};
   }
 
-  if (!initialize_publisher()) {
-    return;
+  if (!camera_node->initialize_api()) {
+    return {};
   }
 
-  if (!initialize_services()) {
-    return;
+  if (!camera_node->initialize_camera()) {
+    return {};
   }
 
-  if (!initialize_graph_notify()) {
-    return;
+  if (!camera_node->initialize_publisher()) {
+    return {};
   }
+
+  if (!camera_node->initialize_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_graph_notify()) {
+    return {};
+  }
+
+  return camera_node;
 }
 
 VimbaXCameraNode::~VimbaXCameraNode()
@@ -67,15 +76,44 @@ VimbaXCameraNode::~VimbaXCameraNode()
     graph_notify_thread_->join();
   }
 
+  if (camera_ && camera_->is_streaming()) {
+    camera_->stop_streaming();
+  }
+
   camera_.reset();
 }
 
 bool VimbaXCameraNode::initialize_parameters()
 {
-  auto cameraIdParamDesc = rcl_interfaces::msg::ParameterDescriptor{};
-  cameraIdParamDesc.description = "Id of camera to open";
-  cameraIdParamDesc.read_only = true;
-  node_->declare_parameter("camera_id", "", cameraIdParamDesc);
+  auto const cameraIdParamDesc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Id of camera to open").set__read_only(true);
+  node_->declare_parameter(parameter_camera_id, "", cameraIdParamDesc);
+
+  auto const settingsFileParamDesc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Settings file to load at startup").set__read_only(true);
+  node_->declare_parameter(parameter_settings_file, "", settingsFileParamDesc);
+
+  auto const bufferCountRange = rcl_interfaces::msg::IntegerRange{}
+  .set__from_value(3).set__step(1).set__to_value(1000);
+  auto const bufferCountParamDesc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Number of buffers used for streaming").set__integer_range({bufferCountRange});
+  node_->declare_parameter(parameter_buffer_count, 7, bufferCountParamDesc);
+
+  parameter_callback_handle_ = node_->add_on_set_parameters_callback(
+    [this](
+      const std::vector<rclcpp::Parameter> & params) -> rcl_interfaces::msg::SetParametersResult {
+      for (auto const & param : params) {
+        if (param.get_name() == parameter_buffer_count) {
+          if (camera_->is_streaming()) {
+            return rcl_interfaces::msg::SetParametersResult{}
+            .set__successful(false)
+            .set__reason("Buffer count change not supported while streaming");
+          }
+        }
+      }
+
+      return rcl_interfaces::msg::SetParametersResult{}.set__successful(true);
+    });
 
   return true;
 }
@@ -117,12 +155,23 @@ bool VimbaXCameraNode::initialize_publisher()
 
 bool VimbaXCameraNode::initialize_camera()
 {
-  camera_ = VimbaXCamera::open(api_, node_->get_parameter("camera_id").as_string());
+  camera_ = VimbaXCamera::open(api_, node_->get_parameter(parameter_camera_id).as_string());
 
   if (!camera_) {
     RCLCPP_FATAL(get_logger(), "Failed to open camera");
     rclcpp::shutdown();
     return false;
+  }
+
+  auto const settingsFile = node_->get_parameter(parameter_settings_file).as_string();
+
+  if (!settingsFile.empty()) {
+    auto const loadResult = camera_->settings_load(settingsFile);
+    if (!loadResult) {
+      RCLCPP_ERROR(
+        get_logger(), "Loading settings from file %s failed with %d",
+        settingsFile.c_str(), loadResult.error().code);
+    }
   }
 
   return true;
@@ -131,7 +180,7 @@ bool VimbaXCameraNode::initialize_camera()
 bool VimbaXCameraNode::initialize_graph_notify()
 {
   graph_notify_thread_ = std::make_unique<std::thread>(
-    [&] {
+    [this] {
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
         node_->wait_for_graph_change(event, std::chrono::milliseconds(5));
@@ -489,13 +538,46 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  settings_save_service_ = node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
+    "~/settings/save", [this](
+      const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
+    {
+      auto const result = camera_->settings_save(request->filename);
+      if (!result) {
+        response->set__error(result.error().code);
+      }
+    });
+
+  if (!settings_save_service_) {
+    return false;
+  }
+
+  settings_load_service_ = node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
+    "~/settings/load", [this](
+      const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
+    {
+      auto const result = camera_->settings_load(request->filename);
+      if (!result) {
+        response->set__error(result.error().code);
+      }
+    });
+
+  if (!settings_load_service_) {
+    return false;
+  }
+
   return true;
 }
 
 void VimbaXCameraNode::start_streaming()
 {
+  auto const buffer_count = node_->get_parameter(parameter_buffer_count).as_int();
+
   camera_->start_streaming(
-    7, [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
+    buffer_count,
+    [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
       static int64_t lastFrameId = -1;
       auto const diff = frame->get_frame_id() - lastFrameId;
 
@@ -510,7 +592,7 @@ void VimbaXCameraNode::start_streaming()
       frame->queue();
     });
 
-  RCLCPP_INFO(get_logger(), "Stream started");
+  RCLCPP_INFO(get_logger(), "Stream started using %ld buffers", buffer_count);
 }
 
 void VimbaXCameraNode::stop_streaming()
@@ -537,5 +619,3 @@ VimbaXCameraNode::NodeBaseInterface::SharedPtr VimbaXCameraNode::get_node_base_i
 }
 
 }  // namespace vimbax_camera
-
-RCLCPP_COMPONENTS_REGISTER_NODE(vimbax_camera::VimbaXCameraNode)
