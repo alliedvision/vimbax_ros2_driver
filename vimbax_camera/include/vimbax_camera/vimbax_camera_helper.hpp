@@ -19,6 +19,14 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+struct feature_float_info
+{
+    _Float64 min;
+    _Float64 max;
+    _Float64 inc;
+    bool inc_available;
+};
+
 namespace vimbax_camera::helper
 {
 rclcpp::Logger get_logger();

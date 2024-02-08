@@ -17,20 +17,25 @@ set(vimbax_camera_SRVS
         srv/Dummy.srv #TODO: Delete and replace with actual service definitions
         srv/FeatureIntGet.srv
         srv/FeatureIntSet.srv
+        srv/FeatureIntInfoGet.srv
         srv/FeatureFloatGet.srv
         srv/FeatureFloatSet.srv
+        srv/FeatureFloatInfoGet.srv
         srv/FeatureStringGet.srv
-        srv/FeatureStringSet.srv 
+        srv/FeatureStringSet.srv
+        srv/FeatureStringInfoGet.srv
         srv/FeatureBoolGet.srv
         srv/FeatureBoolSet.srv 
         srv/FeatureCommandIsDone.srv
         srv/FeatureCommandRun.srv 
         srv/FeatureEnumGet.srv
         srv/FeatureEnumSet.srv 
+        srv/FeatureEnumInfoGet.srv 
         srv/FeatureEnumAsIntGet.srv
         srv/FeatureEnumAsStringGet.srv
         srv/FeatureRawGet.srv
         srv/FeatureRawSet.srv
+        srv/FeatureRawInfoGet.srv
         srv/FeatureAccessModeGet.srv
 )
 

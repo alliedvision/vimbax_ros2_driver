@@ -185,6 +185,24 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  feature_int_info_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureIntInfoGet>(
+    "~/features/int_info_get", [this](
+      const vimbax_camera_msgs::srv::FeatureIntInfoGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureIntInfoGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_int_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->min = (*result)[0];
+          response->max = (*result)[1];
+          response->inc = (*result)[2];
+        }
+      }
+    );
+
   feature_float_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureFloatGet>(
     "~/features/float_get", [this](
       const vimbax_camera_msgs::srv::FeatureFloatGet::Request::ConstSharedPtr request,
@@ -213,6 +231,25 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  feature_float_info_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureFloatInfoGet>(
+    "~/features/float_info_get", [this](
+      const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_float_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->min = (*result).min;
+          response->max = (*result).max;
+          response->inc = (*result).inc;
+          response->inc_available = (*result).inc_available;
+        }
+      }
+    );
+
   feature_string_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureStringGet>(
     "~/features/string_get", [this](
       const vimbax_camera_msgs::srv::FeatureStringGet::Request::ConstSharedPtr request,
@@ -237,6 +274,22 @@ bool VimbaXCameraNode::initialize_services()
         auto const result = camera_->feature_string_set(request->feature_name, request->value);
         if (!result) {
           response->set__error(result.error().code);
+        }
+      }
+    );
+
+  feature_string_info_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureStringInfoGet>(
+    "~/features/string_info_get", [this](
+      const vimbax_camera_msgs::srv::FeatureStringInfoGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureStringInfoGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_string_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->max_length = *result;
         }
       }
     );
@@ -325,6 +378,23 @@ bool VimbaXCameraNode::initialize_services()
       }
     );
 
+  feature_enum_info_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureEnumInfoGet>(
+    "~/features/enum_info_get", [this](
+      const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_enum_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->possible_values = (*result)[0];
+          response->available_values = (*result)[1];
+        }
+      }
+    );
+
   feature_enum_as_int_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsIntGet>(
     "~/features/enum_as_int_get", [this](
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Request::ConstSharedPtr request,
@@ -382,6 +452,22 @@ bool VimbaXCameraNode::initialize_services()
         auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
         if (!result) {
           response->set__error(result.error().code);
+        }
+      }
+    );
+
+  feature_raw_info_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureRawInfoGet>(
+    "~/features/raw_info_get", [this](
+      const vimbax_camera_msgs::srv::FeatureRawInfoGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureRawInfoGet::Response::SharedPtr response) 
+      {
+        auto const result = camera_->feature_raw_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().code);
+        }
+        else
+        {
+          response->max_length = *result;
         }
       }
     );
