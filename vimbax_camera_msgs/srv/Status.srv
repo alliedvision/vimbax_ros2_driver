@@ -16,5 +16,5 @@ float64 frame_rate
 string pixel_format
 string trigger_mode
 string trigger_source
-uint64 ip_address
-uint64 mac_address
+string ip_address
+string mac_address

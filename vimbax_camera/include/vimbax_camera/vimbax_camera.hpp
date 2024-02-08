@@ -93,7 +93,7 @@ public:
 
     static constexpr std::string_view InterfaceId = "InterfaceID";
     static constexpr std::string_view TransportLayerId = "TLID";
-    
+
 
     static constexpr std::string_view GevDeviceIPAddress = "GevDeviceIPAddress";
     static constexpr std::string_view GevDeviceMACAddress = "GevDeviceMACAddress";
@@ -110,8 +110,8 @@ public:
     std::string device_serial_number;
     std::string interface_id;
     std::string transport_layer_id;
-    std::optional<uint64_t> ip_address{std::nullopt};
-    std::optional<uint64_t> mac_address{std::nullopt};
+    std::optional<std::string> ip_address{std::nullopt};
+    std::optional<std::string> mac_address{std::nullopt};
     bool streaming;
     uint32_t width;
     uint32_t height;
@@ -189,6 +189,8 @@ public:
 private:
   explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
 
+  result<void> feature_command_run(const std::string_view & name, VmbHandle_t handle) const;
+
   result<int64_t> feature_int_get(const std::string_view & name, VmbHandle_t handle) const;
 
   result<_Float64> feature_float_get(const std::string_view & name, VmbHandle_t handle) const;
@@ -204,6 +206,7 @@ private:
   std::vector<std::shared_ptr<Frame>> frames_;
   bool streaming_{false};
   VmbCameraInfo camera_info_;
+  std::optional<uint64_t> timestamp_frequency_;
 };
 
 }  // namespace vimbax_camera
