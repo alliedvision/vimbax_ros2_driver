@@ -120,6 +120,7 @@ bool VimbaXCameraNode::initialize_parameters()
 
 bool VimbaXCameraNode::initialize_api()
 {
+  RCLCPP_INFO(get_logger(), "Initializing VimbaX API ...");
   RCLCPP_INFO(get_logger(), "Starting VimbaX camera node ...");
   RCLCPP_INFO(get_logger(), "Loading VimbaX api ...");
   api_ = VmbCAPI::get_instance();
@@ -138,23 +139,26 @@ bool VimbaXCameraNode::initialize_api()
     get_logger(), "Successfully loaded VmbC API version %d.%d.%d",
     versionInfo.major, versionInfo.minor, versionInfo.patch);
 
-
+  RCLCPP_INFO(get_logger(), " API initialization done.");
   return true;
 }
 
 bool VimbaXCameraNode::initialize_publisher()
 {
+  RCLCPP_INFO(get_logger(), "Initializing publisher ...");
   image_publisher_ = image_transport::create_publisher(node_.get(), "~/image_raw");
 
   if (!image_publisher_) {
     return false;
   }
 
+  RCLCPP_INFO(get_logger(), " Publisher initialization done.");
   return true;
 }
 
 bool VimbaXCameraNode::initialize_camera()
 {
+  RCLCPP_INFO(get_logger(), "Initializing camera ...");
   camera_ = VimbaXCamera::open(api_, node_->get_parameter(parameter_camera_id).as_string());
 
   if (!camera_) {
@@ -174,11 +178,13 @@ bool VimbaXCameraNode::initialize_camera()
     }
   }
 
+  RCLCPP_INFO(get_logger(), " Camera initialization done.");
   return true;
 }
 
 bool VimbaXCameraNode::initialize_graph_notify()
 {
+  RCLCPP_INFO(get_logger(), "Initializing graph notify ...");
   graph_notify_thread_ = std::make_unique<std::thread>(
     [this] {
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
@@ -187,7 +193,7 @@ bool VimbaXCameraNode::initialize_graph_notify()
 
         if (event->check_and_clear()) {
           if (image_publisher_.getNumSubscribers() > 0 && !camera_->is_streaming()) {
-     //       start_streaming();
+            start_streaming();
           } else if (image_publisher_.getNumSubscribers() == 0 && camera_->is_streaming()) {
             stop_streaming();
           }
@@ -199,12 +205,13 @@ bool VimbaXCameraNode::initialize_graph_notify()
     return false;
   }
 
+  RCLCPP_INFO(get_logger(), " Graph notify initialization done.");
   return true;
 }
 
 bool VimbaXCameraNode::initialize_services()
 {
-  RCLCPP_INFO(get_logger(), "Initializing feature services ...");
+  RCLCPP_INFO(get_logger(), "Initializing services ...");
 
   feature_int_get_service_ = node_->create_service<vimbax_camera_msgs::srv::FeatureIntGet>(
     "~/features/int_get", [this](
@@ -567,6 +574,8 @@ bool VimbaXCameraNode::initialize_services()
   if (!settings_load_service_) {
     return false;
   }
+
+  RCLCPP_INFO(get_logger(), " Service initialization done.");
 
   return true;
 }
