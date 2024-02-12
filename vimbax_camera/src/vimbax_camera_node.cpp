@@ -65,6 +65,7 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
+  RCLCPP_INFO(get_logger(), "Initialization done.");
   return camera_node;
 }
 
@@ -139,7 +140,6 @@ bool VimbaXCameraNode::initialize_api()
     get_logger(), "Successfully loaded VmbC API version %d.%d.%d",
     versionInfo.major, versionInfo.minor, versionInfo.patch);
 
-  RCLCPP_INFO(get_logger(), " API initialization done.");
   return true;
 }
 
@@ -152,7 +152,6 @@ bool VimbaXCameraNode::initialize_publisher()
     return false;
   }
 
-  RCLCPP_INFO(get_logger(), " Publisher initialization done.");
   return true;
 }
 
@@ -178,7 +177,6 @@ bool VimbaXCameraNode::initialize_camera()
     }
   }
 
-  RCLCPP_INFO(get_logger(), " Camera initialization done.");
   return true;
 }
 
@@ -205,7 +203,6 @@ bool VimbaXCameraNode::initialize_graph_notify()
     return false;
   }
 
-  RCLCPP_INFO(get_logger(), " Graph notify initialization done.");
   return true;
 }
 
@@ -574,8 +571,6 @@ bool VimbaXCameraNode::initialize_services()
   if (!settings_load_service_) {
     return false;
   }
-
-  RCLCPP_INFO(get_logger(), " Service initialization done.");
 
   return true;
 }
