@@ -559,7 +559,7 @@ result<std::array<std::vector<std::string>,2>> VimbaXCamera::feature_enum_info_g
     return error{err};
   }
 
-  for (auto & entry : enumEntries) {
+  for (auto const & entry : enumEntries) {
       values[0].push_back(std::string(entry));
 
       err = 
