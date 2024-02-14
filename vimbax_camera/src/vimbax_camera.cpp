@@ -335,11 +335,10 @@ VimbaXCamera::feature_int_info_get(const std::string_view & name) const
 
   auto err =
     api_->FeatureIntRangeQuery(
-      camera_handle_,
-      name.data(),
-      reinterpret_cast<VmbInt64_t *>(&value[0]),
-      reinterpret_cast<VmbInt64_t *>(&value[1])
-    );
+    camera_handle_,
+    name.data(),
+    reinterpret_cast<VmbInt64_t *>(&value[0]),
+    reinterpret_cast<VmbInt64_t *>(&value[1]));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -348,10 +347,9 @@ VimbaXCamera::feature_int_info_get(const std::string_view & name) const
 
   err =
     api_->FeatureIntIncrementQuery(
-      camera_handle_,
-      name.data(),
-      reinterpret_cast<VmbInt64_t *>(&value[2])
-    );
+    camera_handle_,
+    name.data(),
+    reinterpret_cast<VmbInt64_t *>(&value[2]));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -400,11 +398,10 @@ result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::strin
 
   auto err =
     api_->FeatureFloatRangeQuery(
-      camera_handle_,
-      name.data(),
-      reinterpret_cast<double *>(&info.min),
-      reinterpret_cast<double *>(&info.max)
-    );
+    camera_handle_,
+    name.data(),
+    reinterpret_cast<double *>(&info.min),
+    reinterpret_cast<double *>(&info.max));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -413,11 +410,10 @@ result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::strin
 
   err =
     api_->FeatureFloatIncrementQuery(
-      camera_handle_,
-      name.data(),
-      &info.inc_available,
-      reinterpret_cast<double *>(&info.inc)
-    );
+    camera_handle_,
+    name.data(),
+    &info.inc_available,
+    reinterpret_cast<double *>(&info.inc));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -441,21 +437,19 @@ result<std::string> VimbaXCamera::feature_string_get(const std::string_view & na
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   } else {
-    char* buf = static_cast<char*>(malloc(size_filled));
+    char * buf = static_cast<char *>(malloc(size_filled));
 
     err =
       api_->FeatureStringGet(camera_handle_, name.data(), buf, size_filled, &size_filled);
 
-    if (err == VmbErrorSuccess)
-    {
-      value.assign(buf, size_filled);;
+    if (err == VmbErrorSuccess) {
+      value.assign(buf, size_filled);
     }
 
     free(buf);
     buf = nullptr;
 
-    if (err != VmbErrorSuccess)
-    {
+    if (err != VmbErrorSuccess) {
       RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
       return error{err};
     }
@@ -486,10 +480,9 @@ result<uint32_t> VimbaXCamera::feature_string_info_get(const std::string_view & 
 
   auto err =
     api_->FeatureStringMaxlengthQuery(
-      camera_handle_,
-      name.data(),
-      reinterpret_cast<VmbUint32_t *>(&value)
-    );
+    camera_handle_,
+    name.data(),
+    reinterpret_cast<VmbUint32_t *>(&value));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -575,7 +568,7 @@ VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
     return error{err};
   }
 
-  std::vector<const char*> enumEntries(numFound);
+  std::vector<const char *> enumEntries(numFound);
 
   err =
     api_->FeatureEnumRangeQuery(camera_handle_, name.data(), &enumEntries[0], numFound, &numFound);
@@ -586,15 +579,14 @@ VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
   }
 
   for (auto const & entry : enumEntries) {
-      values[0].push_back(std::string(entry));
+    values[0].push_back(std::string(entry));
 
-      err =
-        api_->FeatureEnumIsAvailable(camera_handle_, name.data(), entry, &available);
+    err =
+      api_->FeatureEnumIsAvailable(camera_handle_, name.data(), entry, &available);
 
-      if (err == VmbErrorSuccess && available)
-      {
-        values[1].push_back(std::string(entry));
-      }
+    if (err == VmbErrorSuccess && available) {
+      values[1].push_back(std::string(entry));
+    }
   }
 
   return values;
@@ -627,7 +619,7 @@ VimbaXCamera::feature_enum_as_string_get(const std::string_view & name, const in
 {
   RCLCPP_INFO(get_logger(), "%s('%s', %ld)", __FUNCTION__, name.data(), value);
   std::string option;
-  const char *stringValue;
+  const char * stringValue;
 
   auto const err = api_->FeatureEnumAsString(
     camera_handle_, name.data(), value,
@@ -665,15 +657,13 @@ VimbaXCamera::feature_raw_get(const std::string_view & name) const
   std::vector<unsigned char> buffer(length);
   err =
     api_->FeatureRawGet(
-      camera_handle_,
-      name.data(),
-      reinterpret_cast<char*>(&buffer[0]),
-      length,
-      &size_filled
-    );
+    camera_handle_,
+    name.data(),
+    reinterpret_cast<char *>(&buffer[0]),
+    length,
+    &size_filled);
 
-  if (err != VmbErrorSuccess)
-  {
+  if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   }
@@ -685,16 +675,15 @@ result<void> VimbaXCamera::feature_raw_set(
   const std::string_view & name,
   const std::vector<uint8_t> buffer) const
 {
-  RCLCPP_INFO(get_logger(), "%s('%s', buffer.size()=%ld)",
-    __FUNCTION__, name.data(), buffer.size());
+  RCLCPP_INFO(
+    get_logger(), "%s('%s', buffer.size()=%ld)", __FUNCTION__, name.data(), buffer.size());
 
   auto const err =
     api_->FeatureRawSet(
-      camera_handle_,
-      name.data(),
-      reinterpret_cast<const char*>(buffer.data()),
-      static_cast<uint32_t>(buffer.size())
-    );
+    camera_handle_,
+    name.data(),
+    reinterpret_cast<const char *>(buffer.data()),
+    static_cast<uint32_t>(buffer.size()));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -840,7 +829,6 @@ VmbFeaturePersistSettings VimbaXCamera::get_default_feature_persist_settings() c
     VmbLogLevel::VmbLogLevelWarn
   };
 }
-
 
 bool VimbaXCamera::is_streaming() const
 {
