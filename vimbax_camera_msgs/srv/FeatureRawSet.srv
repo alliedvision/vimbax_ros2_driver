@@ -1,4 +1,4 @@
 string feature_name
-char[] buffer
+byte[] buffer
 ---
 int32 error
