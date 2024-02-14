@@ -25,12 +25,12 @@ set(vimbax_camera_SRVS
         srv/FeatureStringSet.srv
         srv/FeatureStringInfoGet.srv
         srv/FeatureBoolGet.srv
-        srv/FeatureBoolSet.srv 
+        srv/FeatureBoolSet.srv
         srv/FeatureCommandIsDone.srv
-        srv/FeatureCommandRun.srv 
+        srv/FeatureCommandRun.srv
         srv/FeatureEnumGet.srv
-        srv/FeatureEnumSet.srv 
-        srv/FeatureEnumInfoGet.srv 
+        srv/FeatureEnumSet.srv
+        srv/FeatureEnumInfoGet.srv
         srv/FeatureEnumAsIntGet.srv
         srv/FeatureEnumAsStringGet.srv
         srv/FeatureRawGet.srv
