@@ -649,7 +649,7 @@ result<std::vector<unsigned char>> VimbaXCamera::feature_raw_get(const std::stri
   return buffer;
 }
 
-result<void> VimbaXCamera::feature_raw_set(const std::string_view & name, const std::vector<unsigned char> buffer) const
+result<void> VimbaXCamera::feature_raw_set(const std::string_view & name, const std::vector<uint8_t> buffer) const
 {
   RCLCPP_INFO(get_logger(), "%s('%s', buffer.size()=%ld)", __FUNCTION__, name.data(), buffer.size());
  
