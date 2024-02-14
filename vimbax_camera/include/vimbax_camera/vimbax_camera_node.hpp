@@ -71,7 +71,6 @@ private:
   VimbaXCameraNode() = default;
 
   using OnSetParametersCallbackHandle = rclcpp::Node::OnSetParametersCallbackHandle;
-  using vcms = vimbax_camera_msgs::srv
 
   const std::string parameter_camera_id = "camera_id";
   const std::string parameter_settings_file = "settings_file";
@@ -97,30 +96,54 @@ private:
   image_transport::Publisher image_publisher_;
 
   // Services
-  rclcpp::Service<vcms::FeatureIntGet>::SharedPtr feature_int_get_service_;
-  rclcpp::Service<vcms::FeatureIntSet>::SharedPtr feature_int_set_service_;
-  rclcpp::Service<vcms::FeatureIntInfoGet>::SharedPtr feature_int_info_get_service_;
-  rclcpp::Service<vcms::FeatureFloatGet>::SharedPtr feature_float_get_service_;
-  rclcpp::Service<vcms::FeatureFloatSet>::SharedPtr feature_float_set_service_;
-  rclcpp::Service<vcms::FeatureFloatInfoGet>::SharedPtr feature_float_info_get_service_;
-  rclcpp::Service<vcms::FeatureStringGet>::SharedPtr feature_string_get_service_;
-  rclcpp::Service<vcms::FeatureStringSet>::SharedPtr feature_string_set_service_;
-  rclcpp::Service<vcms::FeatureStringInfoGet>::SharedPtr feature_string_info_get_service_;
-  rclcpp::Service<vcms::FeatureBoolGet>::SharedPtr feature_bool_get_service_;
-  rclcpp::Service<vcms::FeatureBoolSet>::SharedPtr feature_bool_set_service_;
-  rclcpp::Service<vcms::FeatureCommandIsDone>::SharedPtr feature_command_is_done_service_;
-  rclcpp::Service<vcms::FeatureCommandRun>::SharedPtr feature_command_run_service_;
-  rclcpp::Service<vcms::FeatureEnumGet>::SharedPtr feature_enum_get_service_;
-  rclcpp::Service<vcms::FeatureEnumSet>::SharedPtr feature_enum_set_service_;
-  rclcpp::Service<vcms::FeatureEnumInfoGet>::SharedPtr feature_enum_info_get_service_;
-  rclcpp::Service<vcms::FeatureEnumAsIntGet>::SharedPtr feature_enum_as_int_get_service_;
-  rclcpp::Service<vcms::FeatureEnumAsStringGet>::SharedPtr feature_enum_as_string_get_service_;
-  rclcpp::Service<vcms::FeatureRawGet>::SharedPtr feature_raw_get_service_;
-  rclcpp::Service<vcms::FeatureRawSet>::SharedPtr feature_raw_set_service_;
-  rclcpp::Service<vcms::FeatureRawInfoGet>::SharedPtr feature_raw_info_get_service_;
-  rclcpp::Service<vcms::FeatureAccessModeGet>::SharedPtr feature_access_mode_get_service_;
-  rclcpp::Service<vcms::SettingsLoadSave>::SharedPtr settings_save_service_;
-  rclcpp::Service<vcms::SettingsLoadSave>::SharedPtr settings_load_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntGet>::SharedPtr
+    feature_int_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntSet>::SharedPtr
+    feature_int_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntInfoGet>::SharedPtr
+    feature_int_info_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureFloatGet>::SharedPtr
+    feature_float_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureFloatSet>::SharedPtr
+    feature_float_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureFloatInfoGet>::SharedPtr
+    feature_float_info_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureStringGet>::SharedPtr
+    feature_string_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureStringSet>::SharedPtr
+    feature_string_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureStringInfoGet>::SharedPtr
+    feature_string_info_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureBoolGet>::SharedPtr
+    feature_bool_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureBoolSet>::SharedPtr
+    feature_bool_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureCommandIsDone>::SharedPtr
+    feature_command_is_done_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureCommandRun>::SharedPtr
+    feature_command_run_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumGet>::SharedPtr
+    feature_enum_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumSet>::SharedPtr
+    feature_enum_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumInfoGet>::SharedPtr
+    feature_enum_info_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumAsIntGet>::SharedPtr
+    feature_enum_as_int_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureEnumAsStringGet>::SharedPtr
+    feature_enum_as_string_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureRawGet>::SharedPtr
+    feature_raw_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureRawSet>::SharedPtr
+    feature_raw_set_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureRawInfoGet>::SharedPtr
+    feature_raw_info_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureAccessModeGet>::SharedPtr
+    feature_access_mode_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
+    settings_save_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
+    settings_load_service_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 

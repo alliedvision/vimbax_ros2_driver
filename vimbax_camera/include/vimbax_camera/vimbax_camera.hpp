@@ -112,23 +112,28 @@ public:
   result<void> feature_float_set(const std::string_view & name, const _Float64 value) const;
   result<feature_float_info> feature_float_info_get(const std::string_view & name) const;
   result<std::string> feature_string_get(const std::string_view & name) const;
-  result<void>
-    feature_string_set(const std::string_view & name, const std::string_view value) const;
+  result<void> feature_string_set(
+    const std::string_view & name,
+    const std::string_view value) const;
   result<uint32_t> feature_string_info_get(const std::string_view & name) const;
   result<bool> feature_bool_get(const std::string_view & name) const;
   result<void> feature_bool_set(const std::string_view & name, const bool value) const;
   result<std::string> feature_enum_get(const std::string_view & name) const;
-  result<void>
-    feature_enum_set(const std::string_view & name, const std::string_view & value) const;
-  result<std::array<std::vector<std::string>, 2>>
-    feature_enum_info_get(const std::string_view & name) const;
-  result<int64_t>
-    feature_enum_as_int_get(const std::string_view & name, const std::string_view & option) const;
-  result<std::string>
-    feature_enum_as_string_get(const std::string_view & name, const int64_t value) const;
+  result<void> feature_enum_set(
+    const std::string_view & name,
+    const std::string_view & value) const;
+  result<std::array<std::vector<std::string>, 2>> feature_enum_info_get(
+    const std::string_view & name) const;
+  result<int64_t> feature_enum_as_int_get(
+    const std::string_view & name,
+    const std::string_view & option) const;
+  result<std::string> feature_enum_as_string_get(
+    const std::string_view & name,
+    const int64_t value) const;
   result<std::vector<unsigned char>> feature_raw_get(const std::string_view & name) const;
-  result<void>
-    feature_raw_set(const std::string_view & name, const std::vector<uint8_t> buffer) const;
+  result<void> feature_raw_set(
+    const std::string_view & name,
+    const std::vector<uint8_t> buffer) const;
   result<uint32_t> feature_raw_info_get(const std::string_view & name) const;
   result<std::array<bool, 2>> feature_access_mode_get(const std::string_view & name) const;
 
