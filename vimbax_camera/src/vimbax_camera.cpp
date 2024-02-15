@@ -143,9 +143,9 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
     get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
     camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
 
-  auto const timestamp_frequency = 
+  auto const timestamp_frequency =
     feature_int_get("DeviceTimestampFrequency", camera_info_.localDeviceHandle);
-  
+
   if (timestamp_frequency) {
     timestamp_frequency_ = *timestamp_frequency;
   }
@@ -179,8 +179,13 @@ result<void> VimbaXCamera::start_streaming(
       return error{payloadSizeError};
     }
 
+    auto const alignment_res =
+      feature_int_get(SFNCFeatures::StreamBufferAlignment, camera_info_.streamHandles[0]);
+
+    auto const alignment = alignment_res ? *alignment_res : 1;
+
     for (auto & frame : frames_) {
-      auto newFrame = Frame::create(shared_from_this(), payloadSize, 128);
+      auto newFrame = Frame::create(shared_from_this(), payloadSize, alignment);
 
       if (!newFrame) {
         RCLCPP_ERROR(get_logger(), "Failed to create frame");
@@ -292,7 +297,8 @@ result<void> VimbaXCamera::feature_command_run(const std::string_view & name) co
   return feature_command_run(name, camera_handle_);
 }
 
-result<void> VimbaXCamera::feature_command_run(const std::string_view & name, VmbHandle_t handle) const
+result<void> VimbaXCamera::feature_command_run(
+  const std::string_view & name, VmbHandle_t handle) const
 {
   auto const run_error = api_->FeatureCommandRun(handle, name.data());
 
@@ -420,7 +426,6 @@ VimbaXCamera::feature_float_set(const std::string_view & name, const _Float64 va
 result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::string_view & name) const
 {
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
-  std::array<_Float64, 3> value;
   feature_float_info info{};
 
   auto err =
@@ -960,7 +965,7 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
     feature_int_get(SFNCFeatures::GevDeviceIPAddress, camera_info_.localDeviceHandle);
   if (ip_address) {
     auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*ip_address));
-    info.ip_address = 
+    info.ip_address =
       std::to_string(u8ptr[3]) + "." +
       std::to_string(u8ptr[2]) + "." +
       std::to_string(u8ptr[1]) + "." +
@@ -976,8 +981,7 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
     mac_address_stream << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[5]);
     for (int i = 4; i >= 0; i--) {
       mac_address_stream << ":" << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[i]);
-    } 
-
+    }
 
     info.mac_address = mac_address_stream.str();
   }
@@ -1015,14 +1019,29 @@ result<std::shared_ptr<VimbaXCamera::Frame>> VimbaXCamera::Frame::create(
   }
 
   auto const line = *width * bpp / 8;
-  size_t const realSize = *height * line;
+  size_t const real_size = *height * line;
 
-  auto const allocMode = (realSize == size) ? AllocationMode::kByImage : AllocationMode::kByTl;
+  size_t const aligned_size = [&] {
+      if (alignment > 1) {
+        auto const mask = (alignment - 1);
+
+        auto const alignment = mask + 1;
+        auto const offset = (size & mask);
+        auto const offset_to_next = (alignment - offset) & mask;
+
+        return size + offset_to_next;
+      }
+
+      return size;
+    }();
+
+  auto const allocMode =
+    (real_size == aligned_size) ? AllocationMode::kByImage : AllocationMode::kByTl;
 
   std::shared_ptr<VimbaXCamera::Frame> frame(new VimbaXCamera::Frame{camera, allocMode});
 
   if (allocMode == AllocationMode::kByTl) {
-    frame->data.resize(realSize);
+    frame->data.resize(real_size);
 
     frame->vmb_frame_.buffer = nullptr;
     frame->vmb_frame_.bufferSize = size;
@@ -1086,7 +1105,7 @@ uint64_t VimbaXCamera::Frame::timestamp_to_ns(uint64_t timestamp)
   if (!camera_.expired()) {
     auto camera = camera_.lock();
 
-    
+
     if (camera->timestamp_frequency_) {
       RCLCPP_DEBUG(get_logger(), "Using timestamp frequnency %ld", *camera->timestamp_frequency_);
 
