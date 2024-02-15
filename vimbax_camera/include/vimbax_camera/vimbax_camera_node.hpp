@@ -150,7 +150,7 @@ private:
 
   rclcpp::CallbackGroup::SharedPtr feature_callback_group_;
   rclcpp::CallbackGroup::SharedPtr settings_load_save_callback_group_;
-  rclcpp::CallbackGroup::SharedPtr status_callback_group_; 
+  rclcpp::CallbackGroup::SharedPtr status_callback_group_;
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};

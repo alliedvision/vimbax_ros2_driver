@@ -39,10 +39,7 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
-  auto opts = options;
-  opts.use_intra_process_comms(true);
-
-  camera_node->node_ = helper::create_node(get_node_name(), opts);
+  camera_node->node_ = helper::create_node(get_node_name(), options);
 
   if (!camera_node->node_) {
     return {};
@@ -228,7 +225,7 @@ bool VimbaXCameraNode::initialize_callback_groups()
     return false;
   }
 
-  settings_load_save_callback_group_ = 
+  settings_load_save_callback_group_ =
     node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
   if (!settings_load_save_callback_group_) {
@@ -649,7 +646,7 @@ void VimbaXCameraNode::start_streaming()
 
       auto const queue_error = frame->queue();
       if (queue_error != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Frame requeue failed with %d",queue_error);
+        RCLCPP_ERROR(get_logger(), "Frame requeue failed with %d", queue_error);
       }
     });
 
