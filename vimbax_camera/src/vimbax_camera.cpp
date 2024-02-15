@@ -330,7 +330,7 @@ result<int64_t> VimbaXCamera::feature_int_get(
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
   int64_t value{};
   auto const err =
-    api_->FeatureIntGet(camera_handle_, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
+    api_->FeatureIntGet(handle, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s %s failed with error %d", __FUNCTION__, name.data(), err);
