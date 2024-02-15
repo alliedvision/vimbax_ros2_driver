@@ -653,7 +653,10 @@ void VimbaXCameraNode::start_streaming()
 
       image_publisher_.publish(*frame);
 
-      frame->queue();
+      auto const queue_error = frame->queue();
+      if (queue_error != VmbErrorSuccess) {
+        RCLCPP_ERROR(get_logger(), "Frame requeue failed with %d", queue_error);
+      }
     });
 
   RCLCPP_INFO(get_logger(), "Stream started using %ld buffers", buffer_count);

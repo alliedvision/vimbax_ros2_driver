@@ -52,6 +52,12 @@ protected:
       });
 
 
+    EXPECT_CALL(*api_mock_, FeatureCommandIsDone).WillRepeatedly(
+      [](auto, auto, bool * done) -> VmbError_t {
+        *done = true;
+        return VmbErrorSuccess;
+      });
+
     EXPECT_CALL(*api_mock_, Startup(_)).Times(1);
     EXPECT_CALL(*api_mock_, Shutdown()).Times(1);
     auto instance = VmbCAPI::get_instance({}, loaderMock);
@@ -73,6 +79,8 @@ protected:
 
   std::shared_ptr<VmbCAPI> api_;
   std::shared_ptr<APIMock> api_mock_;
+
+  std::array<VmbHandle_t, 1> stream_handles_{};
 };
 
 class VimbaXCameraOpenedTest : public VimbaXCameraTest
@@ -100,7 +108,12 @@ protected:
     EXPECT_CALL(*api_mock_, CameraClose(&dummy_handle_)).Times(1);
 
     EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummy_handle_, _, _))
-    .Times(1).WillOnce(Return(VmbErrorSuccess));
+    .Times(1).WillOnce(
+      [&] (auto, VmbCameraInfo_t * ptr, auto) -> VmbError_t {
+        ptr->streamHandles = stream_handles_.data();
+        ptr->streamCount = stream_handles_.size();
+        return VmbErrorSuccess;
+      });
 
     EXPECT_CALL(*api_mock_, CameraOpen(Eq(cameraIdStr), _, _))
     .Times(1).WillOnce(
@@ -175,6 +188,7 @@ protected:
   int64_t test_size_ = test_line_ * test_height_;
 
   uint64_t dummy_handle_{};
+
 };
 
 TEST_F(VimbaXCameraTest, open_first_camera)
@@ -191,8 +205,8 @@ TEST_F(VimbaXCameraTest, open_first_camera)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     },
     VmbCameraInfo{
@@ -204,8 +218,8 @@ TEST_F(VimbaXCameraTest, open_first_camera)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };
@@ -281,8 +295,8 @@ TEST_F(VimbaXCameraTest, open_second_camera)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead
     },
     VmbCameraInfo{
@@ -294,8 +308,8 @@ TEST_F(VimbaXCameraTest, open_second_camera)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };
@@ -370,8 +384,8 @@ TEST_F(VimbaXCameraTest, open_camera_no_access)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead
     },
     VmbCameraInfo{
@@ -383,8 +397,8 @@ TEST_F(VimbaXCameraTest, open_camera_no_access)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead
     }
   };
@@ -502,7 +516,12 @@ TEST_F(VimbaXCameraTest, open_by_id_success_fallback)
   EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(Return(VmbErrorSuccess));
+  .Times(1).WillOnce(
+    [&] (auto, VmbCameraInfo_t * ptr, auto) {
+      ptr->streamHandles = stream_handles_.data();
+      ptr->streamCount = stream_handles_.size();
+      return VmbErrorSuccess;
+    });
 
   EXPECT_CALL(*api_mock_, CameraOpen(Eq(cameraIdStr), _, _))
   .Times(1).WillOnce(
@@ -532,8 +551,8 @@ TEST_F(VimbaXCameraTest, open_by_id_success)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     },
     VmbCameraInfo{
@@ -545,8 +564,8 @@ TEST_F(VimbaXCameraTest, open_by_id_success)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };
@@ -583,7 +602,11 @@ TEST_F(VimbaXCameraTest, open_by_id_success)
   EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(Return(VmbErrorSuccess));
+  .Times(1).WillOnce(
+    [&] (auto ,VmbCameraInfo_t * info_ptr, auto) -> VmbError_t {
+      *info_ptr = availableCameras[1];
+      return VmbErrorSuccess;
+    });
 
   EXPECT_CALL(*api_mock_, CameraOpen(Eq(cameraIdStr), _, _))
   .Times(1).WillOnce(
@@ -611,8 +634,8 @@ TEST_F(VimbaXCameraTest, open_by_serial)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     },
     VmbCameraInfo{
@@ -624,8 +647,8 @@ TEST_F(VimbaXCameraTest, open_by_serial)
       nullptr,
       nullptr,
       nullptr,
-      nullptr,
-      0,
+      stream_handles_.data(),
+      stream_handles_.size(),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };

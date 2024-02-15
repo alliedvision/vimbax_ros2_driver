@@ -97,6 +97,8 @@ public:
 
     static constexpr std::string_view GevDeviceIPAddress = "GevDeviceIPAddress";
     static constexpr std::string_view GevDeviceMACAddress = "GevDeviceMACAddress";
+
+    static constexpr std::string_view StreamBufferAlignment = "StreamBufferAlignment";
   };
 
   struct Info
