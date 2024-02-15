@@ -558,7 +558,7 @@ VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
   uint32_t numFound{};
   bool available{false};
-  std::array<std::vector<std::string>, 2> values;  // 0: possibleValues, 1: a1availableValues
+  std::array<std::vector<std::string>, 2> values;  // 0: possibleValues, 1: availableValues
 
   auto err =
     api_->FeatureEnumRangeQuery(camera_handle_, name.data(), nullptr, 0, &numFound);
