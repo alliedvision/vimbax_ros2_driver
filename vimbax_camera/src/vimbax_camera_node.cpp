@@ -39,7 +39,10 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
-  camera_node->node_ = helper::create_node(get_node_name(), options);
+  auto opts = options;
+  opts.use_intra_process_comms(true);
+
+  camera_node->node_ = helper::create_node(get_node_name(), opts);
 
   if (!camera_node->node_) {
     return {};
@@ -54,6 +57,10 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
   }
 
   if (!camera_node->initialize_camera()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_callback_groups()) {
     return {};
   }
 
@@ -150,7 +157,11 @@ bool VimbaXCameraNode::initialize_api()
 bool VimbaXCameraNode::initialize_publisher()
 {
   RCLCPP_INFO(get_logger(), "Initializing publisher ...");
-  image_publisher_ = image_transport::create_publisher(node_.get(), "~/image_raw");
+
+  auto qos = rmw_qos_profile_default;
+  qos.depth = 10;
+
+  image_publisher_ = image_transport::create_publisher(node_.get(), "~/image_raw", qos);
 
   if (!image_publisher_) {
     return false;
@@ -191,7 +202,7 @@ bool VimbaXCameraNode::initialize_graph_notify()
     [this] {
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
-        node_->wait_for_graph_change(event, std::chrono::milliseconds(5));
+        node_->wait_for_graph_change(event, std::chrono::milliseconds(50));
 
         if (event->check_and_clear()) {
           if (image_publisher_.getNumSubscribers() > 0 && !camera_->is_streaming()) {
@@ -206,6 +217,25 @@ bool VimbaXCameraNode::initialize_graph_notify()
   if (!graph_notify_thread_) {
     return false;
   }
+
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_callback_groups()
+{
+  feature_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+  if (!feature_callback_group_) {
+    return false;
+  }
+
+  settings_load_save_callback_group_ = node_->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
+
+  if (!settings_load_save_callback_group_) {
+    return false;
+  }
+
+  status_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
 
   return true;
 }
@@ -226,7 +256,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->value = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_int_get_service_);
 
@@ -240,7 +270,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_int_set_service_);
 
@@ -258,7 +288,7 @@ bool VimbaXCameraNode::initialize_services()
         response->max = (*result)[1];
         response->inc = (*result)[2];
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_int_info_get_service_);
 
@@ -274,7 +304,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->value = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_float_get_service_);
 
@@ -288,7 +318,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_float_set_service_);
 
@@ -307,7 +337,7 @@ bool VimbaXCameraNode::initialize_services()
         response->inc = (*result).inc;
         response->inc_available = (*result).inc_available;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_float_info_get_service_);
 
@@ -323,7 +353,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->value = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_string_get_service_);
 
@@ -337,7 +367,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_string_set_service_);
 
@@ -353,7 +383,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->max_length = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_string_info_get_service_);
 
@@ -369,7 +399,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->value = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_bool_get_service_);
 
@@ -383,7 +413,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_bool_set_service_);
 
@@ -399,7 +429,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->is_done = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_command_is_done_service_);
 
@@ -413,7 +443,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_command_run_service_);
 
@@ -429,7 +459,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->value = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_enum_get_service_);
 
@@ -443,7 +473,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_enum_set_service_);
 
@@ -460,7 +490,7 @@ bool VimbaXCameraNode::initialize_services()
         response->possible_values = (*result)[0];
         response->available_values = (*result)[1];
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_enum_info_get_service_);
 
@@ -478,7 +508,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->value = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_enum_as_int_get_service_);
 
@@ -496,7 +526,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->option = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_enum_as_string_get_service_);
 
@@ -513,7 +543,7 @@ bool VimbaXCameraNode::initialize_services()
         response->buffer = *result;
         response->buffer_size = (*result).size();
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_raw_get_service_);
 
@@ -527,7 +557,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_raw_set_service_);
 
@@ -543,7 +573,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         response->max_length = *result;
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_raw_info_get_service_);
 
@@ -560,7 +590,7 @@ bool VimbaXCameraNode::initialize_services()
         response->is_readable = (*result)[0];
         response->is_writeable = (*result)[1];
       }
-    });
+    }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_access_mode_get_service_);
 
@@ -574,7 +604,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
   CHK_SVC(settings_save_service_);
 
@@ -588,7 +618,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-    });
+    }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
   CHK_SVC(settings_load_service_);
 
@@ -611,9 +641,12 @@ void VimbaXCameraNode::start_streaming()
 
       lastFrameId = frame->get_frame_id();
 
-      image_publisher_.publish(*frame);
+      image_publisher_.publish(frame);
 
-      frame->queue();
+      auto const queue_error = frame->queue();
+      if (queue_error != VmbErrorSuccess) {
+        RCLCPP_ERROR(get_logger(), "Frame requeue failed with %d",queue_error);
+      }
     });
 
   RCLCPP_INFO(get_logger(), "Stream started using %ld buffers", buffer_count);

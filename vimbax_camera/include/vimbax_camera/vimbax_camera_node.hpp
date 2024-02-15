@@ -83,6 +83,7 @@ private:
   bool initialize_publisher();
   bool initialize_camera();
   bool initialize_graph_notify();
+  bool initialize_callback_groups();
   bool initialize_services();
 
   void start_streaming();
@@ -146,6 +147,10 @@ private:
     settings_load_service_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+
+  rclcpp::CallbackGroup::SharedPtr feature_callback_group_;
+  rclcpp::CallbackGroup::SharedPtr settings_load_save_callback_group_;
+  rclcpp::CallbackGroup::SharedPtr status_callback_group_; 
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};
