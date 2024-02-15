@@ -16,6 +16,10 @@
 #include <unistd.h>
 #endif
 
+#define CHK_SVC(a) {if (!a) { \
+      return false; \
+    }};
+
 #include <rclcpp/rclcpp.hpp>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
@@ -224,6 +228,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_int_get_service_);
+
   feature_int_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntSet>(
     "~/features/int_set", [this](
@@ -235,6 +241,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_int_set_service_);
 
   feature_int_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntInfoGet>(
@@ -252,6 +260,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_int_info_get_service_);
+
   feature_float_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatGet>(
     "~/features/float_get", [this](
@@ -266,6 +276,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_float_get_service_);
+
   feature_float_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatSet>(
     "~/features/float_set", [this](
@@ -277,6 +289,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_float_set_service_);
 
   feature_float_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatInfoGet>(
@@ -295,6 +309,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_float_info_get_service_);
+
   feature_string_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringGet>(
     "~/features/string_get", [this](
@@ -309,6 +325,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_string_get_service_);
+
   feature_string_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringSet>(
     "~/features/string_set", [this](
@@ -320,6 +338,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_string_set_service_);
 
   feature_string_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringInfoGet>(
@@ -335,6 +355,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_string_info_get_service_);
+
   feature_bool_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureBoolGet>(
     "~/features/bool_get", [this](
@@ -349,6 +371,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_bool_get_service_);
+
   feature_bool_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureBoolSet>(
     "~/features/bool_set", [this](
@@ -360,6 +384,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_bool_set_service_);
 
   feature_command_is_done_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureCommandIsDone>(
@@ -375,6 +401,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_command_is_done_service_);
+
   feature_command_run_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureCommandRun>(
     "~/features/command_run", [this](
@@ -386,6 +414,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_command_run_service_);
 
   feature_enum_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumGet>(
@@ -401,6 +431,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_enum_get_service_);
+
   feature_enum_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumSet>(
     "~/features/enum_set", [this](
@@ -412,6 +444,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_enum_set_service_);
 
   feature_enum_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumInfoGet>(
@@ -427,6 +461,8 @@ bool VimbaXCameraNode::initialize_services()
         response->available_values = (*result)[1];
       }
     });
+
+  CHK_SVC(feature_enum_info_get_service_);
 
   feature_enum_as_int_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsIntGet>(
@@ -444,6 +480,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_enum_as_int_get_service_);
+
   feature_enum_as_string_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsStringGet>(
     "~/features/enum_as_string_get", [this](
@@ -460,6 +498,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_enum_as_string_get_service_);
+
   feature_raw_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawGet>(
     "~/features/raw_get", [this](
@@ -475,6 +515,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_raw_get_service_);
+
   feature_raw_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawSet>(
     "~/features/raw_set", [this](
@@ -486,6 +528,8 @@ bool VimbaXCameraNode::initialize_services()
         response->set__error(result.error().code);
       }
     });
+
+  CHK_SVC(feature_raw_set_service_);
 
   feature_raw_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawInfoGet>(
@@ -500,6 +544,8 @@ bool VimbaXCameraNode::initialize_services()
         response->max_length = *result;
       }
     });
+
+  CHK_SVC(feature_raw_info_get_service_);
 
   feature_access_mode_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureAccessModeGet>(
@@ -516,6 +562,8 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
+  CHK_SVC(feature_access_mode_get_service_);
+
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/save", [this](
@@ -528,9 +576,7 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
-  if (!settings_save_service_) {
-    return false;
-  }
+  CHK_SVC(settings_save_service_);
 
   settings_load_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
@@ -544,9 +590,7 @@ bool VimbaXCameraNode::initialize_services()
       }
     });
 
-  if (!settings_load_service_) {
-    return false;
-  }
+  CHK_SVC(settings_load_service_);
 
   return true;
 }
