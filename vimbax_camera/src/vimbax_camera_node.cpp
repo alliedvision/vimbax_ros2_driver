@@ -228,14 +228,18 @@ bool VimbaXCameraNode::initialize_callback_groups()
     return false;
   }
 
-  settings_load_save_callback_group_ = node_->create_callback_group(
-    rclcpp::CallbackGroupType::MutuallyExclusive);
+  settings_load_save_callback_group_ = 
+    node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
   if (!settings_load_save_callback_group_) {
     return false;
   }
 
   status_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::Reentrant);
+
+  if (!status_callback_group_) {
+    return false;
+  }
 
   return true;
 }
