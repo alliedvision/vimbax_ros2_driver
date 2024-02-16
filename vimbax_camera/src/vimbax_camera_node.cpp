@@ -623,6 +623,45 @@ bool VimbaXCameraNode::initialize_services()
 
   CHK_SVC(settings_load_service_);
 
+  status_service_ = node_->create_service<vimbax_camera_msgs::srv::Status>(
+    "~/status", [this](
+      const vimbax_camera_msgs::srv::Status::Request::ConstSharedPtr,
+      const vimbax_camera_msgs::srv::Status::Response::SharedPtr response)
+    {
+      auto const info = camera_->camera_info_get();
+      if (!info) {
+        response->set__error(info.error().code);
+      } else {
+        response->set__display_name(info->display_name)
+        .set__model_name(info->model_name)
+        .set__device_firmware_version(info->firmware_version)
+        .set__device_id(info->device_id)
+        .set__device_user_id(info->device_user_id)
+        .set__device_serial_number(info->device_serial_number)
+        .set__interface_id(info->interface_id)
+        .set__transport_layer_id(info->transport_layer_id)
+        .set__streaming(info->streaming)
+        .set__width(info->width)
+        .set__height(info->height)
+        .set__frame_rate(info->frame_rate)
+        .set__pixel_format(info->pixel_format)
+        .set__trigger_mode(info->trigger_mode)
+        .set__trigger_source(info->trigger_source);
+
+        if (info->ip_address) {
+          response->set__ip_address(*info->ip_address);
+        }
+
+        if (info->mac_address) {
+          response->set__mac_address(*info->mac_address);
+        }
+      }
+    });
+
+  CHK_SVC(status_service_);
+
+  RCLCPP_INFO(get_logger(), " Service initialization done.");
+
   return true;
 }
 

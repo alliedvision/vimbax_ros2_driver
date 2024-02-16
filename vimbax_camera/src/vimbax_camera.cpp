@@ -142,6 +142,15 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
   RCLCPP_INFO(
     get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
     camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
+
+  auto const timestamp_frequency =
+    feature_int_get("DeviceTimestampFrequency", camera_info_.localDeviceHandle);
+
+  if (timestamp_frequency) {
+    timestamp_frequency_ = *timestamp_frequency;
+  }
+
+  feature_command_run("GVSPAdjustPacketSize", camera_info_.streamHandles[0]);
 }
 
 VimbaXCamera::~VimbaXCamera()
@@ -170,8 +179,13 @@ result<void> VimbaXCamera::start_streaming(
       return error{payloadSizeError};
     }
 
+    auto const alignment_res =
+      feature_int_get(SFNCFeatures::StreamBufferAlignment, camera_info_.streamHandles[0]);
+
+    auto const alignment = alignment_res ? *alignment_res : 1;
+
     for (auto & frame : frames_) {
-      auto newFrame = Frame::create(shared_from_this(), payloadSize, 128);
+      auto newFrame = Frame::create(shared_from_this(), payloadSize, alignment);
 
       if (!newFrame) {
         RCLCPP_ERROR(get_logger(), "Failed to create frame");
@@ -280,19 +294,25 @@ result<bool> VimbaXCamera::feature_command_is_done(const std::string_view & name
 
 result<void> VimbaXCamera::feature_command_run(const std::string_view & name) const
 {
-  auto const runError = api_->FeatureCommandRun(camera_handle_, name.data());
+  return feature_command_run(name, camera_handle_);
+}
 
-  if (runError != VmbErrorSuccess) {
-    return error{runError};
+result<void> VimbaXCamera::feature_command_run(
+  const std::string_view & name, VmbHandle_t handle) const
+{
+  auto const run_error = api_->FeatureCommandRun(handle, name.data());
+
+  if (run_error != VmbErrorSuccess) {
+    return error{run_error};
   }
 
   bool done{false};
-  api_->FeatureCommandIsDone(camera_handle_, name.data(), &done);
+  api_->FeatureCommandIsDone(handle, name.data(), &done);
 
   while (!done) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    api_->FeatureCommandIsDone(camera_handle_, name.data(), &done);
+    api_->FeatureCommandIsDone(handle, name.data(), &done);
   }
 
   return {};
@@ -300,13 +320,20 @@ result<void> VimbaXCamera::feature_command_run(const std::string_view & name) co
 
 result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
 {
+  return feature_int_get(name, camera_handle_);
+}
+
+result<int64_t> VimbaXCamera::feature_int_get(
+  const std::string_view & name,
+  VmbHandle_t handle) const
+{
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
   int64_t value{};
   auto const err =
-    api_->FeatureIntGet(camera_handle_, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
+    api_->FeatureIntGet(handle, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(get_logger(), "%s %s failed with error %d", __FUNCTION__, name.data(), err);
     return error{err};
   }
 
@@ -361,11 +388,17 @@ VimbaXCamera::feature_int_info_get(const std::string_view & name) const
 
 result<_Float64> VimbaXCamera::feature_float_get(const std::string_view & name) const
 {
+  return feature_float_get(name, camera_handle_);
+}
+
+result<_Float64> VimbaXCamera::feature_float_get(
+  const std::string_view & name, VmbHandle_t handle) const
+{
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
   _Float64 value{};
   auto const err =
-    api_->FeatureFloatGet(camera_handle_, name.data(), reinterpret_cast<_Float64 *>(&value));
+    api_->FeatureFloatGet(handle, name.data(), reinterpret_cast<_Float64 *>(&value));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -393,7 +426,6 @@ VimbaXCamera::feature_float_set(const std::string_view & name, const _Float64 va
 result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::string_view & name) const
 {
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
-  std::array<_Float64, 3> value;
   feature_float_info info{};
 
   auto err =
@@ -425,13 +457,18 @@ result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::strin
 
 result<std::string> VimbaXCamera::feature_string_get(const std::string_view & name) const
 {
+  return feature_string_get(name, camera_handle_);
+}
+
+result<std::string> VimbaXCamera::feature_string_get(
+  const std::string_view & name, VmbHandle_t handle) const
+{
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
   uint32_t size_filled{};
   std::string value;
 
-  auto err =
-    api_->FeatureStringGet(camera_handle_, name.data(), nullptr, 0, &size_filled);
+  auto err = api_->FeatureStringGet(handle, name.data(), nullptr, 0, &size_filled);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -439,8 +476,7 @@ result<std::string> VimbaXCamera::feature_string_get(const std::string_view & na
   } else {
     char * buf = static_cast<char *>(malloc(size_filled));
 
-    err =
-      api_->FeatureStringGet(camera_handle_, name.data(), buf, size_filled, &size_filled);
+    err = api_->FeatureStringGet(handle, name.data(), buf, size_filled, &size_filled);
 
     if (err == VmbErrorSuccess) {
       value.assign(buf, size_filled);
@@ -524,10 +560,17 @@ result<void> VimbaXCamera::feature_bool_set(const std::string_view & name, const
 
 result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
 {
+  return feature_enum_get(name, camera_handle_);
+}
+
+result<std::string> VimbaXCamera::feature_enum_get(
+  const std::string_view & name,
+  VmbHandle_t handle) const
+{
   RCLCPP_INFO(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
-  const char * value;
-  auto const err = api_->FeatureEnumGet(camera_handle_, name.data(), &value);
+  const char * value{nullptr};
+  auto const err = api_->FeatureEnumGet(handle, name.data(), &value);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
@@ -830,6 +873,122 @@ VmbFeaturePersistSettings VimbaXCamera::get_default_feature_persist_settings() c
   };
 }
 
+result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
+{
+  Info info{};
+
+  info.display_name = camera_info_.cameraName;
+  info.model_name = camera_info_.modelName;
+
+  auto const firmware_version = feature_string_get(SFNCFeatures::DeviceFirmwareVersion);
+  if (!firmware_version) {
+    return firmware_version.error();
+  }
+  info.firmware_version = *firmware_version;
+
+  info.device_id = camera_info_.cameraIdString;
+
+  auto const device_user_id = feature_string_get(SFNCFeatures::DeviceUserId);
+  if (!device_user_id) {
+    return device_user_id.error();
+  }
+  info.device_user_id = *device_user_id;
+
+  info.device_serial_number = camera_info_.serialString;
+
+
+  auto const interface_id =
+    feature_string_get(SFNCFeatures::InterfaceId, camera_info_.interfaceHandle);
+  if (!interface_id) {
+    return interface_id.error();
+  }
+  info.interface_id = *interface_id;
+
+  auto const transport_layer_id =
+    feature_string_get(SFNCFeatures::TransportLayerId, camera_info_.transportLayerHandle);
+  if (!transport_layer_id) {
+    return transport_layer_id.error();
+  }
+  info.transport_layer_id = *transport_layer_id;
+
+  info.streaming = streaming_;
+
+  auto const width = feature_int_get(SFNCFeatures::Width);
+  if (!width) {
+    return width.error();
+  }
+  info.width = *width;
+
+  auto const height = feature_int_get(SFNCFeatures::Height);
+  if (!height) {
+    return height.error();
+  } else {
+    info.height = *height;
+  }
+
+  auto const frame_rate = feature_float_get(SFNCFeatures::AcquisitionFrameRate);
+  if (!frame_rate) {
+    if (frame_rate.error().code != VmbErrorNotAvailable) {
+      return frame_rate.error();
+    }
+  } else {
+    info.frame_rate = *frame_rate;
+  }
+
+  auto const pixel_format = feature_enum_get(SFNCFeatures::PixelFormat);
+  if (!pixel_format) {
+    return pixel_format.error();
+  } else {
+    info.pixel_format = *pixel_format;
+  }
+
+
+  auto const trigger_mode = feature_enum_get(SFNCFeatures::TriggerMode);
+  if (!trigger_mode) {
+    return trigger_mode.error();
+  } else {
+    info.trigger_mode = *trigger_mode;
+  }
+
+  auto const trigger_source = feature_enum_get(SFNCFeatures::TriggerSource);
+  if (!trigger_source) {
+    if (trigger_source.error().code != VmbErrorNotAvailable) {
+      return trigger_source.error();
+    }
+  } else {
+    info.trigger_source = *trigger_source;
+  }
+
+  auto const ip_address =
+    feature_int_get(SFNCFeatures::GevDeviceIPAddress, camera_info_.localDeviceHandle);
+  if (ip_address) {
+    auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*ip_address));
+    info.ip_address =
+      std::to_string(u8ptr[3]) + "." +
+      std::to_string(u8ptr[2]) + "." +
+      std::to_string(u8ptr[1]) + "." +
+      std::to_string(u8ptr[0]);
+  }
+
+  auto const mac_address =
+    feature_int_get(SFNCFeatures::GevDeviceMACAddress, camera_info_.localDeviceHandle);
+  if (mac_address) {
+    auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*mac_address));
+
+    std::stringstream mac_address_stream{};
+    mac_address_stream << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[5]);
+    for (int i = 4; i >= 0; i--) {
+      mac_address_stream << ":" << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[i]);
+    }
+
+    info.mac_address = mac_address_stream.str();
+  }
+
+
+  return info;
+}
+
+
 bool VimbaXCamera::is_streaming() const
 {
   return streaming_;
@@ -858,14 +1017,29 @@ result<std::shared_ptr<VimbaXCamera::Frame>> VimbaXCamera::Frame::create(
   }
 
   auto const line = *width * bpp / 8;
-  size_t const realSize = *height * line;
+  size_t const real_size = *height * line;
 
-  auto const allocMode = (realSize == size) ? AllocationMode::kByImage : AllocationMode::kByTl;
+  size_t const aligned_size = [&] {
+      if (alignment > 1) {
+        auto const mask = (alignment - 1);
+
+        auto const alignment = mask + 1;
+        auto const offset = (size & mask);
+        auto const offset_to_next = (alignment - offset) & mask;
+
+        return size + offset_to_next;
+      }
+
+      return size;
+    }();
+
+  auto const allocMode =
+    (real_size == aligned_size) ? AllocationMode::kByImage : AllocationMode::kByTl;
 
   std::shared_ptr<VimbaXCamera::Frame> frame(new VimbaXCamera::Frame{camera, allocMode});
 
   if (allocMode == AllocationMode::kByTl) {
-    frame->data.resize(realSize);
+    frame->data.resize(real_size);
 
     frame->vmb_frame_.buffer = nullptr;
     frame->vmb_frame_.bufferSize = size;
@@ -929,18 +1103,14 @@ uint64_t VimbaXCamera::Frame::timestamp_to_ns(uint64_t timestamp)
   if (!camera_.expired()) {
     auto camera = camera_.lock();
 
-    auto const localDeviceHandle = camera->camera_info_.localDeviceHandle;
-    int64_t timestampFrequency{};
-    auto const err = camera->api_->FeatureIntGet(
-      localDeviceHandle, "DeviceTimestampFrequency",
-      reinterpret_cast<VmbInt64_t *>(&timestampFrequency));
-    if (err == VmbErrorSuccess) {
-      RCLCPP_DEBUG(get_logger(), "Using timestamp frequnency %ld", timestampFrequency);
 
-      if (timestampFrequency > std::nano::den) {
-        return timestamp / (timestampFrequency / std::nano::den);
+    if (camera->timestamp_frequency_) {
+      RCLCPP_DEBUG(get_logger(), "Using timestamp frequnency %ld", *camera->timestamp_frequency_);
+
+      if (*camera->timestamp_frequency_ > std::nano::den) {
+        return timestamp / ((*camera->timestamp_frequency_) / std::nano::den);
       } else {
-        return timestamp * (std::nano::den / timestampFrequency);
+        return timestamp * (std::nano::den / (*camera->timestamp_frequency_));
       }
     }
   }
