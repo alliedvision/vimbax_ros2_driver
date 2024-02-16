@@ -49,6 +49,7 @@
 #include <vimbax_camera_msgs/srv/feature_raw_info_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_access_mode_get.hpp>
 #include <vimbax_camera_msgs/srv/settings_load_save.hpp>
+#include <vimbax_camera_msgs/srv/status.hpp>
 
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
@@ -144,6 +145,7 @@ private:
     settings_save_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
     settings_load_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::Status>::SharedPtr status_service_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 
