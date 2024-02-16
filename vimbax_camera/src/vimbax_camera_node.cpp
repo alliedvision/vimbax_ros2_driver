@@ -656,7 +656,7 @@ bool VimbaXCameraNode::initialize_services()
           response->set__mac_address(*info->mac_address);
         }
       }
-    });
+    }, rmw_qos_profile_services_default, status_callback_group_);
 
   CHK_SVC(status_service_);
 
