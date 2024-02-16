@@ -1,6 +1,5 @@
 ---
 int32 error
-bool connected
 string display_name
 string model_name
 string device_firmware_version

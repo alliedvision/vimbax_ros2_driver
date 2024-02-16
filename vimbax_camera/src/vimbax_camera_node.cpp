@@ -601,8 +601,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!info) {
         response->set__error(info.error().code);
       } else {
-        response->set__connected(info->connected)
-        .set__display_name(info->display_name)
+        response->set__display_name(info->display_name)
         .set__model_name(info->model_name)
         .set__device_firmware_version(info->firmware_version)
         .set__device_id(info->device_id)

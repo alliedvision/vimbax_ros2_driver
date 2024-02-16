@@ -877,8 +877,6 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
 {
   Info info{};
 
-  info.connected = true;
-
   info.display_name = camera_info_.cameraName;
   info.model_name = camera_info_.modelName;
 

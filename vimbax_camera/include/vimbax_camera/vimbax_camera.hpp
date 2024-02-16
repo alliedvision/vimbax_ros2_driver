@@ -103,7 +103,6 @@ public:
 
   struct Info
   {
-    bool connected;
     std::string display_name;
     std::string model_name;
     std::string firmware_version;
