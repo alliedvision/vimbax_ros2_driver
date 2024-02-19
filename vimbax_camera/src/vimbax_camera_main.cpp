@@ -26,8 +26,12 @@ int main(int argc, char * argv[])
   auto const node = VimbaXCameraNode::make_shared();
 
   if (node) {
-    rclcpp::spin(node->get_node_base_interface());
+    auto const executor = rclcpp::executors::MultiThreadedExecutor::make_shared();
+    executor->add_node(node->get_node_base_interface());
+    executor->spin();
   }
+
+  rclcpp::shutdown();
 
   return 0;
 }
