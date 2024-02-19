@@ -11,6 +11,7 @@ import signal
 
 from sensor_msgs.msg import Image
 
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("node_name")
@@ -40,5 +41,3 @@ def main():
     node.create_subscription(Image, f"{args.node_name}/image_raw", on_frame, 10)
 
     rclpy.spin_until_future_complete(node, stop_future)
-
-    
