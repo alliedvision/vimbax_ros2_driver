@@ -32,7 +32,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("node_name")
     parser.add_argument("-i", "--info", action="store_true", help="Show frame infos")
-    parser.add_argument("-c", "--count", type=int, default=0, help="Frame count to stream")
+    parser.add_argument("-c", "--count", type=int, default=0, help="Frame count until stop stream")
 
     (args, rosargs) = parser.parse_known_args()
 

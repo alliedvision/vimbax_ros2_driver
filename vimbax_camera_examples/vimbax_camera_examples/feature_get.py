@@ -45,4 +45,4 @@ def main():
         else:
             print(f"{args.feature_name}: {response.value}")
     else:
-        print(f"Gettings feature {args.feature_name} value failed with {response.error}")
+        print(f"Getting feature {args.feature_name} value failed with {response.error}")

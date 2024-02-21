@@ -46,4 +46,4 @@ def main():
     if response.error == 0:
         print_feature_info(response)
     else:
-        print(f"Gettings feature {args.feature_name} value failed with {response.error}")
+        print(f"Getting feature {args.feature_name} info failed with {response.error}")

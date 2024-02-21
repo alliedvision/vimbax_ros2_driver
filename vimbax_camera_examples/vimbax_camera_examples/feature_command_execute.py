@@ -40,4 +40,4 @@ def main():
     if response.error == 0:
         print(f"Successfully executed command {args.feature_name}")
     else:
-        print(f"Gettings feature {args.feature_name} value failed with {response.error}")
+        print(f"Executing command feature {args.feature_name} failed with {response.error}")
