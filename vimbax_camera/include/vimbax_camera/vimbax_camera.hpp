@@ -173,6 +173,10 @@ public:
   result<uint32_t> feature_raw_info_get(const std::string_view & name) const;
   result<std::array<bool, 2>> feature_access_mode_get(const std::string_view & name) const;
 
+  result<std::vector<feature_info>> feature_info_query_list(
+    const std::vector<std::string> & names) const;
+
+
   result<VmbPixelFormatType> get_pixel_format() const;
 
   result<VmbCameraInfo> query_camera_info() const;

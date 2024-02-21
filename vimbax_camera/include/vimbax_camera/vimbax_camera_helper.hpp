@@ -27,6 +27,26 @@ struct feature_float_info
   bool inc_available;
 };
 
+struct feature_flags
+{
+  bool flag_none;
+  bool flag_read;
+  bool flag_write;
+  bool flag_volatile;
+  bool flag_modify_write;
+};
+struct feature_info
+{
+  std::string name;
+  std::string category;
+  std::string display_name;
+  std::string sfnc_namespace;
+  std::string unit;
+  uint32_t data_type;           // Data type corresponding to VmbFeatureDataType
+  feature_flags flags;
+  uint32_t polling_time;
+};
+
 namespace vimbax_camera::helper
 {
 rclcpp::Logger get_logger();

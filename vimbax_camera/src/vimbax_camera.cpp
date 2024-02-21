@@ -771,6 +771,42 @@ VimbaXCamera::feature_access_mode_get(const std::string_view & name) const
   return value;
 }
 
+result<std::vector<feature_info>>
+VimbaXCamera::feature_info_query_list(const std::vector<std::string> & names) const
+{
+  std::vector<feature_info> infos;
+
+  for (auto name : names)
+  {
+    VmbFeatureInfo featureInfo{};
+    feature_info info{};
+
+    auto const err =
+      api_->FeatureInfoQuery(camera_handle_, name.data(), &featureInfo, sizeof(featureInfo));
+
+    if (err != VmbErrorSuccess) {
+      RCLCPP_ERROR(get_logger(), "Reading feature info for '%s' failed with %d", name.data(), err);
+      return error{err};
+    }
+    info.name = std::string(featureInfo.name ? featureInfo.name : "");
+    info.category = std::string(featureInfo.category ? featureInfo.category : "");
+    info.display_name = std::string(featureInfo.displayName ? featureInfo.displayName : "");
+    info.sfnc_namespace = std::string(featureInfo.sfncNamespace ? featureInfo.sfncNamespace : "");
+    info.unit = std::string(featureInfo.unit ? featureInfo.unit : "");
+    info.data_type = static_cast<uint32_t>(featureInfo.featureDataType);
+    info.flags.flag_none = featureInfo.featureDataType == 0;
+    info.flags.flag_read = (featureInfo.featureDataType & VmbFeatureFlagsRead) == VmbFeatureFlagsRead;
+    info.flags.flag_write = (featureInfo.featureDataType & VmbFeatureFlagsWrite) == VmbFeatureFlagsWrite;
+    info.flags.flag_volatile = (featureInfo.featureDataType & VmbFeatureFlagsVolatile) == VmbFeatureFlagsVolatile;
+    info.flags.flag_modify_write = (featureInfo.featureDataType & VmbFeatureFlagsModifyWrite) == VmbFeatureFlagsModifyWrite;
+    info.polling_time = featureInfo.pollingTime;
+
+    infos.push_back(info);
+  }
+
+  return infos;
+}
+
 result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
 {
   auto const featureInfoOpt = feature_info_query(SFNCFeatures::PixelFormat);
@@ -806,7 +842,7 @@ result<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view &
     api_->FeatureInfoQuery(camera_handle_, name.data(), &featureInfo, sizeof(featureInfo));
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Reading feature info for %s failed with %d", name.data(), err);
+    RCLCPP_ERROR(get_logger(), "Reading feature info for '%s' failed with %d", name.data(), err);
     return error{err};
   }
 

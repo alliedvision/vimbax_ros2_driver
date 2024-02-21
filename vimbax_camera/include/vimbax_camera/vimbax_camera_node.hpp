@@ -48,6 +48,7 @@
 #include <vimbax_camera_msgs/srv/feature_raw_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_raw_info_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_access_mode_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_info_query.hpp>
 #include <vimbax_camera_msgs/srv/settings_load_save.hpp>
 #include <vimbax_camera_msgs/srv/status.hpp>
 
@@ -142,6 +143,8 @@ private:
     feature_raw_info_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureAccessModeGet>::SharedPtr
     feature_access_mode_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureInfoQuery>::SharedPtr
+    feature_info_query_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
     settings_save_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr

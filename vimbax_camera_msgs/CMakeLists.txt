@@ -11,6 +11,8 @@ find_package(rosidl_default_generators REQUIRED)
 
 set(vimbax_camera_MSGS
         msg/Dummy.msg #TODO: Delete and replace with actual service definitions
+        msg/FeatureFlags.msg
+        msg/FeatureInfo.msg
 )
 
 set(vimbax_camera_SRVS
@@ -37,6 +39,7 @@ set(vimbax_camera_SRVS
         srv/FeatureRawSet.srv
         srv/FeatureRawInfoGet.srv
         srv/FeatureAccessModeGet.srv
+        srv/FeatureInfoQuery.srv
         srv/SettingsLoadSave.srv
         srv/Status.srv
 )

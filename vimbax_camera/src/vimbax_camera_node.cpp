@@ -595,6 +595,42 @@ bool VimbaXCameraNode::initialize_services()
 
   CHK_SVC(feature_access_mode_get_service_);
 
+  feature_info_query_service_ =
+    node_->create_service<vimbax_camera_msgs::srv::FeatureInfoQuery>(
+    "~/feature_info_query", [this](
+      const vimbax_camera_msgs::srv::FeatureInfoQuery::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureInfoQuery::Response::SharedPtr response)
+    {
+      auto const result = camera_->feature_info_query_list(request->feature_names);
+      if (!result) {
+        response->set__error(result.error().code);
+      } else {
+        auto index{0};
+        response->feature_info.resize((*result).size());
+        for (auto data : (*result))
+        {
+          response->feature_info.at(index).name = data.name;
+          response->feature_info.at(index).category = data.category;
+          response->feature_info.at(index).display_name = data.display_name;
+          response->feature_info.at(index).sfnc_namespace = data.sfnc_namespace;
+          response->feature_info.at(index).unit = data.unit;
+
+          response->feature_info.at(index).data_type = data.data_type;
+          response->feature_info.at(index).flags.flag_none = data.flags.flag_none;
+          response->feature_info.at(index).flags.flag_read = data.flags.flag_read;
+          response->feature_info.at(index).flags.flag_write = data.flags.flag_write;
+          response->feature_info.at(index).flags.flag_volatile = data.flags.flag_volatile;
+          response->feature_info.at(index).flags.flag_modify_write = data.flags.flag_modify_write;
+          response->feature_info.at(index).polling_time = data.polling_time;
+
+          index++;
+        }
+      }
+
+    }, rmw_qos_profile_services_default, feature_callback_group_);
+
+  CHK_SVC(feature_info_query_service_);
+
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/save", [this](
