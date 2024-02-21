@@ -27,6 +27,8 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+install(TARGETS asynchronous_grab_cpp DESTINATION lib/${PROJECT_NAME})
+
 ament_python_install_package(${PROJECT_NAME} SCRIPTS_DESTINATION lib/${PROJECT_NAME})
 
 ament_package()

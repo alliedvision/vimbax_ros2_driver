@@ -23,7 +23,10 @@ int main(int argc, char * argv[])
 {
   auto const args = rclcpp::init_and_remove_ros_arguments(argc, argv);
 
-  auto const stream_count = std::stoi(args[1]);
+  if (args.size() < 2) {
+    std::cout << "Usage asynchronous_grab_cpp <vimbax camera node name>" << std::endl;
+    return 1;
+  }
 
   auto node = rclcpp::Node::make_shared("_asynchronous_grab_cpp");
 
@@ -43,14 +46,10 @@ int main(int argc, char * argv[])
         std::cout << "Detected " << missing << " missing frames!" << std::endl;
       }
 
-
       std::cout << "Got frame " << frame_id << std::endl;
 
       last_frame_id = frame_id;
       frame_count++;
-      if (frame_count >= stream_count) {
-        rclcpp::shutdown();
-      }
     }, "raw");
 
   rclcpp::spin(node);
