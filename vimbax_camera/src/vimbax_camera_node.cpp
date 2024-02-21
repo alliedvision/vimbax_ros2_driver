@@ -631,6 +631,22 @@ bool VimbaXCameraNode::initialize_services()
 
   CHK_SVC(feature_info_query_service_);
 
+  features_list_get_service_ =
+    node_->create_service<vimbax_camera_msgs::srv::FeaturesListGet>(
+    "~/features/list_get", [this](
+      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
+    {
+      auto const result = camera_->features_list_get();
+      if (!result) {
+        response->set__error(result.error().code);
+      } else {
+        response->feature_list = *result;
+      }
+    }, rmw_qos_profile_services_default, feature_callback_group_);
+
+  CHK_SVC(features_list_get_service_);
+
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/save", [this](

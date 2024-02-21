@@ -40,6 +40,7 @@ set(vimbax_camera_SRVS
         srv/FeatureRawInfoGet.srv
         srv/FeatureAccessModeGet.srv
         srv/FeatureInfoQuery.srv
+        srv/FeaturesListGet.srv
         srv/SettingsLoadSave.srv
         srv/Status.srv
 )

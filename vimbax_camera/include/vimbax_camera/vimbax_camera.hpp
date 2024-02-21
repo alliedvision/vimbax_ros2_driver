@@ -138,6 +138,7 @@ public:
   result<void> stop_streaming();
 
   // Feature access
+  result<std::vector<std::string>> features_list_get(void) const;
   result<bool> feature_command_is_done(const std::string_view & name) const;
   result<void> feature_command_run(const std::string_view & name) const;
   result<int64_t> feature_int_get(const std::string_view & name) const;

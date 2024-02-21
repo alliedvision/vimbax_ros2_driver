@@ -26,6 +26,7 @@
 
 #include <image_transport/image_transport.hpp>
 
+#include <vimbax_camera_msgs/srv/features_list_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_info_get.hpp>
@@ -99,6 +100,8 @@ private:
   image_transport::Publisher image_publisher_;
 
   // Services
+  rclcpp::Service<vimbax_camera_msgs::srv::FeaturesListGet>::SharedPtr
+    features_list_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntGet>::SharedPtr
     feature_int_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntSet>::SharedPtr
