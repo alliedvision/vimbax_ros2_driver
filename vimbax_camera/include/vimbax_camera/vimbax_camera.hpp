@@ -211,8 +211,20 @@ public:
 
   bool is_streaming() const;
 
+  result<void> feature_invalidation_register(
+    const std::string_view & name,
+    std::function<void (const std::string &)> callback);
+
+  result<void> feature_invalidation_unregister(const std::string_view & name);
+
+  using EventMetaDataList = std::vector<std::pair<std::string, std::string>>;
+
+  result<EventMetaDataList> get_event_meta_data(const std::string_view & name);
+
 private:
   explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
+
+  static void on_feature_invalidation(VmbHandle_t, const char * name, void * context);
 
   result<void> feature_command_run(const std::string_view & name, VmbHandle_t handle) const;
 
@@ -232,6 +244,13 @@ private:
   bool streaming_{false};
   VmbCameraInfo camera_info_;
   std::optional<uint64_t> timestamp_frequency_;
+  std::unordered_map<std::string, std::function<void (const std::string &)>> 
+    invalidation_callbacks_;
+
+  std::mutex invalidation_callbacks_mutex_{};
+
+  std::unordered_map<std::string, VmbFeatureInfo> feature_info_map_;
+  std::unordered_multimap<std::string, std::string> feature_category_map_;
 };
 
 }  // namespace vimbax_camera

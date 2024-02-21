@@ -15,6 +15,7 @@
   <depend>image_transport</depend>
   <depend>vimbax_camera_msgs</depend>
   <depend>cv_bridge</depend>
+  <depend>vimbax_camera_events</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

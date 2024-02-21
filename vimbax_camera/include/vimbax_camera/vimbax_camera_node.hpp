@@ -53,8 +53,14 @@
 #include <vimbax_camera_msgs/srv/settings_load_save.hpp>
 #include <vimbax_camera_msgs/srv/status.hpp>
 
+#include <vimbax_camera_msgs/msg/event_data.hpp>
+
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
+
+#include <std_msgs/msg/empty.hpp>
+
+#include <vimbax_camera_events/event_publisher.hpp>
 
 
 namespace vimbax_camera
@@ -153,6 +159,12 @@ private:
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
     settings_load_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::Status>::SharedPtr status_service_;
+
+  std::shared_ptr<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>> 
+    feature_invalidation_event_publisher_;
+
+  std::shared_ptr<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>> 
+    event_event_publisher_;  
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 
