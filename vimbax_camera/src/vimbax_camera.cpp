@@ -303,7 +303,7 @@ result<std::vector<std::string>> VimbaXCamera::features_list_get(void) const
     feature_list.push_back(std::string(features[count].name));
   }
 
-  free (features);
+  free(features);
   features = nullptr;
 
   return feature_list;

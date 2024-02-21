@@ -238,6 +238,12 @@ bool VimbaXCameraNode::initialize_callback_groups()
     return false;
   }
 
+  stream_start_stop_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+  if (!stream_start_stop_callback_group_) {
+    return false;
+  }
+
   return true;
 }
 
@@ -712,16 +718,45 @@ bool VimbaXCameraNode::initialize_services()
 
   CHK_SVC(status_service_);
 
+  stream_start_service_ =
+    node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
+    "~/stream_start", [this](
+      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
+    {
+      auto const result = start_streaming();
+      if (!result) {
+        response->set__error(result.error().code);
+      }
+    }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
+
+  CHK_SVC(stream_start_service_);
+
+  stream_stop_service_ =
+    node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
+    "~/stream_stop", [this](
+      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
+    {
+      auto const result = camera_->stop_streaming();
+      if (!result) {
+        response->set__error(result.error().code);
+      }
+
+    }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
+
+  CHK_SVC(stream_stop_service_);
+
   RCLCPP_INFO(get_logger(), " Service initialization done.");
 
   return true;
 }
 
-void VimbaXCameraNode::start_streaming()
+result<void> VimbaXCameraNode::start_streaming()
 {
   auto const buffer_count = node_->get_parameter(parameter_buffer_count).as_int();
 
-  camera_->start_streaming(
+  auto error = camera_->start_streaming(
     buffer_count,
     [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
       static int64_t lastFrameId = -1;
@@ -742,6 +777,7 @@ void VimbaXCameraNode::start_streaming()
     });
 
   RCLCPP_INFO(get_logger(), "Stream started using %ld buffers", buffer_count);
+  return error;
 }
 
 void VimbaXCameraNode::stop_streaming()
