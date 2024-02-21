@@ -288,22 +288,22 @@ result<std::vector<std::string>> VimbaXCamera::features_list_get(void) const
     return error{err};
   }
 
-  VmbFeatureInfo_t * features = static_cast<VmbFeatureInfo_t *>(malloc(feature_count * sizeof(VmbFeatureInfo_t)));
+  VmbFeatureInfo_t * features =
+    static_cast<VmbFeatureInfo_t *>(malloc(feature_count * sizeof(VmbFeatureInfo_t)));
 
-  err =
-    api_->FeaturesList(camera_handle_, features, feature_count, &feature_count, sizeof(VmbFeatureInfo_t));
+  err = api_->FeaturesList(
+    camera_handle_, features, feature_count, &feature_count, sizeof(VmbFeatureInfo_t));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   }
 
-  for (auto count = 0; count<feature_count; count++)
-  {
+  for (auto count = 0; count < feature_count; count++) {
     feature_list.push_back(std::string(features[count].name));
   }
 
-  free (features);
+  free(features);
   features = nullptr;
 
   return feature_list;
