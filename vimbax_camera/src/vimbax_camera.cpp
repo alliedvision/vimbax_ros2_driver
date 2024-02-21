@@ -288,18 +288,18 @@ result<std::vector<std::string>> VimbaXCamera::features_list_get(void) const
     return error{err};
   }
 
-  VmbFeatureInfo_t * features = static_cast<VmbFeatureInfo_t *>(malloc(feature_count * sizeof(VmbFeatureInfo_t)));
+  VmbFeatureInfo_t * features =
+    static_cast<VmbFeatureInfo_t *>(malloc(feature_count * sizeof(VmbFeatureInfo_t)));
 
-  err =
-    api_->FeaturesList(camera_handle_, features, feature_count, &feature_count, sizeof(VmbFeatureInfo_t));
+  err = api_->FeaturesList(
+    camera_handle_, features, feature_count, &feature_count, sizeof(VmbFeatureInfo_t));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
     return error{err};
   }
 
-  for (auto count = 0; count<feature_count; count++)
-  {
+  for (auto count = 0; count < feature_count; count++) {
     feature_list.push_back(std::string(features[count].name));
   }
 
@@ -809,8 +809,7 @@ VimbaXCamera::feature_info_query_list(const std::vector<std::string> & names) co
 {
   std::vector<feature_info> infos;
 
-  for (auto name : names)
-  {
+  for (auto name : names) {
     VmbFeatureInfo featureInfo{};
     feature_info info{};
 
@@ -828,10 +827,14 @@ VimbaXCamera::feature_info_query_list(const std::vector<std::string> & names) co
     info.unit = std::string(featureInfo.unit ? featureInfo.unit : "");
     info.data_type = static_cast<uint32_t>(featureInfo.featureDataType);
     info.flags.flag_none = featureInfo.featureDataType == 0;
-    info.flags.flag_read = (featureInfo.featureDataType & VmbFeatureFlagsRead) == VmbFeatureFlagsRead;
-    info.flags.flag_write = (featureInfo.featureDataType & VmbFeatureFlagsWrite) == VmbFeatureFlagsWrite;
-    info.flags.flag_volatile = (featureInfo.featureDataType & VmbFeatureFlagsVolatile) == VmbFeatureFlagsVolatile;
-    info.flags.flag_modify_write = (featureInfo.featureDataType & VmbFeatureFlagsModifyWrite) == VmbFeatureFlagsModifyWrite;
+    info.flags.flag_read =
+      (featureInfo.featureDataType & VmbFeatureFlagsRead) == VmbFeatureFlagsRead;
+    info.flags.flag_write = (
+      featureInfo.featureDataType & VmbFeatureFlagsWrite) == VmbFeatureFlagsWrite;
+    info.flags.flag_volatile =
+      (featureInfo.featureDataType & VmbFeatureFlagsVolatile) == VmbFeatureFlagsVolatile;
+    info.flags.flag_modify_write =
+      (featureInfo.featureDataType & VmbFeatureFlagsModifyWrite) == VmbFeatureFlagsModifyWrite;
     info.polling_time = featureInfo.pollingTime;
 
     infos.push_back(info);

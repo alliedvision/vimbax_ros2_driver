@@ -613,8 +613,7 @@ bool VimbaXCameraNode::initialize_services()
       } else {
         auto index{0};
         response->feature_info.resize((*result).size());
-        for (auto data : (*result))
-        {
+        for (auto data : (*result)) {
           response->feature_info.at(index).name = data.name;
           response->feature_info.at(index).category = data.category;
           response->feature_info.at(index).display_name = data.display_name;
@@ -632,7 +631,6 @@ bool VimbaXCameraNode::initialize_services()
           index++;
         }
       }
-
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(feature_info_query_service_);
