@@ -770,7 +770,7 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
-      auto const result = camera_->stop_streaming();
+      auto const result = stop_streaming();
       if (!result) {
         response->set__error(result.error().code);
       }
@@ -810,11 +810,12 @@ result<void> VimbaXCameraNode::start_streaming()
   return error;
 }
 
-void VimbaXCameraNode::stop_streaming()
+result<void> VimbaXCameraNode::stop_streaming()
 {
-  camera_->stop_streaming();
+  auto error = camera_->stop_streaming();
 
   RCLCPP_INFO(get_logger(), "Stream stopped");
+  return error;
 }
 
 std::string VimbaXCameraNode::get_node_name()

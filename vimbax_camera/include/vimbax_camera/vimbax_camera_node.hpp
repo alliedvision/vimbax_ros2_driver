@@ -94,7 +94,7 @@ private:
   bool initialize_services();
 
   result<void> start_streaming();
-  void stop_streaming();
+  result<void> stop_streaming();
 
   rclcpp::Node::SharedPtr node_;
   std::shared_ptr<VmbCAPI> api_;
