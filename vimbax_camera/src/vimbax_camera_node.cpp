@@ -108,6 +108,10 @@ bool VimbaXCameraNode::initialize_parameters()
   .set__description("Number of buffers used for streaming").set__integer_range({bufferCountRange});
   node_->declare_parameter(parameter_buffer_count, 7, bufferCountParamDesc);
 
+  auto const autostartStreamParamDesc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Auto start stream while subscribing to image publisher").set__read_only(false);
+  node_->declare_parameter(parameter_autostart_stream, 1, autostartStreamParamDesc);
+
   parameter_callback_handle_ = node_->add_on_set_parameters_callback(
     [this](
       const std::vector<rclcpp::Parameter> & params) -> rcl_interfaces::msg::SetParametersResult {
@@ -199,14 +203,25 @@ bool VimbaXCameraNode::initialize_graph_notify()
     [this] {
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
-        node_->wait_for_graph_change(event, std::chrono::milliseconds(50));
+        node_->wait_for_graph_change(event, std::chrono::milliseconds(500));
+        static auto last_num_subscribers = 0;
+        auto current_num_subscribers = image_publisher_.getNumSubscribers();
 
         if (event->check_and_clear()) {
-          if (image_publisher_.getNumSubscribers() > 0 && !camera_->is_streaming()) {
-            start_streaming();
-          } else if (image_publisher_.getNumSubscribers() == 0 && camera_->is_streaming()) {
-            stop_streaming();
+          if (current_num_subscribers > 0) {
+            if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
+              !camera_->is_streaming() &&
+              (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers)) {
+              start_streaming();
+            }
+          } else {
+            if (camera_->is_streaming()) {
+              stop_streaming();
+            }
+            stream_stopped_by_service_ = false;
           }
+
+          last_num_subscribers = current_num_subscribers;
         }
       }
     });
@@ -741,6 +756,7 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
+      stream_stopped_by_service_ = false;
     }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
 
   CHK_SVC(stream_start_service_);
@@ -755,12 +771,10 @@ bool VimbaXCameraNode::initialize_services()
       if (!result) {
         response->set__error(result.error().code);
       }
-
+      stream_stopped_by_service_ = true;
     }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
 
   CHK_SVC(stream_stop_service_);
-
-  RCLCPP_INFO(get_logger(), " Service initialization done.");
 
   return true;
 }

@@ -79,6 +79,9 @@ private:
   const std::string parameter_camera_id = "camera_id";
   const std::string parameter_settings_file = "settings_file";
   const std::string parameter_buffer_count = "buffer_count";
+  const std::string parameter_autostart_stream = "autostart";
+
+  bool stream_stopped_by_service_ = false;
 
   static std::string get_node_name();
 
