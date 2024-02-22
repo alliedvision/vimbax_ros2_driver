@@ -210,9 +210,11 @@ bool VimbaXCameraNode::initialize_graph_notify()
         if (event->check_and_clear()) {
           if (current_num_subscribers > 0) {
             if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
-              !camera_->is_streaming() &&
-              (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers)) {
+            !camera_->is_streaming() &&
+            (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers))
+            {
               start_streaming();
+              stream_stopped_by_service_ = false;
             }
           } else {
             if (camera_->is_streaming()) {
@@ -253,7 +255,8 @@ bool VimbaXCameraNode::initialize_callback_groups()
     return false;
   }
 
-  stream_start_stop_callback_group_ = node_->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+  stream_start_stop_callback_group_ = node_->create_callback_group(
+    rclcpp::CallbackGroupType::MutuallyExclusive);
 
   if (!stream_start_stop_callback_group_) {
     return false;
