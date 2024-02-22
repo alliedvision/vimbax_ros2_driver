@@ -595,6 +595,71 @@ bool VimbaXCameraNode::initialize_services()
 
   CHK_SVC(feature_access_mode_get_service_);
 
+  feature_info_query_service_ =
+    node_->create_service<vimbax_camera_msgs::srv::FeatureInfoQuery>(
+    "~/feature_info_query", [this](
+      const vimbax_camera_msgs::srv::FeatureInfoQuery::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeatureInfoQuery::Response::SharedPtr response)
+    {
+      std::vector<std::string> feature_names;
+
+      // If our list is empty we want to query infos for all features
+      if (request->feature_names.size() == 0) {
+        auto const result = camera_->features_list_get();
+        if (!result) {
+          response->set__error(result.error().code);
+          return;
+        } else {
+          feature_names = *result;
+        }
+      } else {
+        feature_names = request->feature_names;
+      }
+
+      auto const result = camera_->feature_info_query_list(feature_names);
+      if (!result) {
+        response->set__error(result.error().code);
+      } else {
+        auto index{0};
+        response->feature_info.resize((*result).size());
+        for (auto data : (*result)) {
+          response->feature_info.at(index).name = data.name;
+          response->feature_info.at(index).category = data.category;
+          response->feature_info.at(index).display_name = data.display_name;
+          response->feature_info.at(index).sfnc_namespace = data.sfnc_namespace;
+          response->feature_info.at(index).unit = data.unit;
+
+          response->feature_info.at(index).data_type = data.data_type;
+          response->feature_info.at(index).flags.flag_none = data.flags.flag_none;
+          response->feature_info.at(index).flags.flag_read = data.flags.flag_read;
+          response->feature_info.at(index).flags.flag_write = data.flags.flag_write;
+          response->feature_info.at(index).flags.flag_volatile = data.flags.flag_volatile;
+          response->feature_info.at(index).flags.flag_modify_write = data.flags.flag_modify_write;
+          response->feature_info.at(index).polling_time = data.polling_time;
+
+          index++;
+        }
+      }
+    }, rmw_qos_profile_services_default, feature_callback_group_);
+
+  CHK_SVC(feature_info_query_service_);
+
+  features_list_get_service_ =
+    node_->create_service<vimbax_camera_msgs::srv::FeaturesListGet>(
+    "~/features/list_get", [this](
+      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
+    {
+      auto const result = camera_->features_list_get();
+      if (!result) {
+        response->set__error(result.error().code);
+      } else {
+        response->feature_list = *result;
+      }
+    }, rmw_qos_profile_services_default, feature_callback_group_);
+
+  CHK_SVC(features_list_get_service_);
+
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/save", [this](

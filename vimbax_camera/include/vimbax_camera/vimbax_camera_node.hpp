@@ -26,6 +26,7 @@
 
 #include <image_transport/image_transport.hpp>
 
+#include <vimbax_camera_msgs/srv/features_list_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_info_get.hpp>
@@ -48,6 +49,7 @@
 #include <vimbax_camera_msgs/srv/feature_raw_set.hpp>
 #include <vimbax_camera_msgs/srv/feature_raw_info_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_access_mode_get.hpp>
+#include <vimbax_camera_msgs/srv/feature_info_query.hpp>
 #include <vimbax_camera_msgs/srv/settings_load_save.hpp>
 #include <vimbax_camera_msgs/srv/status.hpp>
 
@@ -98,6 +100,8 @@ private:
   image_transport::Publisher image_publisher_;
 
   // Services
+  rclcpp::Service<vimbax_camera_msgs::srv::FeaturesListGet>::SharedPtr
+    features_list_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntGet>::SharedPtr
     feature_int_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureIntSet>::SharedPtr
@@ -142,6 +146,8 @@ private:
     feature_raw_info_get_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::FeatureAccessModeGet>::SharedPtr
     feature_access_mode_get_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::FeatureInfoQuery>::SharedPtr
+    feature_info_query_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
     settings_save_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
