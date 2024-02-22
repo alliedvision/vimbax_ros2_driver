@@ -69,90 +69,9 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
-  camera_node->feature_invalidation_event_publisher_ = 
-    std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
-      camera_node->node_,
-      "~/feature_invalidation",
-      [camera_node](const std::string & name) -> int32_t {
-        auto const res = camera_node->camera_->feature_invalidation_register(name, [camera_node] (auto name) {
-            camera_node->feature_invalidation_event_publisher_->publish_event(
-              name, std_msgs::msg::Empty{});
-        });
-
-        if (!res) {
-          return res.error().code;
-        }
-
-        return 0;
-      }, 
-      [](const std::string & name) -> void {
-        return;
-      }
-    );
-
-  camera_node->event_event_publisher_ = 
-    std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
-      camera_node->node_,
-      "~/events",
-      [camera_node](const std::string & name) -> int32_t {
-        auto const event_feature_name = "Event" + name;
-
-        auto const sel_res = camera_node->camera_->feature_enum_set("EventSelector", name);
-
-        if (!sel_res) {
-          return sel_res.error().code;
-        }
-
-        auto const on_res = camera_node->camera_->feature_enum_set("EventNotification", "On");
-
-        if (!on_res) {
-          return on_res.error().code;
-        }
-
-
-        auto const res = camera_node->camera_->feature_invalidation_register(event_feature_name, 
-          [camera_node, name] (auto) {
-            auto const res = camera_node->camera_->get_event_meta_data(name);
-
-            vimbax_camera_msgs::msg::EventData data{};
-
-            if (res) {
-              std::transform(res->cbegin(), res->cend(), std::back_inserter(data.entries), [] (auto pair) {
-                return vimbax_camera_msgs::msg::EventDataEntry{}.set__name(pair.first).set__value(pair.second);
-              });
-            }
-
-            camera_node->event_event_publisher_->publish_event(
-              name, data);
-          });
-
-        if (!res) {
-          return res.error().code;
-        }
-
-        return 0;
-      }, 
-      [camera_node](const std::string & name) -> void {
-        auto const event_feature_name = "Event" + name;
-
-
-        camera_node->camera_->feature_invalidation_unregister(event_feature_name);
-
-        auto const sel_res = camera_node->camera_->feature_enum_set("EventSelector", name);
-
-        if (!sel_res) {
-          return;
-        }
-
-        auto const off_res = camera_node->camera_->feature_enum_set("EventNotification", "Off");
-
-        if (!off_res) {
-          return;
-        }
-
-        return;
-      }
-    );
+  if (!camera_node->initialize_events()) {
+    return {};
+  }
 
   if (!camera_node->initialize_graph_notify()) {
     return {};
@@ -176,6 +95,106 @@ VimbaXCameraNode::~VimbaXCameraNode()
   }
 
   camera_.reset();
+}
+
+bool VimbaXCameraNode::initialize_events()
+{
+  feature_invalidation_event_publisher_ =
+    std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
+    node_, "~/feature_invalidation",
+    [this](const std::string & name) -> int32_t
+    {
+      auto const res = camera_->feature_invalidation_register(
+        name, [this](auto name) {
+          feature_invalidation_event_publisher_->publish_event(
+            name, std_msgs::msg::Empty{});
+        });
+
+      if (!res) {
+        return res.error().code;
+      }
+
+      return 0;
+    },
+    [this](const std::string & name) -> void {
+      camera_->feature_invalidation_unregister(name);
+    });
+
+  if (!feature_invalidation_event_publisher_) {
+    return false;
+  }
+
+  event_event_publisher_ =
+    std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
+    node_, "~/events", [this](const std::string & name) -> int32_t
+    {
+      auto const event_feature_name = "Event" + name;
+
+      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+
+      if (!sel_res) {
+        return sel_res.error().code;
+      }
+
+      auto const on_res = camera_->feature_enum_set("EventNotification", "On");
+
+      if (!on_res) {
+        return on_res.error().code;
+      }
+
+
+      auto const res = camera_->feature_invalidation_register(
+        event_feature_name,
+        [this, name](auto)
+        {
+          auto const res = camera_->get_event_meta_data(name);
+
+          vimbax_camera_msgs::msg::EventData data{};
+
+          if (res) {
+            std::transform(
+              res->cbegin(), res->cend(), std::back_inserter(data.entries),
+              [](auto pair) {
+                return vimbax_camera_msgs::msg::EventDataEntry{}
+                .set__name(pair.first).set__value(pair.second);
+              });
+          }
+
+          event_event_publisher_->publish_event(name, data);
+        });
+
+      if (!res) {
+        return res.error().code;
+      }
+
+      return 0;
+    },
+    [this](const std::string & name) -> void {
+      auto const event_feature_name = "Event" + name;
+
+
+      camera_->feature_invalidation_unregister(event_feature_name);
+
+      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+
+      if (!sel_res) {
+        return;
+      }
+
+      auto const off_res = camera_->feature_enum_set("EventNotification", "Off");
+
+      if (!off_res) {
+        return;
+      }
+
+      return;
+    });
+
+  if (!event_event_publisher_) {
+    return false;
+  }
+
+  return true;
 }
 
 bool VimbaXCameraNode::initialize_parameters()

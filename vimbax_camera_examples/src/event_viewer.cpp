@@ -32,18 +32,20 @@ int main(int argc, char * argv[])
 
   auto node = rclcpp::Node::make_shared("_event_viewer");
 
-  auto event_subscriber = vimbax_camera_events::EventSubscriber<vimbax_camera_msgs::msg::EventData>::make_shared(
+  auto event_subscriber =
+    vimbax_camera_events::EventSubscriber<vimbax_camera_msgs::msg::EventData>::make_shared(
     node,
     "/vimbax_camera_test/events"
-  );
+    );
 
 
-  auto event_subscibtion = event_subscriber->subscribe_event(args[1], [&] (auto event_data) {
-    RCLCPP_INFO(node->get_logger(), "Got event meta data:");
-    for (auto const & entry : event_data.entries) {
-      RCLCPP_INFO(node->get_logger(), "%s: %s", entry.name.c_str(), entry.value.c_str());
-    }
-  });
+  auto event_subscibtion = event_subscriber->subscribe_event(
+    args[1], [&](auto event_data) {
+      RCLCPP_INFO(node->get_logger(), "Got event meta data:");
+      for (auto const & entry : event_data.entries) {
+        RCLCPP_INFO(node->get_logger(), "%s: %s", entry.name.c_str(), entry.value.c_str());
+      }
+    });
 
 
   rclcpp::spin(node);

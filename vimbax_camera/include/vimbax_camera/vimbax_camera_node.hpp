@@ -94,6 +94,7 @@ private:
   bool initialize_graph_notify();
   bool initialize_callback_groups();
   bool initialize_services();
+  bool initialize_events();
 
   void start_streaming();
   void stop_streaming();
@@ -160,11 +161,11 @@ private:
     settings_load_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::Status>::SharedPtr status_service_;
 
-  std::shared_ptr<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>> 
+  vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>::SharedPtr
     feature_invalidation_event_publisher_;
 
-  std::shared_ptr<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>> 
-    event_event_publisher_;  
+  vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>::SharedPtr
+    event_event_publisher_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 

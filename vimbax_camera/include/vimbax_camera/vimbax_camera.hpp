@@ -20,6 +20,8 @@
 #include <functional>
 #include <optional>
 #include <vector>
+#include <utility>
+#include <unordered_map>
 
 #include <rclcpp/logger.hpp>
 #include <sensor_msgs/image_encodings.hpp>
@@ -213,7 +215,7 @@ public:
 
   result<void> feature_invalidation_register(
     const std::string_view & name,
-    std::function<void (const std::string &)> callback);
+    std::function<void(const std::string &)> callback);
 
   result<void> feature_invalidation_unregister(const std::string_view & name);
 
@@ -244,8 +246,7 @@ private:
   bool streaming_{false};
   VmbCameraInfo camera_info_;
   std::optional<uint64_t> timestamp_frequency_;
-  std::unordered_map<std::string, std::function<void (const std::string &)>> 
-    invalidation_callbacks_;
+  std::unordered_map<std::string, std::function<void(const std::string &)>> invalidation_callbacks_;
 
   std::mutex invalidation_callbacks_mutex_{};
 

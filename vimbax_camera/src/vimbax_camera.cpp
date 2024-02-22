@@ -160,7 +160,9 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
   std::vector<VmbFeatureInfo_t> feature_list{};
   feature_list.resize(feature_list_size);
 
-  api_->FeaturesList(camera_handle_, feature_list.data(), feature_list.size(), &feature_list_size, sizeof(VmbFeatureInfo_t));
+  api_->FeaturesList(
+    camera_handle_, feature_list.data(), feature_list.size(),
+    &feature_list_size, sizeof(VmbFeatureInfo_t));
 
   for (auto const & info : feature_list) {
     feature_info_map_.emplace(info.name, info);
@@ -1093,7 +1095,7 @@ void VimbaXCamera::on_feature_invalidation(VmbHandle_t, const char * name, void 
 
 result<void> VimbaXCamera::feature_invalidation_register(
   const std::string_view & name,
-  std::function<void (const std::string &)> callback)
+  std::function<void(const std::string &)> callback)
 {
   std::unique_lock lock{invalidation_callbacks_mutex_};
   invalidation_callbacks_.emplace(name, callback);
@@ -1116,7 +1118,7 @@ result<void> VimbaXCamera::feature_invalidation_unregister(const std::string_vie
   invalidation_callbacks_.extract(std::string{name});
   lock.unlock();
 
-  auto const err = 
+  auto const err =
     api_->FeatureInvalidationUnregister(camera_handle_, name.data(), on_feature_invalidation);
 
   if (err != VmbErrorSuccess) {
@@ -1126,8 +1128,8 @@ result<void> VimbaXCamera::feature_invalidation_unregister(const std::string_vie
   return {};
 }
 
-result<VimbaXCamera::EventMetaDataList> 
-  VimbaXCamera::get_event_meta_data(const std::string_view & name)
+result<VimbaXCamera::EventMetaDataList>
+VimbaXCamera::get_event_meta_data(const std::string_view & name)
 {
   auto const category_path = "/EventControl/EventsData/Event" + std::string{name} + "Data";
 
@@ -1137,19 +1139,49 @@ result<VimbaXCamera::EventMetaDataList>
 
   for (auto it = start; it != end; it++) {
     auto const info = feature_info_map_.at(it->second);
-    switch (info.featureDataType)
-    {
-    case VmbFeatureDataInt:
-      {
-        auto const value_res = feature_int_get(it->second);
-        if (value_res) {
-          meta_data_list.emplace_back(it->second, std::to_string(*value_res));
+    switch (info.featureDataType) {
+      case VmbFeatureDataInt:
+        {
+          auto const value_res = feature_int_get(it->second);
+          if (value_res) {
+            meta_data_list.emplace_back(it->second, std::to_string(*value_res));
+          }
         }
-      }
-      break;
-    
-    default:
-      break;
+        break;
+      case VmbFeatureDataBool:
+        {
+          auto const value_res = feature_bool_get(it->second);
+          if (value_res) {
+            meta_data_list.emplace_back(it->second, std::to_string(*value_res));
+          }
+        }
+        break;
+      case VmbFeatureDataFloat:
+        {
+          auto const value_res = feature_float_get(it->second);
+          if (value_res) {
+            meta_data_list.emplace_back(it->second, std::to_string(*value_res));
+          }
+        }
+        break;
+      case VmbFeatureDataString:
+        {
+          auto const value_res = feature_string_get(it->second);
+          if (value_res) {
+            meta_data_list.emplace_back(it->second, *value_res);
+          }
+        }
+        break;
+      case VmbFeatureDataEnum:
+        {
+          auto const value_res = feature_enum_get(it->second);
+          if (value_res) {
+            meta_data_list.emplace_back(it->second, *value_res);
+          }
+        }
+        break;
+      default:
+        break;
     }
   }
 
