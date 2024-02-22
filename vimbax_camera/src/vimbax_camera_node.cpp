@@ -607,7 +607,22 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_info_query_list(request->feature_names);
+      std::vector<std::string> feature_names;
+
+      // If our list is empty we want to query infos for all features
+      if (request->feature_names.size() == 0) {
+        auto const result = camera_->features_list_get();
+        if (!result) {
+          response->set__error(result.error().code);
+          return;
+        } else {
+          feature_names = *result;
+        }
+      } else {
+        feature_names = request->feature_names;
+      }
+
+      auto const result = camera_->feature_info_query_list(feature_names);
       if (!result) {
         response->set__error(result.error().code);
       } else {
