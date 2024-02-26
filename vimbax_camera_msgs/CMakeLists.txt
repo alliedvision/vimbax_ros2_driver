@@ -43,6 +43,7 @@ set(vimbax_camera_SRVS
         srv/FeaturesListGet.srv
         srv/SettingsLoadSave.srv
         srv/Status.srv
+        srv/StreamStartStop.srv
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}
