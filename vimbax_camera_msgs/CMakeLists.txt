@@ -13,6 +13,7 @@ set(vimbax_camera_MSGS
         msg/Dummy.msg #TODO: Delete and replace with actual service definitions
         msg/FeatureFlags.msg
         msg/FeatureInfo.msg
+        msg/Error.msg
 )
 
 set(vimbax_camera_SRVS

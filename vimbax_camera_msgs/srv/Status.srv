@@ -1,5 +1,5 @@
 ---
-int32 error
+Error error
 string display_name
 string model_name
 string device_firmware_version

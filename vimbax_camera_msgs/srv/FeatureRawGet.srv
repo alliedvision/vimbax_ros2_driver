@@ -2,4 +2,4 @@ string feature_name
 ---
 byte[] buffer
 uint32 buffer_size
-int32 error
+Error error

@@ -3,4 +3,4 @@ string feature_name
 int64 min
 int64 max
 int64 inc
-int32 error
+Error error

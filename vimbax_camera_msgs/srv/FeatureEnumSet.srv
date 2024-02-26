@@ -1,4 +1,4 @@
 string feature_name
 string value
 ---
-int32 error
+Error error

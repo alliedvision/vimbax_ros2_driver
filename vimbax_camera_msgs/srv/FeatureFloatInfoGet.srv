@@ -4,4 +4,4 @@ float64 min
 float64 max
 float64 inc
 bool inc_available
-int32 error
+Error error

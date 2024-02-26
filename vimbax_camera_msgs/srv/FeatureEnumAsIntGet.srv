@@ -2,4 +2,4 @@ string feature_name
 string option
 ---
 int64 value
-int32 error
+Error error
