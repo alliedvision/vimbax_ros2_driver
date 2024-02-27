@@ -155,8 +155,7 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
 
 VimbaXCamera::~VimbaXCamera()
 {
-  if (is_alive())
-  {
+  if (is_alive()) {
     stop_streaming();
   }
 
@@ -243,8 +242,7 @@ result<void> VimbaXCamera::stop_streaming()
     return {};
   }
 
-  if (is_alive())
-  {
+  if (is_alive()) {
     auto const acqStopError = feature_command_run(SFNCFeatures::AcquisitionStop);
     if (!acqStopError) {
       RCLCPP_ERROR(get_logger(), "Acquisition stop failed with %d", acqStopError.error().code);
