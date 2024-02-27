@@ -344,10 +344,10 @@ bool VimbaXCameraNode::initialize_graph_notify()
   RCLCPP_INFO(get_logger(), "Initializing graph notify ...");
   graph_notify_thread_ = std::make_unique<std::thread>(
     [this] {
+      size_t last_num_subscribers = 0;
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
         node_->wait_for_graph_change(event, std::chrono::milliseconds(500));
-        static size_t last_num_subscribers = 0;
         auto current_num_subscribers = image_publisher_.getNumSubscribers();
 
         if (restart_)

@@ -83,7 +83,7 @@ private:
   const std::string parameter_buffer_count = "buffer_count";
   const std::string parameter_autostart_stream = "autostart";
 
-  bool stream_stopped_by_service_ = false;
+  std::atomic<bool> stream_stopped_by_service_ = false;
   std::atomic<bool> is_available_ = false;
   std::atomic<bool> restart_ = false;
   std::string last_camera_id;
