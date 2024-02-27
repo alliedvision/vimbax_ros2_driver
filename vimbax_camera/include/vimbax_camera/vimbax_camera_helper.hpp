@@ -47,6 +47,37 @@ struct feature_info
   uint32_t polling_time;
 };
 
+namespace vimbax_camera
+{
+  struct SFNCFeatures
+  {
+    static constexpr std::string_view PixelFormat = "PixelFormat";
+    static constexpr std::string_view AcquisitionStart = "AcquisitionStart";
+    static constexpr std::string_view AcquisitionStop = "AcquisitionStop";
+    static constexpr std::string_view Width = "Width";
+    static constexpr std::string_view Height = "Height";
+    static constexpr std::string_view TriggerMode = "TriggerMode";
+    static constexpr std::string_view TriggerSource = "TriggerSource";
+    static constexpr std::string_view DeviceFirmwareVersion = "DeviceFirmwareVersion";
+    static constexpr std::string_view DeviceUserId = "DeviceUserID";
+    static constexpr std::string_view AcquisitionFrameRate = "AcquisitionFrameRate";
+
+    static constexpr std::string_view InterfaceId = "InterfaceID";
+    static constexpr std::string_view TransportLayerId = "TLID";
+
+    static constexpr std::string_view GevDeviceIPAddress = "GevDeviceIPAddress";
+    static constexpr std::string_view GevDeviceMACAddress = "GevDeviceMACAddress";
+
+    static constexpr std::string_view StreamBufferAlignment = "StreamBufferAlignment";
+
+    static constexpr std::string_view EventSelector = "EventSelector";
+    static constexpr std::string_view EventNotification = "EventNotification";
+    static constexpr std::string_view EventCameraDiscovery = "EventCameraDiscovery";
+    static constexpr std::string_view EventCameraDiscoveryCameraID = "EventCameraDiscoveryCameraID";
+    static constexpr std::string_view EventCameraDiscoveryType = "EventCameraDiscoveryType";
+  };
+}
+
 namespace vimbax_camera::helper
 {
 rclcpp::Logger get_logger();

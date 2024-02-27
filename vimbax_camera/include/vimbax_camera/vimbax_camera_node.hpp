@@ -70,6 +70,8 @@ public:
     const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   NodeBaseInterface::SharedPtr get_node_base_interface() const;
+  static void camera_discovery_callback(const VmbHandle_t handle, const char *name, void *context);
+  void on_camera_discovery_callback(const VmbHandle_t handle, const char *name);
 
 private:
   VimbaXCameraNode() = default;
@@ -82,6 +84,9 @@ private:
   const std::string parameter_autostart_stream = "autostart";
 
   bool stream_stopped_by_service_ = false;
+  std::atomic<bool> is_available_ = false;
+  std::atomic<bool> restart_ = false;
+  std::string last_camera_id;
 
   static std::string get_node_name();
 
@@ -89,9 +94,11 @@ private:
   bool initialize_api();
   bool initialize_publisher();
   bool initialize_camera();
+  bool initialize_camera_observer();
   bool initialize_graph_notify();
   bool initialize_callback_groups();
   bool initialize_services();
+  bool deinitialize_camera_observer();
 
   result<void> start_streaming();
   result<void> stop_streaming();

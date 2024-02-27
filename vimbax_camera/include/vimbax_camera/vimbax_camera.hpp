@@ -78,28 +78,6 @@ public:
     AllocationMode allocation_mode_;
   };
 
-  struct SFNCFeatures
-  {
-    static constexpr std::string_view PixelFormat = "PixelFormat";
-    static constexpr std::string_view AcquisitionStart = "AcquisitionStart";
-    static constexpr std::string_view AcquisitionStop = "AcquisitionStop";
-    static constexpr std::string_view Width = "Width";
-    static constexpr std::string_view Height = "Height";
-    static constexpr std::string_view TriggerMode = "TriggerMode";
-    static constexpr std::string_view TriggerSource = "TriggerSource";
-    static constexpr std::string_view DeviceFirmwareVersion = "DeviceFirmwareVersion";
-    static constexpr std::string_view DeviceUserId = "DeviceUserID";
-    static constexpr std::string_view AcquisitionFrameRate = "AcquisitionFrameRate";
-
-    static constexpr std::string_view InterfaceId = "InterfaceID";
-    static constexpr std::string_view TransportLayerId = "TLID";
-
-
-    static constexpr std::string_view GevDeviceIPAddress = "GevDeviceIPAddress";
-    static constexpr std::string_view GevDeviceMACAddress = "GevDeviceMACAddress";
-
-    static constexpr std::string_view StreamBufferAlignment = "StreamBufferAlignment";
-  };
 
   struct Info
   {
@@ -136,6 +114,8 @@ public:
     std::function<void(std::shared_ptr<Frame>)> onFrame,
     bool startAcquisition = true);
   result<void> stop_streaming();
+
+  bool is_alive();
 
   // Feature access
   result<std::vector<std::string>> features_list_get(void) const;

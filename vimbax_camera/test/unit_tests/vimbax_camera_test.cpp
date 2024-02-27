@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <vimbax_camera/vimbax_camera.hpp>
+#include <vimbax_camera/vimbax_camera_helper.hpp>
 
 #include <gmock/gmock.h>
 
@@ -23,6 +24,7 @@
 
 using ::vimbax_camera::VmbCAPI;
 using ::vimbax_camera::VimbaXCamera;
+using ::vimbax_camera::SFNCFeatures;
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -126,7 +128,7 @@ protected:
 
     EXPECT_CALL(
       *api_mock_,
-      FeatureInfoQuery(&dummy_handle_, Eq(VimbaXCamera::SFNCFeatures::PixelFormat), _, _))
+      FeatureInfoQuery(&dummy_handle_, Eq(vimbax_camera::SFNCFeatures::PixelFormat), _, _))
     .Times(AtLeast(0)).WillRepeatedly(
       [&](auto, auto, VmbFeatureInfo_t * info, auto infoSize) -> int32_t {
         if (infoSize != sizeof(VmbFeatureInfo)) {
@@ -137,7 +139,7 @@ protected:
       });
 
     EXPECT_CALL(
-      *api_mock_, FeatureEnumGet(&dummy_handle_, Eq(VimbaXCamera::SFNCFeatures::PixelFormat), _))
+      *api_mock_, FeatureEnumGet(&dummy_handle_, Eq(vimbax_camera::SFNCFeatures::PixelFormat), _))
     .Times(AtLeast(0)).WillRepeatedly(
       [&](auto, auto, const char ** ptr) -> int32_t {
         *ptr = "Test";
@@ -148,7 +150,7 @@ protected:
       *api_mock_,
       FeatureEnumAsInt(
         &dummy_handle_,
-        Eq(VimbaXCamera::SFNCFeatures::PixelFormat),
+        Eq(vimbax_camera::SFNCFeatures::PixelFormat),
         Eq(std::string("Test")), _))
     .Times(AtLeast(0)).WillRepeatedly(
       [&](auto, auto, auto, VmbInt64_t * iptr) -> int32_t {
@@ -157,14 +159,14 @@ protected:
       });
 
     EXPECT_CALL(
-      *api_mock_, FeatureIntGet(_, Eq(VimbaXCamera::SFNCFeatures::Width), _)).Times(AtLeast(0))
+      *api_mock_, FeatureIntGet(_, Eq(vimbax_camera::SFNCFeatures::Width), _)).Times(AtLeast(0))
     .WillRepeatedly(
       [&](auto, auto, VmbInt64_t * ptr) -> int32_t {
         *ptr = test_width_;
         return VmbErrorSuccess;
       });
     EXPECT_CALL(
-      *api_mock_, FeatureIntGet(_, Eq(VimbaXCamera::SFNCFeatures::Height), _)).Times(AtLeast(0))
+      *api_mock_, FeatureIntGet(_, Eq(vimbax_camera::SFNCFeatures::Height), _)).Times(AtLeast(0))
     .WillRepeatedly(
       [&](auto, auto, VmbInt64_t * ptr) -> int32_t {
         *ptr = test_height_;
@@ -725,7 +727,7 @@ TEST_F(VimbaXCameraOpenedTest, frame_create_format_info_fail)
 {
   auto const infoError = VmbErrorMoreData;
 
-  EXPECT_CALL(*api_mock_, FeatureInfoQuery(_, Eq(VimbaXCamera::SFNCFeatures::PixelFormat), _, _))
+  EXPECT_CALL(*api_mock_, FeatureInfoQuery(_, Eq(SFNCFeatures::PixelFormat), _, _))
   .Times(1).WillOnce(Return(infoError));
 
   EXPECT_CALL(*api_mock_, FrameAnnounce).Times(0);
