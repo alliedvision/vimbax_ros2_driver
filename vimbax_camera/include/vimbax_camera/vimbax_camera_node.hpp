@@ -87,7 +87,8 @@ private:
   std::atomic<bool> stream_stopped_by_service_ = false;
   std::atomic<bool> is_available_ = false;
   std::atomic<bool> restart_ = false;
-  std::string last_camera_id;
+  std::string last_camera_id{};
+  std::mutex camera_mutex_{};
 
   static std::string get_node_name();
 
