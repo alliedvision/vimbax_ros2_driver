@@ -903,7 +903,7 @@ bool VimbaXCameraNode::initialize_services()
   features_list_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeaturesListGet>(
     "~/features/list_get", [this](
-      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
     {
       if (is_available_) {
@@ -1000,7 +1000,7 @@ bool VimbaXCameraNode::initialize_services()
   stream_start_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
     "~/stream_start", [this](
-      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
       if (is_available_) {
@@ -1019,7 +1019,7 @@ bool VimbaXCameraNode::initialize_services()
   stream_stop_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
     "~/stream_stop", [this](
-      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
       if (is_available_) {
