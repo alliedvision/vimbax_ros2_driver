@@ -69,9 +69,14 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
+  if (!camera_node->initialize_events()) {
+    return {};
+  }
+
   if (!camera_node->initialize_graph_notify()) {
     return {};
   }
+
 
   RCLCPP_INFO(get_logger(), "Initialization done.");
   return camera_node;
@@ -90,6 +95,106 @@ VimbaXCameraNode::~VimbaXCameraNode()
   }
 
   camera_.reset();
+}
+
+bool VimbaXCameraNode::initialize_events()
+{
+  feature_invalidation_event_publisher_ =
+    std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
+    node_, "~/feature_invalidation",
+    [this](const std::string & name) -> int32_t
+    {
+      auto const res = camera_->feature_invalidation_register(
+        name, [this](auto name) {
+          feature_invalidation_event_publisher_->publish_event(
+            name, std_msgs::msg::Empty{});
+        });
+
+      if (!res) {
+        return res.error().code;
+      }
+
+      return 0;
+    },
+    [this](const std::string & name) -> void {
+      camera_->feature_invalidation_unregister(name);
+    });
+
+  if (!feature_invalidation_event_publisher_) {
+    return false;
+  }
+
+  event_event_publisher_ =
+    std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
+    node_, "~/events", [this](const std::string & name) -> int32_t
+    {
+      auto const event_feature_name = "Event" + name;
+
+      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+
+      if (!sel_res) {
+        return sel_res.error().code;
+      }
+
+      auto const on_res = camera_->feature_enum_set("EventNotification", "On");
+
+      if (!on_res) {
+        return on_res.error().code;
+      }
+
+
+      auto const res = camera_->feature_invalidation_register(
+        event_feature_name,
+        [this, name](auto)
+        {
+          auto const res = camera_->get_event_meta_data(name);
+
+          vimbax_camera_msgs::msg::EventData data{};
+
+          if (res) {
+            std::transform(
+              res->cbegin(), res->cend(), std::back_inserter(data.entries),
+              [](auto pair) {
+                return vimbax_camera_msgs::msg::EventDataEntry{}
+                .set__name(pair.first).set__value(pair.second);
+              });
+          }
+
+          event_event_publisher_->publish_event(name, data);
+        });
+
+      if (!res) {
+        return res.error().code;
+      }
+
+      return 0;
+    },
+    [this](const std::string & name) -> void {
+      auto const event_feature_name = "Event" + name;
+
+
+      camera_->feature_invalidation_unregister(event_feature_name);
+
+      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+
+      if (!sel_res) {
+        return;
+      }
+
+      auto const off_res = camera_->feature_enum_set("EventNotification", "Off");
+
+      if (!off_res) {
+        return;
+      }
+
+      return;
+    });
+
+  if (!event_event_publisher_) {
+    return false;
+  }
+
+  return true;
 }
 
 bool VimbaXCameraNode::initialize_parameters()
@@ -798,7 +903,7 @@ result<void> VimbaXCameraNode::start_streaming()
 
       lastFrameId = frame->get_frame_id();
 
-      image_publisher_.publish(frame);
+      image_publisher_.publish(*frame);
 
       auto const queue_error = frame->queue();
       if (queue_error != VmbErrorSuccess) {

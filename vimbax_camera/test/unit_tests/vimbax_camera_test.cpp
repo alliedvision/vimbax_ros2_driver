@@ -110,6 +110,9 @@ protected:
     EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummy_handle_, _, _))
     .Times(1).WillOnce(
       [&](auto, VmbCameraInfo_t * ptr, auto) -> VmbError_t {
+        ptr->modelName = "TestCamera";
+        ptr->cameraName = "TestCamera";
+        ptr->serialString = "1234";
         ptr->streamHandles = stream_handles_.data();
         ptr->streamCount = stream_handles_.size();
         return VmbErrorSuccess;

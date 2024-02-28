@@ -14,45 +14,40 @@
 
 import rclpy
 from rclpy.node import Node
-import cv2
-import cv_bridge
-
-from asyncio import Future
-
 import argparse
 
-import signal
-
-from sensor_msgs.msg import Image
+from vimbax_camera_events.event_subscriber import EventSubscriber
+from vimbax_camera_msgs.msg import EventData
 
 
 def main():
-    stop_future = Future()
-
-    def signal_handler(signum, frame):
-        if signum == signal.SIGINT:
-            stop_future.set_result(None)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("node_name")
+    parser.add_argument("events", nargs="+")
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("_stream_opencv")
+    node = Node("_feature_command_execute")
 
-    bridge = cv_bridge.CvBridge()
+    event_subscriber = EventSubscriber(EventData, node, f"/{args.node_name}/events")
 
-    def on_frame(msg: Image):
-        mat = bridge.imgmsg_to_cv2(msg, 'rgb8')
-        cv2.imshow("frame", mat)
-        if cv2.waitKey(1) == 0x1B:
-            stop_future.set_result(None)
+    def print_event_data(event):
+        for entry in event.entries:
+            print(f"  {entry.name}: {entry.value}")
 
-    node.create_subscription(Image, f"{args.node_name}/image_raw", on_frame, 10)
+    event_subscribtions = []
 
-    rclpy.spin_until_future_complete(node, stop_future)
+    for event_name in args.events:
+
+        def event_callback(event):
+            print(f"Got event {event_name}")
+            print_event_data(event)
+
+        event_subscribtions.append(event_subscriber.subscribe_event(event_name, event_callback))
+
+    rclpy.spin(node)
+
+    for event_subscribtion in event_subscribtions:
+        event_subscribtion.destory()
