@@ -97,6 +97,8 @@ VimbaXCameraNode::~VimbaXCameraNode()
     graph_notify_thread_->join();
   }
 
+  std::lock_guard<std::mutex> lock(camera_mutex_);
+
   if (camera_ && camera_->is_streaming()) {
     camera_->stop_streaming();
   }
