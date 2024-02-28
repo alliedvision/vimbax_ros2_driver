@@ -2,4 +2,4 @@ string feature_name
 ---
 string[] possible_values
 string[] available_values
-int32 error
+Error error

@@ -38,7 +38,7 @@ def main():
     response = single_service_call(node, service_type,
                                    f"{args.node_name}/settings/{args.operation}", request)
 
-    if response.error == 0:
+    if response.error.code == 0:
         print(f"Settings {args.operation} was successfull")
     else:
         print(f"Settings {args.operation} failed with {response.error}")

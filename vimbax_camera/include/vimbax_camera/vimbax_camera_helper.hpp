@@ -19,6 +19,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+
 struct feature_float_info
 {
   _Float64 min;
@@ -80,6 +81,9 @@ struct SFNCFeatures
 
 namespace vimbax_camera::helper
 {
+
+std::string_view vmb_error_to_string(int32_t error_code);
+
 rclcpp::Logger get_logger();
 
 rclcpp::Node::SharedPtr create_node(const std::string & name, const rclcpp::NodeOptions & options);

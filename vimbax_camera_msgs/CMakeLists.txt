@@ -13,6 +13,9 @@ set(vimbax_camera_MSGS
         msg/Dummy.msg #TODO: Delete and replace with actual service definitions
         msg/FeatureFlags.msg
         msg/FeatureInfo.msg
+        msg/EventDataEntry.msg
+        msg/EventData.msg
+        msg/Error.msg
 )
 
 set(vimbax_camera_SRVS
@@ -44,6 +47,8 @@ set(vimbax_camera_SRVS
         srv/SettingsLoadSave.srv
         srv/Status.srv
         srv/StreamStartStop.srv
+        srv/SubscribeEvent.srv
+        srv/UnsubscribeEvent.srv
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

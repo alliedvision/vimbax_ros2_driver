@@ -74,9 +74,14 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
+  if (!camera_node->initialize_events()) {
+    return {};
+  }
+
   if (!camera_node->initialize_graph_notify()) {
     return {};
   }
+
 
   RCLCPP_INFO(get_logger(), "Initialization done.");
   return camera_node;
@@ -98,6 +103,106 @@ VimbaXCameraNode::~VimbaXCameraNode()
 
   last_camera_id.clear();
   camera_.reset();
+}
+
+bool VimbaXCameraNode::initialize_events()
+{
+  feature_invalidation_event_publisher_ =
+    std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
+    node_, "~/feature_invalidation",
+    [this](const std::string & name) -> int32_t
+    {
+      auto const res = camera_->feature_invalidation_register(
+        name, [this](auto name) {
+          feature_invalidation_event_publisher_->publish_event(
+            name, std_msgs::msg::Empty{});
+        });
+
+      if (!res) {
+        return res.error().code;
+      }
+
+      return 0;
+    },
+    [this](const std::string & name) -> void {
+      camera_->feature_invalidation_unregister(name);
+    });
+
+  if (!feature_invalidation_event_publisher_) {
+    return false;
+  }
+
+  event_event_publisher_ =
+    std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
+    node_, "~/events", [this](const std::string & name) -> int32_t
+    {
+      auto const event_feature_name = "Event" + name;
+
+      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+
+      if (!sel_res) {
+        return sel_res.error().code;
+      }
+
+      auto const on_res = camera_->feature_enum_set("EventNotification", "On");
+
+      if (!on_res) {
+        return on_res.error().code;
+      }
+
+
+      auto const res = camera_->feature_invalidation_register(
+        event_feature_name,
+        [this, name](auto)
+        {
+          auto const res = camera_->get_event_meta_data(name);
+
+          vimbax_camera_msgs::msg::EventData data{};
+
+          if (res) {
+            std::transform(
+              res->cbegin(), res->cend(), std::back_inserter(data.entries),
+              [](auto pair) {
+                return vimbax_camera_msgs::msg::EventDataEntry{}
+                .set__name(pair.first).set__value(pair.second);
+              });
+          }
+
+          event_event_publisher_->publish_event(name, data);
+        });
+
+      if (!res) {
+        return res.error().code;
+      }
+
+      return 0;
+    },
+    [this](const std::string & name) -> void {
+      auto const event_feature_name = "Event" + name;
+
+
+      camera_->feature_invalidation_unregister(event_feature_name);
+
+      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+
+      if (!sel_res) {
+        return;
+      }
+
+      auto const off_res = camera_->feature_enum_set("EventNotification", "Off");
+
+      if (!off_res) {
+        return;
+      }
+
+      return;
+    });
+
+  if (!event_event_publisher_) {
+    return false;
+  }
+
+  return true;
 }
 
 bool VimbaXCameraNode::initialize_parameters()
@@ -425,12 +530,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_int_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->value = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -446,10 +551,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_int_set(request->feature_name, request->value);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -465,14 +570,14 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_int_info_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->min = (*result)[0];
           response->max = (*result)[1];
           response->inc = (*result)[2];
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -488,12 +593,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_float_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->value = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -509,10 +614,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_float_set(request->feature_name, request->value);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -528,7 +633,7 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_float_info_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->min = (*result).min;
           response->max = (*result).max;
@@ -536,7 +641,7 @@ bool VimbaXCameraNode::initialize_services()
           response->inc_available = (*result).inc_available;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -552,12 +657,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_string_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->value = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -573,10 +678,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_string_set(request->feature_name, request->value);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -592,12 +697,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_string_info_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->max_length = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -613,12 +718,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_bool_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->value = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -634,10 +739,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_bool_set(request->feature_name, request->value);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -653,12 +758,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_command_is_done(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->is_done = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -674,10 +779,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_command_run(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -693,12 +798,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_enum_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->value = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -714,10 +819,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_enum_set(request->feature_name, request->value);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -733,13 +838,13 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_enum_info_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->possible_values = (*result)[0];
           response->available_values = (*result)[1];
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -756,12 +861,12 @@ bool VimbaXCameraNode::initialize_services()
         auto const result =
         camera_->feature_enum_as_int_get(request->feature_name, request->option);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->value = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -779,12 +884,12 @@ bool VimbaXCameraNode::initialize_services()
         camera_->feature_enum_as_string_get(request->feature_name, request->value);
 
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->option = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -801,13 +906,13 @@ bool VimbaXCameraNode::initialize_services()
         auto const result = camera_->feature_raw_get(request->feature_name);
 
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->buffer = *result;
           response->buffer_size = (*result).size();
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -824,10 +929,10 @@ bool VimbaXCameraNode::initialize_services()
         auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
 
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -843,12 +948,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_raw_info_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->max_length = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -864,13 +969,13 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->feature_access_mode_get(request->feature_name);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->is_readable = (*result)[0];
           response->is_writeable = (*result)[1];
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -890,7 +995,7 @@ bool VimbaXCameraNode::initialize_services()
         if (request->feature_names.size() == 0) {
           auto const result = camera_->features_list_get();
           if (!result) {
-            response->set__error(result.error().code);
+            response->set__error(result.error().to_error_msg());
             return;
           } else {
             feature_names = *result;
@@ -901,7 +1006,8 @@ bool VimbaXCameraNode::initialize_services()
 
         auto const result = camera_->feature_info_query_list(feature_names);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
+          return;
         } else {
           auto index{0};
           response->feature_info.resize((*result).size());
@@ -924,7 +1030,7 @@ bool VimbaXCameraNode::initialize_services()
           }
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -940,12 +1046,12 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->features_list_get();
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         } else {
           response->feature_list = *result;
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -961,10 +1067,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->settings_save(request->filename);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
@@ -980,10 +1086,10 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = camera_->settings_load(request->filename);
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
@@ -998,7 +1104,7 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const info = camera_->camera_info_get();
         if (!info) {
-          response->set__error(info.error().code);
+          response->set__error(info.error().to_error_msg());
         } else {
           response->set__display_name(info->display_name)
           .set__model_name(info->model_name)
@@ -1025,7 +1131,7 @@ bool VimbaXCameraNode::initialize_services()
           }
         }
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, status_callback_group_);
 
@@ -1040,11 +1146,11 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = start_streaming();
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
         stream_stopped_by_service_ = false;
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
 
@@ -1059,11 +1165,11 @@ bool VimbaXCameraNode::initialize_services()
       if (is_available_) {
         auto const result = stop_streaming();
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
         }
         stream_stopped_by_service_ = true;
       } else {
-        response->set__error(VmbErrorNotFound);
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
 
@@ -1093,7 +1199,7 @@ result<void> VimbaXCameraNode::start_streaming()
 
       lastFrameId = frame->get_frame_id();
 
-      image_publisher_.publish(frame);
+      image_publisher_.publish(*frame);
 
       auto const queue_error = frame->queue();
       if (queue_error != VmbErrorSuccess) {

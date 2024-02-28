@@ -20,6 +20,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(vimbax_camera_msgs REQUIRED)
+find_package(vimbax_camera_events REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED ${vimbax_camera_node_SRCS})
 target_include_directories(${PROJECT_NAME} PUBLIC
@@ -31,6 +32,7 @@ ament_target_dependencies(
         "rclcpp"
         "image_transport"
         "vimbax_camera_msgs"
+        "vimbax_camera_events"
 )
 
 add_executable(${PROJECT_NAME}_node src/vimbax_camera_main.cpp)

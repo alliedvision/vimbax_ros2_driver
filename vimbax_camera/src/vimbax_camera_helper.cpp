@@ -23,6 +23,9 @@
 #else
 #define ATTRIBUTE_TARGET(tgt)
 #endif
+
+#include <VmbC/VmbCommonTypes.h>
+
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
 
@@ -122,4 +125,96 @@ void left_shift16(void * out, const void * in, ssize_t size, const int shift)
   }
 }
 #endif
+
+
+std::string_view vmb_error_to_string(int32_t error_code)
+{
+  switch (error_code) {
+    case VmbErrorSuccess:
+      return "VmbErrorSuccess";
+    case VmbErrorInternalFault:
+      return "VmbErrorInternalFault";
+    case VmbErrorApiNotStarted:
+      return "VmbErrorApiNotStarted";
+    case VmbErrorNotFound:
+      return "VmbErrorNotFound";
+    case VmbErrorBadHandle:
+      return "VmbErrorBadHandle";
+    case VmbErrorDeviceNotOpen:
+      return "VmbErrorDeviceNotOpen";
+    case VmbErrorInvalidAccess:
+      return "VmbErrorInvalidAccess";
+    case VmbErrorBadParameter:
+      return "VmbErrorBadParameter";
+    case VmbErrorStructSize:
+      return "VmbErrorStructSize";
+    case VmbErrorMoreData:
+      return "VmbErrorMoreData";
+    case VmbErrorWrongType:
+      return "VmbErrorWrongType";
+    case VmbErrorInvalidValue:
+      return "VmbErrorInvalidValue";
+    case VmbErrorTimeout:
+      return "VmbErrorTimeout";
+    case VmbErrorOther:
+      return "VmbErrorOther";
+    case VmbErrorResources:
+      return "VmbErrorResources";
+    case VmbErrorInvalidCall:
+      return "VmbErrorInvalidCall";
+    case VmbErrorNoTL:
+      return "VmbErrorNoTL";
+    case VmbErrorNotImplemented:
+      return "VmbErrorNotImplemented";
+    case VmbErrorNotSupported:
+      return "VmbErrorNotSupported";
+    case VmbErrorIncomplete:
+      return "VmbErrorIncomplete";
+    case VmbErrorIO:
+      return "VmbErrorIO";
+    case VmbErrorValidValueSetNotPresent:
+      return "VmbErrorValidValueSetNotPresent";
+    case VmbErrorGenTLUnspecified:
+      return "VmbErrorGenTLUnspecified";
+    case VmbErrorUnspecified:
+      return "VmbErrorUnspecified";
+    case VmbErrorBusy:
+      return "VmbErrorBusy";
+    case VmbErrorNoData:
+      return "VmbErrorNoData";
+    case VmbErrorParsingChunkData:
+      return "VmbErrorParsingChunkData";
+    case VmbErrorInUse:
+      return "VmbErrorInUse";
+    case VmbErrorUnknown:
+      return "VmbErrorUnknown";
+    case VmbErrorXml:
+      return "VmbErrorXml";
+    case VmbErrorNotAvailable:
+      return "VmbErrorNotAvailable";
+    case VmbErrorNotInitialized:
+      return "VmbErrorNotInitialized";
+    case VmbErrorInvalidAddress:
+      return "VmbErrorInvalidAddress";
+    case VmbErrorAlready:
+      return "VmbErrorAlready";
+    case VmbErrorNoChunkData:
+      return "VmbErrorNoChunkData";
+    case VmbErrorUserCallbackException:
+      return "VmbErrorUserCallbackException";
+    case VmbErrorFeaturesUnavailable:
+      return "VmbErrorFeaturesUnavailable";
+    case VmbErrorTLNotFound:
+      return "VmbErrorTLNotFound";
+    case VmbErrorAmbiguous:
+      return "VmbErrorAmbiguous";
+    case VmbErrorRetriesExceeded:
+      return "VmbErrorRetriesExceeded";
+    case VmbErrorInsufficientBufferCount:
+      return "VmbErrorInsufficientBufferCount";
+    default:
+      return "VmbErrorCustom";
+  }
+}
+
 }  // namespace vimbax_camera::helper

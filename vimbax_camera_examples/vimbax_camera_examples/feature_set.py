@@ -41,7 +41,7 @@ def main():
                                    f"{args.node_name}/{feature_type.service_base_path}_set",
                                    request)
 
-    if response.error == 0:
+    if response.error.code == 0:
         print(f"Changed feature {args.feature_name} to {args.feature_value}")
     else:
         print(f"Setting feature {args.feature_name} value failed with {response.error}")

@@ -37,7 +37,7 @@ def main():
     response = single_service_call(node, feature_service_type,
                                    f"{args.node_name}/features/command_run", request)
 
-    if response.error == 0:
+    if response.error.code == 0:
         print(f"Successfully executed command {args.feature_name}")
     else:
         print(f"Executing command feature {args.feature_name} failed with {response.error}")

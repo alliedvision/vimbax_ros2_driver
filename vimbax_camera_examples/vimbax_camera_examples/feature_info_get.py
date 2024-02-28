@@ -43,7 +43,7 @@ def main():
         node, feature_service_type,
         f"{args.node_name}/{feature_type.service_base_path}_info_get", request)
 
-    if response.error == 0:
+    if response.error.code == 0:
         print_feature_info(response)
     else:
         print(f"Getting feature {args.feature_name} info failed with {response.error}")

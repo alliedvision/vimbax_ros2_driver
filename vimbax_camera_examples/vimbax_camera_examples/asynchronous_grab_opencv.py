@@ -27,6 +27,15 @@ from sensor_msgs.msg import Image
 
 
 def main():
+    stop_future = Future()
+
+    def signal_handler(signum, frame):
+        if signum == signal.SIGINT:
+            stop_future.set_result(None)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("node_name")
 
@@ -37,14 +46,6 @@ def main():
     node = Node("_stream_opencv")
 
     bridge = cv_bridge.CvBridge()
-
-    stop_future = Future()
-
-    def signal_handler(signum, frame):
-        if signum == signal.SIGINT:
-            stop_future.set_result(None)
-
-    signal.signal(signal.SIGINT, signal_handler)
 
     def on_frame(msg: Image):
         mat = bridge.imgmsg_to_cv2(msg, 'rgb8')
