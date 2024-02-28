@@ -312,7 +312,7 @@ result<std::vector<std::string>> VimbaXCamera::features_list_get(void) const
     return error{err};
   }
 
-  for (auto count = 0; count < feature_count; count++) {
+  for (uint32_t count = 0; count < feature_count; count++) {
     feature_list.push_back(std::string(features[count].name));
   }
 
