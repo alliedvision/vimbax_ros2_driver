@@ -45,6 +45,7 @@ set(vimbax_camera_SRVS
         srv/FeaturesListGet.srv
         srv/SettingsLoadSave.srv
         srv/Status.srv
+        srv/StreamStartStop.srv
         srv/SubscribeEvent.srv
         srv/UnsubscribeEvent.srv
 )

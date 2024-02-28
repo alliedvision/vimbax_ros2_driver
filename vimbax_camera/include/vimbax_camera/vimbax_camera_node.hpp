@@ -52,6 +52,7 @@
 #include <vimbax_camera_msgs/srv/feature_info_query.hpp>
 #include <vimbax_camera_msgs/srv/settings_load_save.hpp>
 #include <vimbax_camera_msgs/srv/status.hpp>
+#include <vimbax_camera_msgs/srv/stream_start_stop.hpp>
 
 #include <vimbax_camera_msgs/msg/event_data.hpp>
 
@@ -84,6 +85,9 @@ private:
   const std::string parameter_camera_id = "camera_id";
   const std::string parameter_settings_file = "settings_file";
   const std::string parameter_buffer_count = "buffer_count";
+  const std::string parameter_autostart_stream = "autostart";
+
+  std::atomic<bool> stream_stopped_by_service_ = false;
 
   static std::string get_node_name();
 
@@ -96,8 +100,8 @@ private:
   bool initialize_services();
   bool initialize_events();
 
-  void start_streaming();
-  void stop_streaming();
+  result<void> start_streaming();
+  result<void> stop_streaming();
 
   rclcpp::Node::SharedPtr node_;
   std::shared_ptr<VmbCAPI> api_;
@@ -159,7 +163,12 @@ private:
     settings_save_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::SettingsLoadSave>::SharedPtr
     settings_load_service_;
-  rclcpp::Service<vimbax_camera_msgs::srv::Status>::SharedPtr status_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::Status>::SharedPtr
+    status_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::StreamStartStop>::SharedPtr
+    stream_start_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::StreamStartStop>::SharedPtr
+    stream_stop_service_;
 
   vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>::SharedPtr
     feature_invalidation_event_publisher_;
@@ -172,6 +181,7 @@ private:
   rclcpp::CallbackGroup::SharedPtr feature_callback_group_;
   rclcpp::CallbackGroup::SharedPtr settings_load_save_callback_group_;
   rclcpp::CallbackGroup::SharedPtr status_callback_group_;
+  rclcpp::CallbackGroup::SharedPtr stream_start_stop_callback_group_;
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};
