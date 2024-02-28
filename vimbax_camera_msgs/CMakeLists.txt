@@ -15,6 +15,7 @@ set(vimbax_camera_MSGS
         msg/FeatureInfo.msg
         msg/EventDataEntry.msg
         msg/EventData.msg
+        msg/Error.msg
 )
 
 set(vimbax_camera_SRVS

@@ -18,12 +18,25 @@
 #include <cstdint>
 #include <variant>
 #include <utility>
+#include <string>
+
+#include <vimbax_camera/vimbax_camera_helper.hpp>
+
+
+#include <vimbax_camera_msgs/msg/error.hpp>
+
 
 namespace vimbax_camera
 {
 struct error
 {
   int32_t code;
+
+  vimbax_camera_msgs::msg::Error to_error_msg() const
+  {
+    return vimbax_camera_msgs::msg::Error().set__code(code)
+           .set__text(std::string{vimbax_camera::helper::vmb_error_to_string(code)});
+  }
 };
 
 template<typename T>

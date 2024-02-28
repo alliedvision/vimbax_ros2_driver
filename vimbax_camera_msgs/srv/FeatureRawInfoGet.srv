@@ -1,4 +1,4 @@
 string feature_name
 ---
 int64 max_length
-int32 error
+Error error

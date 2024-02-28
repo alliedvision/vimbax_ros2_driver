@@ -382,7 +382,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_int_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->value = *result;
       }
@@ -398,7 +398,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_int_set(request->feature_name, request->value);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -412,7 +412,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_int_info_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->min = (*result)[0];
         response->max = (*result)[1];
@@ -430,7 +430,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_float_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->value = *result;
       }
@@ -446,7 +446,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_float_set(request->feature_name, request->value);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -460,7 +460,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_float_info_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->min = (*result).min;
         response->max = (*result).max;
@@ -479,7 +479,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_string_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->value = *result;
       }
@@ -495,7 +495,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_string_set(request->feature_name, request->value);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -509,7 +509,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_string_info_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->max_length = *result;
       }
@@ -525,7 +525,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_bool_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->value = *result;
       }
@@ -541,7 +541,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_bool_set(request->feature_name, request->value);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -555,7 +555,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_command_is_done(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->is_done = *result;
       }
@@ -571,7 +571,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_command_run(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -585,7 +585,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_enum_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->value = *result;
       }
@@ -601,7 +601,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_enum_set(request->feature_name, request->value);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -615,7 +615,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_enum_info_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->possible_values = (*result)[0];
         response->available_values = (*result)[1];
@@ -634,7 +634,7 @@ bool VimbaXCameraNode::initialize_services()
       camera_->feature_enum_as_int_get(request->feature_name, request->option);
 
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->value = *result;
       }
@@ -652,7 +652,7 @@ bool VimbaXCameraNode::initialize_services()
       camera_->feature_enum_as_string_get(request->feature_name, request->value);
 
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->option = *result;
       }
@@ -668,7 +668,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_raw_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->buffer = *result;
         response->buffer_size = (*result).size();
@@ -685,7 +685,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -699,7 +699,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_raw_info_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->max_length = *result;
       }
@@ -715,7 +715,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->feature_access_mode_get(request->feature_name);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->is_readable = (*result)[0];
         response->is_writeable = (*result)[1];
@@ -736,7 +736,7 @@ bool VimbaXCameraNode::initialize_services()
       if (request->feature_names.size() == 0) {
         auto const result = camera_->features_list_get();
         if (!result) {
-          response->set__error(result.error().code);
+          response->set__error(result.error().to_error_msg());
           return;
         } else {
           feature_names = *result;
@@ -747,7 +747,7 @@ bool VimbaXCameraNode::initialize_services()
 
       auto const result = camera_->feature_info_query_list(feature_names);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         auto index{0};
         response->feature_info.resize((*result).size());
@@ -781,7 +781,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->features_list_get();
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       } else {
         response->feature_list = *result;
       }
@@ -797,7 +797,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->settings_save(request->filename);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
@@ -811,7 +811,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const result = camera_->settings_load(request->filename);
       if (!result) {
-        response->set__error(result.error().code);
+        response->set__error(result.error().to_error_msg());
       }
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
@@ -824,7 +824,7 @@ bool VimbaXCameraNode::initialize_services()
     {
       auto const info = camera_->camera_info_get();
       if (!info) {
-        response->set__error(info.error().code);
+        response->set__error(info.error().to_error_msg());
       } else {
         response->set__display_name(info->display_name)
         .set__model_name(info->model_name)

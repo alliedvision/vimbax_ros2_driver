@@ -39,7 +39,7 @@ def main():
                                    f"{args.node_name}/{feature_type.service_base_path}_get",
                                    request)
 
-    if response.error == 0:
+    if response.error.code == 0:
         if args.feature_type == "Raw":
             print(f"{args.feature_name}: {len(response.buffer)} {response.buffer}")
         else:

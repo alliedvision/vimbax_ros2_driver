@@ -1,4 +1,4 @@
 string feature_name
 ---
 bool is_done
-int32 error
+Error error
