@@ -114,14 +114,19 @@ bool VimbaXCameraNode::initialize_events()
     node_, "~/feature_invalidation",
     [this](const std::string & name) -> int32_t
     {
-      auto const res = camera_->feature_invalidation_register(
-        name, [this](auto name) {
-          feature_invalidation_event_publisher_->publish_event(
-            name, std_msgs::msg::Empty{});
-        });
+      std::lock_guard<std::mutex> lock(camera_mutex_);
+      if (is_available_) {
+        auto const res = camera_->feature_invalidation_register(
+          name, [this](auto name) {
+            feature_invalidation_event_publisher_->publish_event(
+              name, std_msgs::msg::Empty{});
+          });
 
-      if (!res) {
-        return res.error().code;
+        if (!res) {
+          return res.error().code;
+        }
+      } else {
+        return VmbErrorNotFound;
       }
 
       return 0;
@@ -138,62 +143,72 @@ bool VimbaXCameraNode::initialize_events()
     std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
     node_, "~/events", [this](const std::string & name) -> int32_t
     {
-      auto const event_feature_name = "Event" + name;
+      std::lock_guard<std::mutex> lock(camera_mutex_);
+      if (is_available_) {
+        auto const event_feature_name = "Event" + name;
 
-      auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
+        auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
-      if (!sel_res) {
-        return sel_res.error().code;
-      }
+        if (!sel_res) {
+          return sel_res.error().code;
+        }
 
-      auto const on_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "On");
+        auto const on_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "On");
 
-      if (!on_res) {
-        return on_res.error().code;
-      }
+        if (!on_res) {
+          return on_res.error().code;
+        }
 
 
-      auto const res = camera_->feature_invalidation_register(
-        event_feature_name,
-        [this, name](auto)
-        {
-          auto const res = camera_->get_event_meta_data(name);
+        auto const res = camera_->feature_invalidation_register(
+          event_feature_name,
+          [this, name](auto)
+          {
+            auto const res = camera_->get_event_meta_data(name);
 
-          vimbax_camera_msgs::msg::EventData data{};
+            vimbax_camera_msgs::msg::EventData data{};
 
-          if (res) {
-            std::transform(
-              res->cbegin(), res->cend(), std::back_inserter(data.entries),
-              [](auto pair) {
-                return vimbax_camera_msgs::msg::EventDataEntry{}
-                .set__name(pair.first).set__value(pair.second);
-              });
-          }
+            if (res) {
+              std::transform(
+                res->cbegin(), res->cend(), std::back_inserter(data.entries),
+                [](auto pair) {
+                  return vimbax_camera_msgs::msg::EventDataEntry{}
+                  .set__name(pair.first).set__value(pair.second);
+                });
+            }
 
-          event_event_publisher_->publish_event(name, data);
-        });
+            event_event_publisher_->publish_event(name, data);
+          });
 
-      if (!res) {
-        return res.error().code;
+        if (!res) {
+          return res.error().code;
+        }
+      } else {
+        return VmbErrorNotFound;
       }
 
       return 0;
     },
     [this](const std::string & name) -> void {
-      auto const event_feature_name = "Event" + name;
+      std::lock_guard<std::mutex> lock(camera_mutex_);
+      if (is_available_) {
+        auto const event_feature_name = "Event" + name;
 
 
-      camera_->feature_invalidation_unregister(event_feature_name);
+        camera_->feature_invalidation_unregister(event_feature_name);
 
-      auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
+        auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
-      if (!sel_res) {
-        return;
-      }
+        if (!sel_res) {
+          return;
+        }
 
-      auto const off_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "Off");
+        auto const off_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "Off");
 
-      if (!off_res) {
+        if (!off_res) {
+          return;
+        }
+      } else {
         return;
       }
 
