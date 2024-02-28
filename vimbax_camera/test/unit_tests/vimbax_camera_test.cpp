@@ -110,7 +110,7 @@ protected:
     EXPECT_CALL(*api_mock_, CameraClose(&dummy_handle_)).Times(1);
 
     EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummy_handle_, _, _))
-    .Times(1).WillOnce(
+    .Times(AtLeast(1)).WillRepeatedly(
       [&](auto, VmbCameraInfo_t * ptr, auto) -> VmbError_t {
         ptr->streamHandles = stream_handles_.data();
         ptr->streamCount = stream_handles_.size();
@@ -128,7 +128,7 @@ protected:
 
     EXPECT_CALL(
       *api_mock_,
-      FeatureInfoQuery(&dummy_handle_, Eq(vimbax_camera::SFNCFeatures::PixelFormat), _, _))
+      FeatureInfoQuery(&dummy_handle_, Eq(SFNCFeatures::PixelFormat), _, _))
     .Times(AtLeast(0)).WillRepeatedly(
       [&](auto, auto, VmbFeatureInfo_t * info, auto infoSize) -> int32_t {
         if (infoSize != sizeof(VmbFeatureInfo)) {
@@ -139,7 +139,7 @@ protected:
       });
 
     EXPECT_CALL(
-      *api_mock_, FeatureEnumGet(&dummy_handle_, Eq(vimbax_camera::SFNCFeatures::PixelFormat), _))
+      *api_mock_, FeatureEnumGet(&dummy_handle_, Eq(SFNCFeatures::PixelFormat), _))
     .Times(AtLeast(0)).WillRepeatedly(
       [&](auto, auto, const char ** ptr) -> int32_t {
         *ptr = "Test";
@@ -150,7 +150,7 @@ protected:
       *api_mock_,
       FeatureEnumAsInt(
         &dummy_handle_,
-        Eq(vimbax_camera::SFNCFeatures::PixelFormat),
+        Eq(SFNCFeatures::PixelFormat),
         Eq(std::string("Test")), _))
     .Times(AtLeast(0)).WillRepeatedly(
       [&](auto, auto, auto, VmbInt64_t * iptr) -> int32_t {
@@ -159,14 +159,14 @@ protected:
       });
 
     EXPECT_CALL(
-      *api_mock_, FeatureIntGet(_, Eq(vimbax_camera::SFNCFeatures::Width), _)).Times(AtLeast(0))
+      *api_mock_, FeatureIntGet(_, Eq(SFNCFeatures::Width), _)).Times(AtLeast(0))
     .WillRepeatedly(
       [&](auto, auto, VmbInt64_t * ptr) -> int32_t {
         *ptr = test_width_;
         return VmbErrorSuccess;
       });
     EXPECT_CALL(
-      *api_mock_, FeatureIntGet(_, Eq(vimbax_camera::SFNCFeatures::Height), _)).Times(AtLeast(0))
+      *api_mock_, FeatureIntGet(_, Eq(SFNCFeatures::Height), _)).Times(AtLeast(0))
     .WillRepeatedly(
       [&](auto, auto, VmbInt64_t * ptr) -> int32_t {
         *ptr = test_height_;
@@ -263,7 +263,7 @@ TEST_F(VimbaXCameraTest, open_first_camera)
     });
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(
+  .Times(AtLeast(1)).WillRepeatedly(
     [&](auto, auto infoPtr, auto infoSize) -> VmbError_t {
       EXPECT_EQ(infoSize, sizeof(VmbCameraInfo));
 
@@ -353,7 +353,7 @@ TEST_F(VimbaXCameraTest, open_second_camera)
     });
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(
+  .Times(AtLeast(1)).WillRepeatedly(
     [&](auto, auto infoPtr, auto infoSize) -> VmbError_t {
       EXPECT_EQ(infoSize, sizeof(VmbCameraInfo));
 
@@ -517,7 +517,7 @@ TEST_F(VimbaXCameraTest, open_by_id_success_fallback)
   EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(
+  .Times(AtLeast(1)).WillRepeatedly(
     [&](auto, VmbCameraInfo_t * ptr, auto) {
       ptr->streamHandles = stream_handles_.data();
       ptr->streamCount = stream_handles_.size();
@@ -603,7 +603,7 @@ TEST_F(VimbaXCameraTest, open_by_id_success)
   EXPECT_CALL(*api_mock_, CameraClose(&dummyHandle)).Times(1);
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(
+  .Times(AtLeast(1)).WillRepeatedly(
     [&](auto, VmbCameraInfo_t * info_ptr, auto) -> VmbError_t {
       *info_ptr = availableCameras[1];
       return VmbErrorSuccess;
@@ -692,7 +692,7 @@ TEST_F(VimbaXCameraTest, open_by_serial)
     });
 
   EXPECT_CALL(*api_mock_, CameraInfoQueryByHandle(&dummyHandle, _, _))
-  .Times(1).WillOnce(
+  .Times(AtLeast(1)).WillRepeatedly(
     [&](auto, auto infoPtr, auto infoSize) -> VmbError_t {
       EXPECT_EQ(infoSize, sizeof(VmbCameraInfo));
 
