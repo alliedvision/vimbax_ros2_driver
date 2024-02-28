@@ -54,8 +54,14 @@
 #include <vimbax_camera_msgs/srv/status.hpp>
 #include <vimbax_camera_msgs/srv/stream_start_stop.hpp>
 
+#include <vimbax_camera_msgs/msg/event_data.hpp>
+
 #include <vimbax_camera/loader/vmbc_api.hpp>
 #include <vimbax_camera/vimbax_camera.hpp>
+
+#include <std_msgs/msg/empty.hpp>
+
+#include <vimbax_camera_events/event_publisher.hpp>
 
 
 namespace vimbax_camera
@@ -92,6 +98,7 @@ private:
   bool initialize_graph_notify();
   bool initialize_callback_groups();
   bool initialize_services();
+  bool initialize_events();
 
   result<void> start_streaming();
   result<void> stop_streaming();
@@ -162,6 +169,12 @@ private:
     stream_start_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::StreamStartStop>::SharedPtr
     stream_stop_service_;
+
+  vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>::SharedPtr
+    feature_invalidation_event_publisher_;
+
+  vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>::SharedPtr
+    event_event_publisher_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
 

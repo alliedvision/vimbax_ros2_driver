@@ -29,6 +29,15 @@ frames_missing = 0
 
 
 def main():
+    stop_future = Future()
+
+    def signal_handler(signum, frame):
+        if signum == signal.SIGINT:
+            stop_future.set_result(None)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("node_name")
     parser.add_argument("-i", "--info", action="store_true", help="Show frame infos")
@@ -38,13 +47,14 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    stop_future = Future()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("node_name")
+    parser.add_argument("-i", "--info", action="store_true", help="Show frame infos")
+    parser.add_argument("-c", "--count", type=int, default=0, help="Frame count until stop stream")
 
-    def signal_handler(signum, frame):
-        if signum == signal.SIGINT:
-            stop_future.set_result(None)
+    (args, rosargs) = parser.parse_known_args()
 
-    signal.signal(signal.SIGINT, signal_handler)
+    rclpy.init(args=rosargs)
 
     node = Node("_asynchronous_grab")
 

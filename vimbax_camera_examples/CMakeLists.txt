@@ -12,6 +12,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(vimbax_camera_msgs REQUIRED)
+find_package(vimbax_camera_events REQUIRED)
 
 add_executable(asynchronous_grab_cpp src/asynchronous_grab.cpp)
 ament_target_dependencies(
@@ -21,6 +22,14 @@ ament_target_dependencies(
         "vimbax_camera_msgs"
 )
 
+add_executable(event_viewer_cpp src/event_viewer.cpp)
+ament_target_dependencies(
+        event_viewer_cpp
+        "rclcpp"
+        "image_transport"
+        "vimbax_camera_msgs"
+        "vimbax_camera_events"
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
