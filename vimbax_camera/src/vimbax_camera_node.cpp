@@ -140,13 +140,13 @@ bool VimbaXCameraNode::initialize_events()
     {
       auto const event_feature_name = "Event" + name;
 
-      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+      auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
       if (!sel_res) {
         return sel_res.error().code;
       }
 
-      auto const on_res = camera_->feature_enum_set("EventNotification", "On");
+      auto const on_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "On");
 
       if (!on_res) {
         return on_res.error().code;
@@ -185,13 +185,13 @@ bool VimbaXCameraNode::initialize_events()
 
       camera_->feature_invalidation_unregister(event_feature_name);
 
-      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+      auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
       if (!sel_res) {
         return;
       }
 
-      auto const off_res = camera_->feature_enum_set("EventNotification", "Off");
+      auto const off_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "Off");
 
       if (!off_res) {
         return;
