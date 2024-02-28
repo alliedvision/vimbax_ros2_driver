@@ -167,9 +167,9 @@ VimbaXCamera::~VimbaXCamera()
 
 bool VimbaXCamera::is_alive()
 {
-  VmbCameraInfo cameraInfo{};
+  VmbCameraInfo camera_info{};
 
-  auto const err = api_->CameraInfoQueryByHandle(camera_handle_, &cameraInfo, sizeof(cameraInfo));
+  auto const err = api_->CameraInfoQueryByHandle(camera_handle_, &camera_info, sizeof(camera_info));
 
   return (err == VmbErrorNotFound) ? false : true;
 }

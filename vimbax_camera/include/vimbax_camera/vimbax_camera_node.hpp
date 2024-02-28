@@ -86,7 +86,7 @@ private:
 
   std::atomic<bool> stream_stopped_by_service_ = false;
   std::atomic<bool> is_available_ = false;
-  std::atomic<bool> restart_ = false;
+  std::atomic<bool> stream_restart_required_ = false;
   std::string last_camera_id{};
   std::mutex camera_mutex_{};
 
@@ -95,7 +95,7 @@ private:
   bool initialize_parameters();
   bool initialize_api();
   bool initialize_publisher();
-  bool initialize_camera();
+  bool initialize_camera(bool reconnect = false);
   bool initialize_camera_observer();
   bool initialize_graph_notify();
   bool initialize_callback_groups();
