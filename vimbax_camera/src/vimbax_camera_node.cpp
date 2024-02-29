@@ -115,7 +115,7 @@ VimbaXCameraNode::~VimbaXCameraNode()
     camera_->stop_streaming();
   }
 
-  last_camera_id.clear();
+  last_camera_id_.clear();
   camera_.reset();
 }
 
@@ -318,8 +318,8 @@ bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
 {
   RCLCPP_INFO(get_logger(), "Initializing camera ...");
   camera_ = VimbaXCamera::open(
-    api_, last_camera_id.empty() ?
-    node_->get_parameter(parameter_camera_id).as_string() : last_camera_id);
+    api_, last_camera_id_.empty() ?
+    node_->get_parameter(parameter_camera_id).as_string() : last_camera_id_);
 
   if (!camera_) {
     if (reconnect) {
@@ -333,7 +333,7 @@ bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
 
   auto const result = camera_->query_camera_info();
   if (result) {
-    last_camera_id = (*result).cameraIdString;
+    last_camera_id_ = (*result).cameraIdString;
   }
 
   auto const settingsFile = node_->get_parameter(parameter_settings_file).as_string();
@@ -444,10 +444,10 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
     err = api_->FeatureEnumGet(handle, SFNCFeatures::EventCameraDiscoveryType.data(), &reason);
     if (err == VmbErrorSuccess) {
       if (std::strcmp(reason, "Missing") == 0) {
-        if ((camera_id.find(last_camera_id) != std::string::npos) && camera_) {
+        if ((camera_id.find(last_camera_id_) != std::string::npos) && camera_) {
           RCLCPP_ERROR(
             get_logger(), "%s: Camera '%s' disconnected. Waiting for reconnection...",
-            __FUNCTION__, last_camera_id.c_str());
+            __FUNCTION__, last_camera_id_.c_str());
           stream_restart_required = camera_->is_streaming();
           std::unique_lock lock{camera_mutex_};
           is_available_ = false;
@@ -455,9 +455,9 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
           lock.unlock();
         }
       } else if (std::strcmp(reason, "Detected") == 0) {
-        if (camera_id.find(last_camera_id) != std::string::npos) {
+        if (camera_id.find(last_camera_id_) != std::string::npos) {
           RCLCPP_INFO(
-            get_logger(), "%s: Camera '%s' reconnected.", __FUNCTION__, last_camera_id.c_str());
+            get_logger(), "%s: Camera '%s' reconnected.", __FUNCTION__, last_camera_id_.c_str());
 
           if (initialize_camera(true)) {
             // Notify graph context that a stream restart is required
