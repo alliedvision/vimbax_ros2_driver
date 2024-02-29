@@ -61,6 +61,7 @@ class TestNode(rclpy.node.Node):
 
     def unsubscribe_image_raw(self):
         assert self.destroy_subscription(self.image_subscribtion)
+        time.sleep(0.1)
         self.clear_queue()
 
     def wait_for_frame(self, timeout: float) -> Image:
