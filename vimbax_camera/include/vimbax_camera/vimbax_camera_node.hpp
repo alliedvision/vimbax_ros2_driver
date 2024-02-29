@@ -105,7 +105,10 @@ private:
   bool initialize_camera_observer();
   bool initialize_graph_notify();
   bool initialize_callback_groups();
-  bool initialize_services();
+  bool initialize_feature_services();
+  bool initialize_settings_services();
+  bool initialize_status_services();
+  bool initialize_stream_services();
   bool initialize_events();
   bool deinitialize_camera_observer();
 

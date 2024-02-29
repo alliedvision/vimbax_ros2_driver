@@ -70,7 +70,19 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
-  if (!camera_node->initialize_services()) {
+  if (!camera_node->initialize_feature_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_settings_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_status_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_stream_services()) {
     return {};
   }
 
@@ -83,7 +95,7 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
   }
 
 
-  RCLCPP_INFO(get_logger(), "Initialization done.");
+  RCLCPP_INFO(get_logger(), "Initialization done!");
   return camera_node;
 }
 
@@ -203,7 +215,8 @@ bool VimbaXCameraNode::initialize_events()
           return;
         }
 
-        auto const off_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "Off");
+        auto const off_res = camera_->feature_enum_set(
+          SFNCFeatures::EventNotification.data(), "Off");
 
         if (!off_res) {
           return;
@@ -533,9 +546,9 @@ bool VimbaXCameraNode::initialize_callback_groups()
   return true;
 }
 
-bool VimbaXCameraNode::initialize_services()
+bool VimbaXCameraNode::initialize_feature_services()
 {
-  RCLCPP_INFO(get_logger(), "Initializing services ...");
+  RCLCPP_INFO(get_logger(), "Initializing feature services ...");
 
   feature_int_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntGet>(
@@ -1074,6 +1087,13 @@ bool VimbaXCameraNode::initialize_services()
 
   CHK_SVC(features_list_get_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_settings_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing settings services ...");
+
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
     "~/settings/save", [this](
@@ -1111,6 +1131,13 @@ bool VimbaXCameraNode::initialize_services()
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
   CHK_SVC(settings_load_service_);
+
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_status_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing status services ...");
 
   status_service_ = node_->create_service<vimbax_camera_msgs::srv::Status>(
     "~/status", [this](
@@ -1153,6 +1180,13 @@ bool VimbaXCameraNode::initialize_services()
     }, rmw_qos_profile_services_default, status_callback_group_);
 
   CHK_SVC(status_service_);
+
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_stream_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing stream services ...");
 
   stream_start_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
