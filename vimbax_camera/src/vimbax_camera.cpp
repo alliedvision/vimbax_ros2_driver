@@ -1345,7 +1345,6 @@ void VimbaXCamera::Frame::on_frame_ready()
   width = vmb_frame_.width;
   height = vmb_frame_.height;
   is_bigendian = false;
-  header.frame_id = std::to_string(vmb_frame_.frameID);
   std::chrono::nanoseconds vmbTimeStamp{timestamp_to_ns(vmb_frame_.timestamp)};
   auto const seconds = std::chrono::floor<std::chrono::seconds>(vmbTimeStamp);
   auto const nanoseconds =

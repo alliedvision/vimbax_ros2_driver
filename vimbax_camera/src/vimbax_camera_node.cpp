@@ -253,6 +253,10 @@ bool VimbaXCameraNode::initialize_parameters()
   .set__description("Auto start stream while subscribing to image publisher").set__read_only(false);
   node_->declare_parameter(parameter_autostart_stream, 1, autostartStreamParamDesc);
 
+  auto const camera_frame_id_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Frame id of published images").set__read_only(true);
+  node_->declare_parameter(parameter_frame_id, get_node_name(), camera_frame_id_param_desc);
+
   parameter_callback_handle_ = node_->add_on_set_parameters_callback(
     [this](
       const std::vector<rclcpp::Parameter> & params) -> rcl_interfaces::msg::SetParametersResult {
@@ -1263,6 +1267,7 @@ result<void> VimbaXCameraNode::start_streaming()
       }
 
       lastFrameId = frame->get_frame_id();
+      frame->header.set__frame_id(node_->get_parameter(parameter_frame_id).as_string());
 
       image_publisher_.publish(*frame);
 

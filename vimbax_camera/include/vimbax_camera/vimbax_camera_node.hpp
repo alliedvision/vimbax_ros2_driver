@@ -90,6 +90,7 @@ private:
   const std::string parameter_settings_file = "settings_file";
   const std::string parameter_buffer_count = "buffer_count";
   const std::string parameter_autostart_stream = "autostart";
+  const std::string parameter_frame_id = "camera_frame_id";
 
   std::atomic_bool stream_stopped_by_service_ = false;
   std::atomic_bool is_available_ = false;
