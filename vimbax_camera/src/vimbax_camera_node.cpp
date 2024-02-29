@@ -109,7 +109,7 @@ VimbaXCameraNode::~VimbaXCameraNode()
     graph_notify_thread_->join();
   }
 
-  std::lock_guard<std::mutex> lock(camera_mutex_);
+  std::unique_lock lock(camera_mutex_);
 
   if (camera_ && camera_->is_streaming()) {
     camera_->stop_streaming();
@@ -126,7 +126,7 @@ bool VimbaXCameraNode::initialize_events()
     node_, "~/feature_invalidation",
     [this](const std::string & name) -> int32_t
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const res = camera_->feature_invalidation_register(
           name, [this](auto name) {
@@ -155,7 +155,7 @@ bool VimbaXCameraNode::initialize_events()
     std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
     node_, "~/events", [this](const std::string & name) -> int32_t
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const event_feature_name = "Event" + name;
 
@@ -170,7 +170,6 @@ bool VimbaXCameraNode::initialize_events()
         if (!on_res) {
           return on_res.error().code;
         }
-
 
         auto const res = camera_->feature_invalidation_register(
           event_feature_name,
@@ -202,10 +201,9 @@ bool VimbaXCameraNode::initialize_events()
       return 0;
     },
     [this](const std::string & name) -> void {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const event_feature_name = "Event" + name;
-
 
         camera_->feature_invalidation_unregister(event_feature_name);
 
@@ -317,6 +315,8 @@ bool VimbaXCameraNode::initialize_publisher()
 bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
 {
   RCLCPP_INFO(get_logger(), "Initializing camera ...");
+
+  std::unique_lock lock(camera_mutex_);
   camera_ = VimbaXCamera::open(
     api_, last_camera_id_.empty() ?
     node_->get_parameter(parameter_camera_id).as_string() : last_camera_id_);
@@ -448,11 +448,11 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
           RCLCPP_ERROR(
             get_logger(), "%s: Camera '%s' disconnected. Waiting for reconnection...",
             __FUNCTION__, last_camera_id_.c_str());
+
           stream_restart_required = camera_->is_streaming();
           std::unique_lock lock{camera_mutex_};
           is_available_ = false;
           camera_.reset();
-          lock.unlock();
         }
       } else if (std::strcmp(reason, "Detected") == 0) {
         if (camera_id.find(last_camera_id_) != std::string::npos) {
@@ -467,6 +467,10 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
         }
       }
     }
+  } else {
+    RCLCPP_ERROR(
+      get_logger(), "%s: Error while accessing EventCameraDiscoveryCameraID: %d", __FUNCTION__,
+      err);
   }
 }
 
@@ -490,14 +494,14 @@ bool VimbaXCameraNode::initialize_graph_notify()
           if (is_available_) {
             if (current_num_subscribers > 0) {
               if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
-              !camera_->is_streaming() &&
+              !is_streaming() &&
               (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers))
               {
                 start_streaming();
                 stream_stopped_by_service_ = false;
               }
             } else {
-              if (camera_->is_streaming()) {
+              if (is_streaming()) {
                 stop_streaming();
               }
               stream_stopped_by_service_ = false;
@@ -556,7 +560,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureIntGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_int_get(request->feature_name);
         if (!result) {
@@ -577,7 +581,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureIntSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntSet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_int_set(request->feature_name, request->value);
         if (!result) {
@@ -596,7 +600,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureIntInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntInfoGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_int_info_get(request->feature_name);
         if (!result) {
@@ -619,9 +623,10 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureFloatGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_float_get(request->feature_name);
+
         if (!result) {
           response->set__error(result.error().to_error_msg());
         } else {
@@ -640,7 +645,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureFloatSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatSet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_float_set(request->feature_name, request->value);
         if (!result) {
@@ -659,7 +664,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_float_info_get(request->feature_name);
         if (!result) {
@@ -683,7 +688,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureStringGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_string_get(request->feature_name);
         if (!result) {
@@ -704,7 +709,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureStringSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringSet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_string_set(request->feature_name, request->value);
         if (!result) {
@@ -723,7 +728,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureStringInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringInfoGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_string_info_get(request->feature_name);
         if (!result) {
@@ -744,7 +749,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureBoolGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureBoolGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_bool_get(request->feature_name);
         if (!result) {
@@ -765,7 +770,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureBoolSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureBoolSet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_bool_set(request->feature_name, request->value);
         if (!result) {
@@ -784,7 +789,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureCommandIsDone::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureCommandIsDone::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_command_is_done(request->feature_name);
         if (!result) {
@@ -805,7 +810,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureCommandRun::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureCommandRun::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_command_run(request->feature_name);
         if (!result) {
@@ -824,7 +829,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureEnumGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_enum_get(request->feature_name);
         if (!result) {
@@ -845,7 +850,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureEnumSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumSet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_enum_set(request->feature_name, request->value);
         if (!result) {
@@ -864,7 +869,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_enum_info_get(request->feature_name);
         if (!result) {
@@ -886,7 +891,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result =
         camera_->feature_enum_as_int_get(request->feature_name, request->option);
@@ -908,7 +913,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result =
         camera_->feature_enum_as_string_get(request->feature_name, request->value);
@@ -931,7 +936,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureRawGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_raw_get(request->feature_name);
 
@@ -954,7 +959,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureRawSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawSet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
 
@@ -974,7 +979,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureRawInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawInfoGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_raw_info_get(request->feature_name);
         if (!result) {
@@ -995,7 +1000,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureAccessModeGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureAccessModeGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->feature_access_mode_get(request->feature_name);
         if (!result) {
@@ -1017,7 +1022,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         std::vector<std::string> feature_names;
 
@@ -1072,7 +1077,7 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->features_list_get();
         if (!result) {
@@ -1100,7 +1105,7 @@ bool VimbaXCameraNode::initialize_settings_services()
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->settings_save(request->filename);
         if (!result) {
@@ -1119,7 +1124,7 @@ bool VimbaXCameraNode::initialize_settings_services()
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = camera_->settings_load(request->filename);
         if (!result) {
@@ -1144,7 +1149,7 @@ bool VimbaXCameraNode::initialize_status_services()
       const vimbax_camera_msgs::srv::Status::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::Status::Response::SharedPtr response)
     {
-      std::lock_guard<std::mutex> lock(camera_mutex_);
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const info = camera_->camera_info_get();
         if (!info) {
@@ -1194,6 +1199,7 @@ bool VimbaXCameraNode::initialize_stream_services()
       const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = start_streaming();
         if (!result) {
@@ -1213,6 +1219,7 @@ bool VimbaXCameraNode::initialize_stream_services()
       const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
+      std::shared_lock lock(camera_mutex_);
       if (is_available_) {
         auto const result = stop_streaming();
         if (!result) {
@@ -1237,7 +1244,7 @@ result<void> VimbaXCameraNode::start_streaming()
 
   auto const buffer_count = node_->get_parameter(parameter_buffer_count).as_int();
 
-  std::lock_guard<std::mutex> lock(camera_mutex_);
+  std::shared_lock lock(camera_mutex_);
   auto error = camera_->start_streaming(
     buffer_count,
     [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
@@ -1268,11 +1275,17 @@ result<void> VimbaXCameraNode::stop_streaming()
     return error{VmbErrorNotFound};
   }
 
-  std::lock_guard<std::mutex> lock(camera_mutex_);
+  std::shared_lock lock(camera_mutex_);
   auto error = camera_->stop_streaming();
 
   RCLCPP_INFO(get_logger(), "Stream stopped");
   return error;
+}
+
+bool VimbaXCameraNode::is_streaming()
+{
+  std::shared_lock lock(camera_mutex_);
+  return (!camera_) ? false : camera_->is_streaming();
 }
 
 std::string VimbaXCameraNode::get_node_name()

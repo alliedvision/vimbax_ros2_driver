@@ -19,6 +19,7 @@
 #include <memory>
 #include <thread>
 #include <mutex>
+#include <shared_mutex>
 #include <memory_resource>
 #include <atomic>
 
@@ -94,7 +95,7 @@ private:
   std::atomic_bool is_available_ = false;
   std::atomic_bool stream_restart_required_ = false;
   std::string last_camera_id_{};
-  std::mutex camera_mutex_{};
+  mutable std::shared_mutex camera_mutex_{};
 
   static std::string get_node_name();
 
@@ -114,6 +115,7 @@ private:
 
   result<void> start_streaming();
   result<void> stop_streaming();
+  bool is_streaming();
 
   rclcpp::Node::SharedPtr node_;
   std::shared_ptr<VmbCAPI> api_;
