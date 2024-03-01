@@ -44,7 +44,7 @@ rclcpp::Logger get_logger()
 
 rclcpp::Node::SharedPtr create_node(const std::string & name, const rclcpp::NodeOptions & options)
 {
-  auto node = rclcpp::Node::make_shared(name, options);
+  auto node = rclcpp::Node::make_shared(name, name, options);
   g_activeNode = node;
   return node;
 }
