@@ -47,15 +47,6 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
-    parser.add_argument("-i", "--info", action="store_true", help="Show frame infos")
-    parser.add_argument("-c", "--count", type=int, default=0, help="Frame count until stop stream")
-
-    (args, rosargs) = parser.parse_known_args()
-
-    rclpy.init(args=rosargs)
-
     node = Node("_asynchronous_grab")
 
     def on_frame(msg: Image):
