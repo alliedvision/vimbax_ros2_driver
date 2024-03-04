@@ -359,8 +359,14 @@ bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
     parameter_frame_id, "vimbax_camera_" + info_res->device_id, camera_frame_id_param_desc);
 
 
+  auto const camera_info_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Url of camera info file").set__read_only(true);
+
+  node_->declare_parameter(parameter_camera_info_url, "", camera_info_param_desc);
+
   camera_info_manager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
-    node_.get(), node_->get_parameter(parameter_frame_id).as_string());
+    node_.get(), info_res->device_id,
+    node_->get_parameter(parameter_camera_info_url).as_string());
 
   is_available_ = true;
 
@@ -1281,8 +1287,16 @@ result<void> VimbaXCameraNode::start_streaming()
       lastFrameId = frame->get_frame_id();
       frame->header.set__frame_id(node_->get_parameter(parameter_frame_id).as_string());
 
-      auto const camera_info = camera_info_manager_->getCameraInfo()
-      .set__header(frame->header);
+      auto const camera_info = [&] {
+        auto const loaded_info =  camera_info_manager_->getCameraInfo();
+
+        if (loaded_info.width != frame->width || loaded_info.height != frame->height)  {
+          return sensor_msgs::msg::CameraInfo{}.set__width(frame->width).set__height(frame->height);
+        }
+        
+        return loaded_info;
+      }().set__header(frame->header);
+
 
       camera_publisher_.publish(*frame, camera_info);
 

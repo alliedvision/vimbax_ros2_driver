@@ -92,6 +92,7 @@ private:
   const std::string parameter_buffer_count = "buffer_count";
   const std::string parameter_autostart_stream = "autostart";
   const std::string parameter_frame_id = "camera_frame_id";
+  const std::string parameter_camera_info_url = "camera_info_url";
 
   std::atomic_bool stream_stopped_by_service_ = false;
   std::atomic_bool is_available_ = false;
