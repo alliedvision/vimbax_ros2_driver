@@ -431,7 +431,6 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
   if (err == VmbErrorSuccess && count > 0) {
     std::string str_id;
     str_id.resize(count);
-  //  std::vector<char> str_id(count);
     err = api_->FeatureStringGet(
       handle, SFNCFeatures::EventCameraDiscoveryCameraID.data(), &str_id[0], count, &count);
     if (err == VmbErrorSuccess) {
