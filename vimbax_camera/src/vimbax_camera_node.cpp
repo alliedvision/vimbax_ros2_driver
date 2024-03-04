@@ -25,6 +25,7 @@
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
 #include <vimbax_camera/vimbax_camera_node.hpp>
+#include <vimbax_camera/vimbax_camera.hpp>
 
 namespace vimbax_camera
 {
@@ -53,6 +54,10 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
+  if (!camera_node->initialize_camera_observer()) {
+    return {};
+  }
+
   if (!camera_node->initialize_camera()) {
     return {};
   }
@@ -65,7 +70,19 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
     return {};
   }
 
-  if (!camera_node->initialize_services()) {
+  if (!camera_node->initialize_feature_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_settings_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_status_services()) {
+    return {};
+  }
+
+  if (!camera_node->initialize_stream_services()) {
     return {};
   }
 
@@ -78,7 +95,7 @@ std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::No
   }
 
 
-  RCLCPP_INFO(get_logger(), "Initialization done.");
+  RCLCPP_INFO(get_logger(), "Initialization done!");
   return camera_node;
 }
 
@@ -86,14 +103,19 @@ VimbaXCameraNode::~VimbaXCameraNode()
 {
   stop_threads_.store(true, std::memory_order::memory_order_relaxed);
 
+  deinitialize_camera_observer();
+
   if (graph_notify_thread_) {
     graph_notify_thread_->join();
   }
+
+  std::unique_lock lock(camera_mutex_);
 
   if (camera_ && camera_->is_streaming()) {
     camera_->stop_streaming();
   }
 
+  last_camera_id_.clear();
   camera_.reset();
 }
 
@@ -104,14 +126,19 @@ bool VimbaXCameraNode::initialize_events()
     node_, "~/feature_invalidation",
     [this](const std::string & name) -> int32_t
     {
-      auto const res = camera_->feature_invalidation_register(
-        name, [this](auto name) {
-          feature_invalidation_event_publisher_->publish_event(
-            name, std_msgs::msg::Empty{});
-        });
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const res = camera_->feature_invalidation_register(
+          name, [this](auto name) {
+            feature_invalidation_event_publisher_->publish_event(
+              name, std_msgs::msg::Empty{});
+          });
 
-      if (!res) {
-        return res.error().code;
+        if (!res) {
+          return res.error().code;
+        }
+      } else {
+        return VmbErrorNotFound;
       }
 
       return 0;
@@ -128,62 +155,71 @@ bool VimbaXCameraNode::initialize_events()
     std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
     node_, "~/events", [this](const std::string & name) -> int32_t
     {
-      auto const event_feature_name = "Event" + name;
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const event_feature_name = "Event" + name;
 
-      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+        auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
-      if (!sel_res) {
-        return sel_res.error().code;
-      }
+        if (!sel_res) {
+          return sel_res.error().code;
+        }
 
-      auto const on_res = camera_->feature_enum_set("EventNotification", "On");
+        auto const on_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "On");
 
-      if (!on_res) {
-        return on_res.error().code;
-      }
+        if (!on_res) {
+          return on_res.error().code;
+        }
 
+        auto const res = camera_->feature_invalidation_register(
+          event_feature_name,
+          [this, name](auto)
+          {
+            auto const res = camera_->get_event_meta_data(name);
 
-      auto const res = camera_->feature_invalidation_register(
-        event_feature_name,
-        [this, name](auto)
-        {
-          auto const res = camera_->get_event_meta_data(name);
+            vimbax_camera_msgs::msg::EventData data{};
 
-          vimbax_camera_msgs::msg::EventData data{};
+            if (res) {
+              std::transform(
+                res->cbegin(), res->cend(), std::back_inserter(data.entries),
+                [](auto pair) {
+                  return vimbax_camera_msgs::msg::EventDataEntry{}
+                  .set__name(pair.first).set__value(pair.second);
+                });
+            }
 
-          if (res) {
-            std::transform(
-              res->cbegin(), res->cend(), std::back_inserter(data.entries),
-              [](auto pair) {
-                return vimbax_camera_msgs::msg::EventDataEntry{}
-                .set__name(pair.first).set__value(pair.second);
-              });
-          }
+            event_event_publisher_->publish_event(name, data);
+          });
 
-          event_event_publisher_->publish_event(name, data);
-        });
-
-      if (!res) {
-        return res.error().code;
+        if (!res) {
+          return res.error().code;
+        }
+      } else {
+        return VmbErrorNotFound;
       }
 
       return 0;
     },
     [this](const std::string & name) -> void {
-      auto const event_feature_name = "Event" + name;
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const event_feature_name = "Event" + name;
 
+        camera_->feature_invalidation_unregister(event_feature_name);
 
-      camera_->feature_invalidation_unregister(event_feature_name);
+        auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
-      auto const sel_res = camera_->feature_enum_set("EventSelector", name);
+        if (!sel_res) {
+          return;
+        }
 
-      if (!sel_res) {
-        return;
-      }
+        auto const off_res = camera_->feature_enum_set(
+          SFNCFeatures::EventNotification.data(), "Off");
 
-      auto const off_res = camera_->feature_enum_set("EventNotification", "Off");
-
-      if (!off_res) {
+        if (!off_res) {
+          return;
+        }
+      } else {
         return;
       }
 
@@ -276,15 +312,28 @@ bool VimbaXCameraNode::initialize_publisher()
   return true;
 }
 
-bool VimbaXCameraNode::initialize_camera()
+bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
 {
   RCLCPP_INFO(get_logger(), "Initializing camera ...");
-  camera_ = VimbaXCamera::open(api_, node_->get_parameter(parameter_camera_id).as_string());
+
+  std::unique_lock lock(camera_mutex_);
+  camera_ = VimbaXCamera::open(
+    api_, last_camera_id_.empty() ?
+    node_->get_parameter(parameter_camera_id).as_string() : last_camera_id_);
 
   if (!camera_) {
-    RCLCPP_FATAL(get_logger(), "Failed to open camera");
-    rclcpp::shutdown();
+    if (reconnect) {
+      RCLCPP_WARN(get_logger(), "Failed to reopen camera");
+    } else {
+      RCLCPP_FATAL(get_logger(), "Failed to open camera");
+      rclcpp::shutdown();
+    }
     return false;
+  }
+
+  auto const result = camera_->query_camera_info();
+  if (result) {
+    last_camera_id_ = (*result).cameraIdString;
   }
 
   auto const settingsFile = node_->get_parameter(parameter_settings_file).as_string();
@@ -298,7 +347,133 @@ bool VimbaXCameraNode::initialize_camera()
     }
   }
 
+  is_available_ = true;
   return true;
+}
+
+bool VimbaXCameraNode::initialize_camera_observer()
+{
+  RCLCPP_INFO(get_logger(), "Initializing camera observer...");
+
+  auto err = api_->FeatureEnumSet(
+    gVmbHandle, SFNCFeatures::EventSelector.data(), "CameraDiscovery");
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return false;
+  }
+
+  err = api_->FeatureEnumSet(
+    gVmbHandle, SFNCFeatures::EventNotification.data(), "On");
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return false;
+  }
+
+  err = api_->FeatureInvalidationRegister(
+    gVmbHandle, SFNCFeatures::EventCameraDiscovery.data(),
+    this->camera_discovery_callback, reinterpret_cast<void *>(this));
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return false;
+  }
+
+  return true;
+}
+
+bool VimbaXCameraNode::deinitialize_camera_observer()
+{
+  auto err = api_->FeatureEnumSet(
+    gVmbHandle, SFNCFeatures::EventSelector.data(), "CameraDiscovery");
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return false;
+  }
+
+  err = api_->FeatureEnumSet(gVmbHandle, SFNCFeatures::EventNotification.data(), "Off");
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return false;
+  }
+
+  err = api_->FeatureInvalidationUnregister(
+    gVmbHandle, SFNCFeatures::EventCameraDiscovery.data(),
+    this->camera_discovery_callback);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    return false;
+  }
+
+  return true;
+}
+
+void VimbaXCameraNode::camera_discovery_callback(
+  const VmbHandle_t handle, const char * name, void * context)
+{
+  if (context) {
+    (reinterpret_cast<VimbaXCameraNode *>(context))->on_camera_discovery_callback(handle, name);
+  }
+}
+
+void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, const char *)
+{
+  std::string camera_id;
+  VmbUint32_t count = 0;
+
+  auto err = api_->FeatureStringGet(
+    handle, SFNCFeatures::EventCameraDiscoveryCameraID.data(), nullptr, count, &count);
+
+  if (err == VmbErrorSuccess && count > 0) {
+    std::string str_id;
+    str_id.resize(count);
+  //  std::vector<char> str_id(count);
+    err = api_->FeatureStringGet(
+      handle, SFNCFeatures::EventCameraDiscoveryCameraID.data(), &str_id[0], count, &count);
+    if (err == VmbErrorSuccess) {
+      camera_id = &*str_id.begin();
+    }
+  }
+
+  if (err == VmbErrorSuccess) {
+    const char * reason = nullptr;
+    static bool stream_restart_required = false;
+
+    err = api_->FeatureEnumGet(handle, SFNCFeatures::EventCameraDiscoveryType.data(), &reason);
+    if (err == VmbErrorSuccess) {
+      if (std::strcmp(reason, "Missing") == 0) {
+        if ((camera_id.find(last_camera_id_) != std::string::npos) && camera_) {
+          RCLCPP_ERROR(
+            get_logger(), "%s: Camera '%s' disconnected. Waiting for reconnection...",
+            __FUNCTION__, last_camera_id_.c_str());
+
+          stream_restart_required = camera_->is_streaming();
+          std::unique_lock lock{camera_mutex_};
+          is_available_ = false;
+          camera_.reset();
+        }
+      } else if (std::strcmp(reason, "Detected") == 0) {
+        if (camera_id.find(last_camera_id_) != std::string::npos) {
+          RCLCPP_INFO(
+            get_logger(), "%s: Camera '%s' reconnected.", __FUNCTION__, last_camera_id_.c_str());
+
+          if (initialize_camera(true)) {
+            // Notify graph context that a stream restart is required
+            stream_restart_required_ = stream_restart_required;
+            stream_restart_required = false;
+          }
+        }
+      }
+    }
+  } else {
+    RCLCPP_ERROR(
+      get_logger(), "%s: Error while accessing EventCameraDiscoveryCameraID: %d", __FUNCTION__,
+      err);
+  }
 }
 
 bool VimbaXCameraNode::initialize_graph_notify()
@@ -306,29 +481,36 @@ bool VimbaXCameraNode::initialize_graph_notify()
   RCLCPP_INFO(get_logger(), "Initializing graph notify ...");
   graph_notify_thread_ = std::make_unique<std::thread>(
     [this] {
-      auto last_num_subscribers = 0;
+      size_t last_num_subscribers = 0;
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
         node_->wait_for_graph_change(event, std::chrono::milliseconds(500));
         auto current_num_subscribers = image_publisher_.getNumSubscribers();
 
+        if (stream_restart_required_) {
+          start_streaming();
+          stream_restart_required_ = false;
+        }
+
         if (event->check_and_clear()) {
-          if (current_num_subscribers > 0) {
-            if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
-            !camera_->is_streaming() &&
-            (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers))
-            {
-              start_streaming();
+          if (is_available_) {
+            if (current_num_subscribers > 0) {
+              if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
+              !is_streaming() &&
+              (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers))
+              {
+                start_streaming();
+                stream_stopped_by_service_ = false;
+              }
+            } else {
+              if (is_streaming()) {
+                stop_streaming();
+              }
               stream_stopped_by_service_ = false;
             }
-          } else {
-            if (camera_->is_streaming()) {
-              stop_streaming();
-            }
-            stream_stopped_by_service_ = false;
-          }
 
-          last_num_subscribers = current_num_subscribers;
+            last_num_subscribers = current_num_subscribers;
+          }
         }
       }
     });
@@ -370,9 +552,9 @@ bool VimbaXCameraNode::initialize_callback_groups()
   return true;
 }
 
-bool VimbaXCameraNode::initialize_services()
+bool VimbaXCameraNode::initialize_feature_services()
 {
-  RCLCPP_INFO(get_logger(), "Initializing services ...");
+  RCLCPP_INFO(get_logger(), "Initializing feature services ...");
 
   feature_int_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntGet>(
@@ -380,11 +562,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureIntGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_int_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_int_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->value = *result;
+        }
       } else {
-        response->value = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -396,9 +583,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureIntSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntSet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_int_set(request->feature_name, request->value);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_int_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -410,13 +602,18 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureIntInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntInfoGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_int_info_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_int_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->min = (*result)[0];
+          response->max = (*result)[1];
+          response->inc = (*result)[2];
+        }
       } else {
-        response->min = (*result)[0];
-        response->max = (*result)[1];
-        response->inc = (*result)[2];
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -428,11 +625,17 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureFloatGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_float_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_float_get(request->feature_name);
+
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->value = *result;
+        }
       } else {
-        response->value = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -444,9 +647,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureFloatSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatSet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_float_set(request->feature_name, request->value);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_float_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -458,14 +666,19 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_float_info_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_float_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->min = (*result).min;
+          response->max = (*result).max;
+          response->inc = (*result).inc;
+          response->inc_available = (*result).inc_available;
+        }
       } else {
-        response->min = (*result).min;
-        response->max = (*result).max;
-        response->inc = (*result).inc;
-        response->inc_available = (*result).inc_available;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -477,11 +690,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureStringGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_string_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_string_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->value = *result;
+        }
       } else {
-        response->value = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -493,9 +711,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureStringSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringSet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_string_set(request->feature_name, request->value);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_string_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -507,11 +730,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureStringInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringInfoGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_string_info_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_string_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->max_length = *result;
+        }
       } else {
-        response->max_length = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -523,11 +751,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureBoolGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureBoolGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_bool_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_bool_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->value = *result;
+        }
       } else {
-        response->value = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -539,9 +772,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureBoolSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureBoolSet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_bool_set(request->feature_name, request->value);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_bool_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -553,11 +791,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureCommandIsDone::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureCommandIsDone::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_command_is_done(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_command_is_done(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->is_done = *result;
+        }
       } else {
-        response->is_done = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -569,9 +812,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureCommandRun::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureCommandRun::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_command_run(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_command_run(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -583,11 +831,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureEnumGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_enum_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_enum_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->value = *result;
+        }
       } else {
-        response->value = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -599,9 +852,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureEnumSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumSet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_enum_set(request->feature_name, request->value);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_enum_set(request->feature_name, request->value);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -613,12 +871,17 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_enum_info_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_enum_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->possible_values = (*result)[0];
+          response->available_values = (*result)[1];
+        }
       } else {
-        response->possible_values = (*result)[0];
-        response->available_values = (*result)[1];
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -630,13 +893,17 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Response::SharedPtr response)
     {
-      auto const result =
-      camera_->feature_enum_as_int_get(request->feature_name, request->option);
-
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result =
+        camera_->feature_enum_as_int_get(request->feature_name, request->option);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->value = *result;
+        }
       } else {
-        response->value = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -648,13 +915,18 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Response::SharedPtr response)
     {
-      auto const result =
-      camera_->feature_enum_as_string_get(request->feature_name, request->value);
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result =
+        camera_->feature_enum_as_string_get(request->feature_name, request->value);
 
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->option = *result;
+        }
       } else {
-        response->option = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -666,12 +938,18 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureRawGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_raw_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_raw_get(request->feature_name);
+
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->buffer = *result;
+          response->buffer_size = (*result).size();
+        }
       } else {
-        response->buffer = *result;
-        response->buffer_size = (*result).size();
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -683,9 +961,15 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureRawSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawSet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
+
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -697,11 +981,16 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureRawInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawInfoGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_raw_info_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_raw_info_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->max_length = *result;
+        }
       } else {
-        response->max_length = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -713,12 +1002,17 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureAccessModeGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureAccessModeGet::Response::SharedPtr response)
     {
-      auto const result = camera_->feature_access_mode_get(request->feature_name);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->feature_access_mode_get(request->feature_name);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->is_readable = (*result)[0];
+          response->is_writeable = (*result)[1];
+        }
       } else {
-        response->is_readable = (*result)[0];
-        response->is_writeable = (*result)[1];
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -730,44 +1024,50 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Response::SharedPtr response)
     {
-      std::vector<std::string> feature_names;
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        std::vector<std::string> feature_names;
 
-      // If our list is empty we want to query infos for all features
-      if (request->feature_names.size() == 0) {
-        auto const result = camera_->features_list_get();
+        // If our list is empty we want to query infos for all features
+        if (request->feature_names.size() == 0) {
+          auto const result = camera_->features_list_get();
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+            return;
+          } else {
+            feature_names = *result;
+          }
+        } else {
+          feature_names = request->feature_names;
+        }
+
+        auto const result = camera_->feature_info_query_list(feature_names);
         if (!result) {
           response->set__error(result.error().to_error_msg());
           return;
         } else {
-          feature_names = *result;
+          auto index{0};
+          response->feature_info.resize((*result).size());
+          for (auto data : (*result)) {
+            response->feature_info.at(index).name = data.name;
+            response->feature_info.at(index).category = data.category;
+            response->feature_info.at(index).display_name = data.display_name;
+            response->feature_info.at(index).sfnc_namespace = data.sfnc_namespace;
+            response->feature_info.at(index).unit = data.unit;
+
+            response->feature_info.at(index).data_type = data.data_type;
+            response->feature_info.at(index).flags.flag_none = data.flags.flag_none;
+            response->feature_info.at(index).flags.flag_read = data.flags.flag_read;
+            response->feature_info.at(index).flags.flag_write = data.flags.flag_write;
+            response->feature_info.at(index).flags.flag_volatile = data.flags.flag_volatile;
+            response->feature_info.at(index).flags.flag_modify_write = data.flags.flag_modify_write;
+            response->feature_info.at(index).polling_time = data.polling_time;
+
+            index++;
+          }
         }
       } else {
-        feature_names = request->feature_names;
-      }
-
-      auto const result = camera_->feature_info_query_list(feature_names);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
-      } else {
-        auto index{0};
-        response->feature_info.resize((*result).size());
-        for (auto data : (*result)) {
-          response->feature_info.at(index).name = data.name;
-          response->feature_info.at(index).category = data.category;
-          response->feature_info.at(index).display_name = data.display_name;
-          response->feature_info.at(index).sfnc_namespace = data.sfnc_namespace;
-          response->feature_info.at(index).unit = data.unit;
-
-          response->feature_info.at(index).data_type = data.data_type;
-          response->feature_info.at(index).flags.flag_none = data.flags.flag_none;
-          response->feature_info.at(index).flags.flag_read = data.flags.flag_read;
-          response->feature_info.at(index).flags.flag_write = data.flags.flag_write;
-          response->feature_info.at(index).flags.flag_volatile = data.flags.flag_volatile;
-          response->feature_info.at(index).flags.flag_modify_write = data.flags.flag_modify_write;
-          response->feature_info.at(index).polling_time = data.polling_time;
-
-          index++;
-        }
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
@@ -776,18 +1076,30 @@ bool VimbaXCameraNode::initialize_services()
   features_list_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeaturesListGet>(
     "~/features/list_get", [this](
-      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
     {
-      auto const result = camera_->features_list_get();
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->features_list_get();
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        } else {
+          response->feature_list = *result;
+        }
       } else {
-        response->feature_list = *result;
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, feature_callback_group_);
 
   CHK_SVC(features_list_get_service_);
+
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_settings_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing settings services ...");
 
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
@@ -795,9 +1107,14 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
     {
-      auto const result = camera_->settings_save(request->filename);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->settings_save(request->filename);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
@@ -809,62 +1126,91 @@ bool VimbaXCameraNode::initialize_services()
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
     {
-      auto const result = camera_->settings_load(request->filename);
-      if (!result) {
-        response->set__error(result.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = camera_->settings_load(request->filename);
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, settings_load_save_callback_group_);
 
   CHK_SVC(settings_load_service_);
+
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_status_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing status services ...");
 
   status_service_ = node_->create_service<vimbax_camera_msgs::srv::Status>(
     "~/status", [this](
       const vimbax_camera_msgs::srv::Status::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::Status::Response::SharedPtr response)
     {
-      auto const info = camera_->camera_info_get();
-      if (!info) {
-        response->set__error(info.error().to_error_msg());
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const info = camera_->camera_info_get();
+        if (!info) {
+          response->set__error(info.error().to_error_msg());
+        } else {
+          response->set__display_name(info->display_name)
+          .set__model_name(info->model_name)
+          .set__device_firmware_version(info->firmware_version)
+          .set__device_id(info->device_id)
+          .set__device_user_id(info->device_user_id)
+          .set__device_serial_number(info->device_serial_number)
+          .set__interface_id(info->interface_id)
+          .set__transport_layer_id(info->transport_layer_id)
+          .set__streaming(info->streaming)
+          .set__width(info->width)
+          .set__height(info->height)
+          .set__frame_rate(info->frame_rate)
+          .set__pixel_format(info->pixel_format)
+          .set__trigger_mode(info->trigger_mode)
+          .set__trigger_source(info->trigger_source);
+
+          if (info->ip_address) {
+            response->set__ip_address(*info->ip_address);
+          }
+
+          if (info->mac_address) {
+            response->set__mac_address(*info->mac_address);
+          }
+        }
       } else {
-        response->set__display_name(info->display_name)
-        .set__model_name(info->model_name)
-        .set__device_firmware_version(info->firmware_version)
-        .set__device_id(info->device_id)
-        .set__device_user_id(info->device_user_id)
-        .set__device_serial_number(info->device_serial_number)
-        .set__interface_id(info->interface_id)
-        .set__transport_layer_id(info->transport_layer_id)
-        .set__streaming(info->streaming)
-        .set__width(info->width)
-        .set__height(info->height)
-        .set__frame_rate(info->frame_rate)
-        .set__pixel_format(info->pixel_format)
-        .set__trigger_mode(info->trigger_mode)
-        .set__trigger_source(info->trigger_source);
-
-        if (info->ip_address) {
-          response->set__ip_address(*info->ip_address);
-        }
-
-        if (info->mac_address) {
-          response->set__mac_address(*info->mac_address);
-        }
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
     }, rmw_qos_profile_services_default, status_callback_group_);
 
   CHK_SVC(status_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_stream_services()
+{
+  RCLCPP_INFO(get_logger(), "Initializing stream services ...");
+
   stream_start_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
     "~/stream_start", [this](
-      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
-      auto const result = start_streaming();
-      if (!result) {
-        response->set__error(result.error().code);
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = start_streaming();
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+        stream_stopped_by_service_ = false;
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-      stream_stopped_by_service_ = false;
     }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
 
   CHK_SVC(stream_start_service_);
@@ -872,14 +1218,19 @@ bool VimbaXCameraNode::initialize_services()
   stream_stop_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
     "~/stream_stop", [this](
-      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr request,
+      const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
-      auto const result = stop_streaming();
-      if (!result) {
-        response->set__error(result.error().code);
+      std::shared_lock lock(camera_mutex_);
+      if (is_available_) {
+        auto const result = stop_streaming();
+        if (!result) {
+          response->set__error(result.error().to_error_msg());
+        }
+        stream_stopped_by_service_ = true;
+      } else {
+        response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-      stream_stopped_by_service_ = true;
     }, rmw_qos_profile_services_default, stream_start_stop_callback_group_);
 
   CHK_SVC(stream_stop_service_);
@@ -889,8 +1240,13 @@ bool VimbaXCameraNode::initialize_services()
 
 result<void> VimbaXCameraNode::start_streaming()
 {
+  if (!is_available_) {
+    return error{VmbErrorNotFound};
+  }
+
   auto const buffer_count = node_->get_parameter(parameter_buffer_count).as_int();
 
+  std::shared_lock lock(camera_mutex_);
   auto error = camera_->start_streaming(
     buffer_count,
     [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
@@ -917,10 +1273,21 @@ result<void> VimbaXCameraNode::start_streaming()
 
 result<void> VimbaXCameraNode::stop_streaming()
 {
+  if (!is_available_) {
+    return error{VmbErrorNotFound};
+  }
+
+  std::shared_lock lock(camera_mutex_);
   auto error = camera_->stop_streaming();
 
   RCLCPP_INFO(get_logger(), "Stream stopped");
   return error;
+}
+
+bool VimbaXCameraNode::is_streaming()
+{
+  std::shared_lock lock(camera_mutex_);
+  return (!camera_) ? false : camera_->is_streaming();
 }
 
 std::string VimbaXCameraNode::get_node_name()
