@@ -147,16 +147,6 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
     get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
     camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
 
-  auto const timestamp_frequency =
-    feature_int_get("DeviceTimestampFrequency", camera_info_.localDeviceHandle);
-
-  if (timestamp_frequency) {
-    timestamp_frequency_ = *timestamp_frequency;
-  }
-
-  feature_command_run("GVSPAdjustPacketSize", camera_info_.streamHandles[0]);
-
-
   VmbUint32_t feature_list_size{};
 
   api_->FeaturesList(camera_handle_, nullptr, 0, &feature_list_size, 0);
@@ -171,6 +161,19 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
   for (auto const & info : feature_list) {
     feature_info_map_.emplace(info.name, info);
     feature_category_map_.emplace(info.category, info.name);
+  }
+
+  if(has_feature(SFNCFeatures::DeviceTimestampFrequency)) {
+    auto const timestamp_frequency =
+      feature_int_get(SFNCFeatures::DeviceTimestampFrequency, camera_info_.localDeviceHandle);
+
+    if (timestamp_frequency) {
+      timestamp_frequency_ = *timestamp_frequency;
+    }
+  }
+
+  if(has_feature(SFNCFeatures::GVSPAdjustPacketSize)) {
+    feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, camera_info_.streamHandles[0]);
   }
 }
 
@@ -195,6 +198,15 @@ bool VimbaXCamera::is_alive()
   return (err == VmbErrorNotFound) ? false : true;
 }
 
+bool VimbaXCamera::has_feature(const std::string_view & name)
+{
+  if (auto search = feature_info_map_.find(name.data()); search != feature_info_map_.end()) {
+    return true;
+  }
+
+  return false;
+}
+
 result<void> VimbaXCamera::start_streaming(
   int bufferCount,
   std::function<void(std::shared_ptr<Frame>)> onFrame,
@@ -211,10 +223,16 @@ result<void> VimbaXCamera::start_streaming(
       return error{payloadSizeError};
     }
 
-    auto const alignment_res =
-      feature_int_get(SFNCFeatures::StreamBufferAlignment, camera_info_.streamHandles[0]);
+    auto alignment{1};
 
-    auto const alignment = alignment_res ? *alignment_res : 1;
+    if (has_feature(SFNCFeatures::StreamBufferAlignment)) {
+      auto const alignment_res =
+        feature_int_get(SFNCFeatures::StreamBufferAlignment, camera_info_.streamHandles[0]);
+
+      alignment = alignment_res ? *alignment_res : 1;
+    }
+
+    RCLCPP_INFO(get_logger(), "Buffer alignment: %d", alignment);
 
     for (auto & frame : frames_) {
       auto newFrame = Frame::create(shared_from_this(), payloadSize, alignment);

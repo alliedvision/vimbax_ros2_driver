@@ -118,6 +118,7 @@ public:
   result<void> stop_streaming();
 
   bool is_alive();
+  bool has_feature(const std::string_view & name);
 
   // Feature access
   result<std::vector<std::string>> features_list_get(void) const;
