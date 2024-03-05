@@ -806,7 +806,7 @@ result<int64_t> VimbaXCamera::feature_enum_as_int_get(
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
-      get_logger(), "%s failed to convert enum %s option %s to int with error %d (%s)",
+      get_logger(), "%s failed to convert enum '%s' option '%s' to int with error %d (%s)",
       __FUNCTION__, name.data(), option.data(), err,
       vmb_error_to_string(err).data());
 
@@ -830,7 +830,7 @@ VimbaXCamera::feature_enum_as_string_get(const std::string_view & name, const in
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
-      get_logger(), "Failed to convert enum %s option %s to int with error %d (%s)",
+      get_logger(), "Failed to convert enum '%s' option '%s' to int with error %d (%s)",
       name.data(), option.data(), err, vmb_error_to_string(err).data());
 
     return error{err};
@@ -1428,7 +1428,7 @@ uint64_t VimbaXCamera::Frame::timestamp_to_ns(uint64_t timestamp)
 
 
     if (camera->timestamp_frequency_) {
-      RCLCPP_DEBUG(get_logger(), "Using timestamp frequnency %ld", *camera->timestamp_frequency_);
+      RCLCPP_DEBUG(get_logger(), "Using timestamp frequency %ld", *camera->timestamp_frequency_);
 
       if (*camera->timestamp_frequency_ > std::nano::den) {
         return timestamp / ((*camera->timestamp_frequency_) / std::nano::den);
