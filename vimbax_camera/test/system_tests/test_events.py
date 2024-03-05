@@ -12,18 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import rclpy
-import rclpy.node
-import rclpy.executors
-
 import pytest
 
-
-import launch_pytest
-import launch
-from launch_ros.actions import Node
-
-from threading import Thread
 from threading import Event
 
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet
