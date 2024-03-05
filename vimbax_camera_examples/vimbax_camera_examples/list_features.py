@@ -28,7 +28,7 @@ def main():
     rclpy.init(args=rosargs)
 
     type_names = ["Unknown", "Int", "Float", "Enum", "String", "Bool", "Command",
-                   "Raw", "None", "?"]
+                  "Raw", "None", "?"]
 
     def print_info_data(info):
         for entry in info.feature_info:
@@ -37,7 +37,7 @@ def main():
             print(f"   category: {entry.category}")
             print(f"   sfnc_namespace: {entry.sfnc_namespace}")
             print(f"   unit: {entry.unit}")
-            type_name = type_names[max(min(len(type_names)-1,entry.data_type),0)]
+            type_name = type_names[max(min(len(type_names) - 1, entry.data_type), 0)]
             print(f"   data_type: {entry.data_type} ({type_name})")
             print(f"   polling_time: {entry.polling_time}")
             print(f"   flag_none: {entry.flags.flag_none}")
