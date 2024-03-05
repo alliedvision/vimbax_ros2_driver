@@ -17,15 +17,12 @@ import pytest
 import random
 import string
 
-from enum import Enum
-
-from vimbax_camera_msgs.msg import Error
 
 from vimbax_camera_msgs.srv import FeaturesListGet
 from vimbax_camera_msgs.srv import FeatureInfoQuery
-from vimbax_camera_msgs.msg import FeatureInfo
 
 from vimbax_camera_msgs.srv import FeatureAccessModeGet
+
 from vimbax_camera_msgs.srv import FeatureIntInfoGet
 from vimbax_camera_msgs.srv import FeatureFloatInfoGet
 from vimbax_camera_msgs.srv import FeatureStringInfoGet
@@ -51,47 +48,7 @@ from vimbax_camera_msgs.srv import FeatureRawGet
 
 from conftest import vimbax_camera_node, camera_test_node_name, TestNode
 
-
-class FeatureDataType(Enum):
-    INT = 1
-    FLOAT = 2
-    ENUM = 3
-    STRING = 4
-    BOOL = 5
-    COMMAND = 6
-    RAW = 7
-    NONE = 8
-
-
-sfnc_namespaces = [
-    "Standard",
-    "Custom"
-]
-
-
-def check_error(error: Error):
-    assert error.code == 0, f"Unexpected error {error.code} ({error.text})"
-
-
-def check_feature_info(feature_info: FeatureInfo):
-    assert feature_info.name != ""
-    assert feature_info.category != ""
-    assert feature_info.display_name != ""
-    assert feature_info.sfnc_namespace in sfnc_namespaces
-    assert feature_info.data_type > 0 and feature_info.data_type < 9
-
-
-def ensure_access_mode(service, name, readable: bool = True, writeable: bool = True) -> bool:
-    response = service.call(FeatureAccessModeGet.Request(feature_name=name))
-
-    check_error(response.error)
-
-    if readable and not response.is_readable:
-        return False
-    if writeable and not response.is_writeable:
-        return False
-
-    return True
+from test_helper import check_error, check_feature_info, ensure_access_mode, FeatureDataType
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)

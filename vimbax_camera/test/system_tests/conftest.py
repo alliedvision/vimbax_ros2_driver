@@ -31,7 +31,6 @@ import time
 
 from sensor_msgs.msg import Image
 
-
 camera_test_node_name = "vimbax_camera_pytest"
 
 
