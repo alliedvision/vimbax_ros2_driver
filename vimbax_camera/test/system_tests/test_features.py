@@ -60,7 +60,7 @@ from vimbax_camera_msgs.srv import FeatureStringSet
 
 from vimbax_camera_msgs.srv import FeatureRawGet
 
-camera_test_node_name = "vimbax_camera_pytest"
+from conftest import vimbax_camera_node, camera_test_node_name, TestNode
 
 
 class FeatureDataType(Enum):
@@ -72,38 +72,6 @@ class FeatureDataType(Enum):
     COMMAND = 6
     RAW = 7
     NONE = 8
-
-
-class TestNode(rclpy.node.Node):
-    __test__ = False
-
-    def __init__(self, name="_test_node"):
-        rclpy.node.Node.__init__(self, name)
-
-        self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self, ))
-        self.ros_spin_thread.start()
-
-
-@launch_pytest.fixture
-def vimbax_camera_node():
-    return launch.LaunchDescription([
-        Node(
-            package='vimbax_camera',
-            # namespace='avt_vimbax',
-            executable='vimbax_camera_node',
-            name=camera_test_node_name
-        ),
-        # Tell launch when to start the test
-        # If no ReadyToTest action is added, one will be appended automatically.
-        launch_pytest.actions.ReadyToTest()
-    ])
-
-
-@pytest.fixture
-def test_node():
-    rclpy.init()
-    yield TestNode()
-    rclpy.shutdown()
 
 
 sfnc_namespaces = [

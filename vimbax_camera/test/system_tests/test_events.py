@@ -33,40 +33,7 @@ from vimbax_camera_msgs.msg import EventData
 
 from vimbax_camera_events.event_subscriber import EventSubscriber
 
-
-camera_test_node_name = "vimbax_camera_pytest"
-
-
-class TestNode(rclpy.node.Node):
-    __test__ = False
-
-    def __init__(self, name="_test_node"):
-        rclpy.node.Node.__init__(self, name)
-
-        self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self, ))
-        self.ros_spin_thread.start()
-
-
-@launch_pytest.fixture
-def vimbax_camera_node():
-    return launch.LaunchDescription([
-        Node(
-            package='vimbax_camera',
-            # namespace='avt_vimbax',
-            executable='vimbax_camera_node',
-            name=camera_test_node_name
-        ),
-        # Tell launch when to start the test
-        # If no ReadyToTest action is added, one will be appended automatically.
-        launch_pytest.actions.ReadyToTest()
-    ])
-
-
-@pytest.fixture
-def test_node():
-    rclpy.init()
-    yield TestNode()
-    rclpy.shutdown()
+from conftest import vimbax_camera_node, camera_test_node_name, TestNode
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
