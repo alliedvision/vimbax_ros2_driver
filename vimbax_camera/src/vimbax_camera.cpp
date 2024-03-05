@@ -41,8 +41,9 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
         api->CameraOpen(idStr.c_str(), VmbAccessModeType::VmbAccessModeExclusive, &cameraHandle);
 
       if (openError != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Failed to open camera %s. Error %d (%s)", idStr.c_str(),
-        openError, (vmb_error_to_string(openError)).data());
+        RCLCPP_ERROR(
+          get_logger(), "Failed to open camera %s. Error %d (%s)", idStr.c_str(), openError,
+          (vmb_error_to_string(openError)).data());
         return std::nullopt;
       }
 
@@ -55,8 +56,9 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
       auto const countError = api->CamerasList(nullptr, 0, &availableCamerasCount, 0);
 
       if (countError != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Reading camera list size failed with error %d (%s)", countError,
-        (vmb_error_to_string(countError)).data());
+        RCLCPP_ERROR(
+          get_logger(), "Reading camera list size failed with error %d (%s)", countError,
+          (vmb_error_to_string(countError)).data());
         return {};
       }
 
@@ -68,8 +70,9 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
         cameraList.data(), availableCamerasCount, &camerasFound, sizeof(VmbCameraInfo_t));
 
       if (error != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "List first camera failed with error %d (%s)", error,
-        (vmb_error_to_string(error)).data());
+        RCLCPP_ERROR(
+          get_logger(), "List first camera failed with error %d (%s)", error,
+          (vmb_error_to_string(error)).data());
         return {};
       }
 
@@ -163,7 +166,7 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
     feature_category_map_.emplace(info.category, info.name);
   }
 
-  if(has_feature(SFNCFeatures::DeviceTimestampFrequency)) {
+  if (has_feature(SFNCFeatures::DeviceTimestampFrequency)) {
     auto const timestamp_frequency =
       feature_int_get(SFNCFeatures::DeviceTimestampFrequency, camera_info_.localDeviceHandle);
 
@@ -172,7 +175,7 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
     }
   }
 
-  if(has_feature(SFNCFeatures::GVSPAdjustPacketSize)) {
+  if (has_feature(SFNCFeatures::GVSPAdjustPacketSize)) {
     feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, camera_info_.streamHandles[0]);
   }
 }
@@ -249,16 +252,18 @@ result<void> VimbaXCamera::start_streaming(
 
     auto const capStartError = api_->CaptureStart(camera_handle_);
     if (capStartError != VmbErrorSuccess) {
-      RCLCPP_ERROR(get_logger(), "Capture start failed with error %d (%s)", capStartError,
-      (vmb_error_to_string(capStartError)).data());
+      RCLCPP_ERROR(
+        get_logger(), "Capture start failed with error %d (%s)", capStartError,
+        (vmb_error_to_string(capStartError)).data());
       return error{capStartError};
     }
 
     for (auto const & frame : frames_) {
       auto const queueError = frame->queue();
       if (queueError != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Queue frame failed with error %d (%s)", queueError,
-        (vmb_error_to_string(queueError)).data());
+        RCLCPP_ERROR(
+          get_logger(), "Queue frame failed with error %d (%s)", queueError,
+          (vmb_error_to_string(queueError)).data());
         return error{queueError};
       }
     }
@@ -266,8 +271,9 @@ result<void> VimbaXCamera::start_streaming(
     if (startAcquisition) {
       auto const acqStartError = feature_command_run(SFNCFeatures::AcquisitionStart);
       if (!acqStartError) {
-        RCLCPP_ERROR(get_logger(), "Acquisition start failed with error %d (%s)",
-        acqStartError.error().code, (vmb_error_to_string(acqStartError.error().code)).data());
+        RCLCPP_ERROR(
+          get_logger(), "Acquisition start failed with error %d (%s)", acqStartError.error().code,
+          (vmb_error_to_string(acqStartError.error().code)).data());
         return acqStartError.error();
       }
     }
@@ -287,30 +293,34 @@ result<void> VimbaXCamera::stop_streaming()
   if (is_alive()) {
     auto const acqStopError = feature_command_run(SFNCFeatures::AcquisitionStop);
     if (!acqStopError) {
-      RCLCPP_ERROR(get_logger(), "Acquisition stop failed with error %d (%s)",
-      acqStopError.error().code, (vmb_error_to_string(acqStopError.error().code)).data());
+      RCLCPP_ERROR(
+        get_logger(), "Acquisition stop failed with error %d (%s)", acqStopError.error().code,
+        (vmb_error_to_string(acqStopError.error().code)).data());
       return acqStopError.error();
     }
   }
 
   auto const capStopError = api_->CaptureEnd(camera_handle_);
   if (capStopError != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Capture stop failed with error %d (%s)", capStopError,
-    (vmb_error_to_string(capStopError)).data());
+    RCLCPP_ERROR(
+      get_logger(), "Capture stop failed with error %d (%s)", capStopError,
+      (vmb_error_to_string(capStopError)).data());
     return error{capStopError};
   }
 
   auto const flushError = api_->CaptureQueueFlush(camera_handle_);
   if (flushError != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Flush capture queue failed with error %d (%s)", flushError,
-    (vmb_error_to_string(flushError)).data());
+    RCLCPP_ERROR(
+      get_logger(), "Flush capture queue failed with error %d (%s)", flushError,
+      (vmb_error_to_string(flushError)).data());
     return error{flushError};
   }
 
   auto const revokeError = api_->FrameRevokeAll(camera_handle_);
   if (revokeError != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Revoking frames failed with error %d (%s)", revokeError,
-    (vmb_error_to_string(revokeError)).data());
+    RCLCPP_ERROR(
+      get_logger(), "Revoking frames failed with error %d (%s)", revokeError,
+      (vmb_error_to_string(revokeError)).data());
     return error{revokeError};
   }
 
@@ -1009,8 +1019,9 @@ result<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view &
     api_->FeatureInfoQuery(camera_handle_, name.data(), &featureInfo, sizeof(featureInfo));
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "Reading feature info for '%s' failed with error %d (%s)",
-    name.data(), err, (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "Reading feature info for '%s' failed with error %d (%s)", name.data(), err,
+      (vmb_error_to_string(err)).data());
     return error{err};
   }
 

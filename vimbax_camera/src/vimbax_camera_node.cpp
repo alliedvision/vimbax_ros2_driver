@@ -361,8 +361,9 @@ bool VimbaXCameraNode::initialize_camera_observer()
     gVmbHandle, SFNCFeatures::EventSelector.data(), "CameraDiscovery");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-    (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -370,8 +371,9 @@ bool VimbaXCameraNode::initialize_camera_observer()
     gVmbHandle, SFNCFeatures::EventNotification.data(), "On");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-    (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -380,8 +382,9 @@ bool VimbaXCameraNode::initialize_camera_observer()
     this->camera_discovery_callback, reinterpret_cast<void *>(this));
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-    (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -394,16 +397,18 @@ bool VimbaXCameraNode::deinitialize_camera_observer()
     gVmbHandle, SFNCFeatures::EventSelector.data(), "CameraDiscovery");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-    (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
   err = api_->FeatureEnumSet(gVmbHandle, SFNCFeatures::EventNotification.data(), "Off");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-    (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -412,8 +417,9 @@ bool VimbaXCameraNode::deinitialize_camera_observer()
     this->camera_discovery_callback);
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-    (vmb_error_to_string(err)).data());
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -1270,8 +1276,9 @@ result<void> VimbaXCameraNode::start_streaming()
 
       auto const queue_error = frame->queue();
       if (queue_error != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Frame requeue failed with %d (%s)", queue_error,
-        (vmb_error_to_string(queue_error)).data());
+        RCLCPP_ERROR(
+          get_logger(), "Frame requeue failed with %d (%s)", queue_error,
+          (vmb_error_to_string(queue_error)).data());
       }
     });
 
