@@ -65,42 +65,37 @@ def vimbax_camera_node():
 @pytest.fixture
 def test_node():
     rclpy.init()
-    return TestNode()
+    yield TestNode()
+    rclpy.shutdown()
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_genicam_events(test_node: TestNode, launch_context):
-    try: 
-        enum_info_service = test_node.create_client(
-            FeatureEnumInfoGet, f"{camera_test_node_name}/features/enum_info_get"
-        )
-        assert enum_info_service.wait_for_service(10)
-        command_run_service = test_node.create_client(
-            FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
-        )
-        assert command_run_service.wait_for_service(10)
+    enum_info_service = test_node.create_client(
+        FeatureEnumInfoGet, f"{camera_test_node_name}/features/enum_info_get"
+    )
+    assert enum_info_service.wait_for_service(10)
+    command_run_service = test_node.create_client(
+        FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
+    )
+    assert command_run_service.wait_for_service(10)
 
-        enum_info_request = FeatureEnumInfoGet.Request(feature_name="EventSelector")
-        enum_info_response = enum_info_service.call(enum_info_request)
+    enum_info_request = FeatureEnumInfoGet.Request(feature_name="EventSelector")
+    enum_info_response = enum_info_service.call(enum_info_request)
 
-        
-        if "Test" not in enum_info_response.available_values:
-            pytest.skip("Test event not supported")
+    if "Test" not in enum_info_response.available_values:
+        pytest.skip("Test event not supported")
 
-        subscriber = EventSubscriber(EventData, test_node, f"{camera_test_node_name}/events")
+    subscriber = EventSubscriber(EventData, test_node, f"{camera_test_node_name}/events")
 
-        on_event_event = Event()
+    on_event_event = Event()
 
-        def on_event(data):
-            on_event_event.set()
+    def on_event(data):
+        on_event_event.set()
 
-        subscribtion = subscriber.subscribe_event("Test", on_event)
-        run_result = command_run_service.call(
-            FeatureCommandRun.Request(feature_name="TestEventGenerate")
-        )
-        assert run_result.error.code == 0
-        assert on_event_event.wait(1)
-       
-        
-    finally:
-        rclpy.shutdown()
+    subscriber.subscribe_event("Test", on_event)
+    run_result = command_run_service.call(
+        FeatureCommandRun.Request(feature_name="TestEventGenerate")
+    )
+    assert run_result.error.code == 0
+    assert on_event_event.wait(1)

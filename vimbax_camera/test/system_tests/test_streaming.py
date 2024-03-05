@@ -89,108 +89,97 @@ def vimbax_camera_node():
 @pytest.fixture
 def test_node():
     rclpy.init()
-    return TestNode()
+    yield TestNode()
+    rclpy.shutdown()
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_start_stop_services(test_node: TestNode, launch_context):
-    try:
-        start_service = test_node.create_client(
-            StreamStartStop, f"/{camera_test_node_name}/stream_start"
-            )
-        assert start_service.wait_for_service(10)
-        stop_service = test_node.create_client(
-            StreamStartStop, f"/{camera_test_node_name}/stream_stop"
-            )
-        assert stop_service.wait_for_service(10)
-    finally:
-        rclpy.shutdown()
+    start_service = test_node.create_client(
+        StreamStartStop, f"/{camera_test_node_name}/stream_start"
+        )
+    assert start_service.wait_for_service(10)
+    stop_service = test_node.create_client(
+        StreamStartStop, f"/{camera_test_node_name}/stream_stop"
+        )
+    assert stop_service.wait_for_service(10)
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_auto_stream_start_stop(test_node: TestNode, launch_context):
-    try:
-        status_service = test_node.create_client(Status, f"/{camera_test_node_name}/status")
-        assert status_service.wait_for_service(10)
+    status_service = test_node.create_client(Status, f"/{camera_test_node_name}/status")
+    assert status_service.wait_for_service(10)
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert not status.streaming
-        test_node.subscribe_image_raw()
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert not status.streaming
+    test_node.subscribe_image_raw()
 
-        assert test_node.wait_for_frame(5.0)
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert status.streaming
-        test_node.unsubscribe_image_raw()
-        time.sleep(2.0)
-        assert test_node.image_queue.empty()
+    assert test_node.wait_for_frame(5.0)
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert status.streaming
+    test_node.unsubscribe_image_raw()
+    time.sleep(2.0)
+    assert test_node.image_queue.empty()
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert not status.streaming
-    finally:
-        rclpy.shutdown()
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert not status.streaming
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_streaming(test_node: TestNode, launch_context):
-    try:
-        test_node.subscribe_image_raw()
-        assert test_node.wait_for_frame(5.0)
-        frame_count = 0
-        for i in range(100):
-            assert test_node.wait_for_frame(0.5)
-            frame_count += 1
+    test_node.subscribe_image_raw()
+    assert test_node.wait_for_frame(5.0)
+    frame_count = 0
+    for i in range(100):
+        assert test_node.wait_for_frame(0.5)
+        frame_count += 1
 
-        assert frame_count == 100
+    assert frame_count == 100
 
-        test_node.unsubscribe_image_raw()
-    finally:
-        rclpy.shutdown()
+    test_node.unsubscribe_image_raw()
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_manual_start_stop(test_node: TestNode, launch_context):
-    try:
-        status_service = test_node.create_client(Status, f"/{camera_test_node_name}/status")
-        assert status_service.wait_for_service(10)
+    status_service = test_node.create_client(Status, f"/{camera_test_node_name}/status")
+    assert status_service.wait_for_service(10)
 
-        start_service = test_node.create_client(
-            StreamStartStop, f"/{camera_test_node_name}/stream_start"
-            )
-        assert start_service.wait_for_service(1)
-        stop_service = test_node.create_client(
-            StreamStartStop, f"/{camera_test_node_name}/stream_stop"
-            )
-        assert stop_service.wait_for_service(1)
+    start_service = test_node.create_client(
+        StreamStartStop, f"/{camera_test_node_name}/stream_start"
+        )
+    assert start_service.wait_for_service(1)
+    stop_service = test_node.create_client(
+        StreamStartStop, f"/{camera_test_node_name}/stream_stop"
+        )
+    assert stop_service.wait_for_service(1)
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert not status.streaming
-        test_node.subscribe_image_raw()
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert not status.streaming
+    test_node.subscribe_image_raw()
 
-        assert test_node.wait_for_frame(5.0)
+    assert test_node.wait_for_frame(5.0)
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert status.streaming
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert status.streaming
 
-        assert stop_service.call(StreamStartStop.Request()).error == 0
-        test_node.clear_queue()
-        time.sleep(2.0)
-        assert test_node.image_queue.empty()
+    assert stop_service.call(StreamStartStop.Request()).error == 0
+    test_node.clear_queue()
+    time.sleep(2.0)
+    assert test_node.image_queue.empty()
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert not status.streaming
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert not status.streaming
 
-        assert start_service.call(StreamStartStop.Request()).error == 0
+    assert start_service.call(StreamStartStop.Request()).error == 0
 
-        assert test_node.wait_for_frame(5.0)
+    assert test_node.wait_for_frame(5.0)
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert status.streaming
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert status.streaming
 
-        test_node.unsubscribe_image_raw()
-        time.sleep(2.0)
-        assert test_node.image_queue.empty()
+    test_node.unsubscribe_image_raw()
+    time.sleep(2.0)
+    assert test_node.image_queue.empty()
 
-        status = test_node.call_service_sync(status_service, Status.Request())
-        assert not status.streaming
-    finally:
-        rclpy.shutdown()
+    status = test_node.call_service_sync(status_service, Status.Request())
+    assert not status.streaming
