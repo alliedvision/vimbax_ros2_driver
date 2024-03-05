@@ -57,4 +57,4 @@ def main():
     if response.error.code == 0:
         print_info_data(response)
     else:
-        print(f"Settings {args.operation} failed with {response.error}")
+        print(f"Feature info query failed with {response.error}")
