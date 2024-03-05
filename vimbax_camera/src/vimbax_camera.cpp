@@ -192,7 +192,7 @@ VimbaXCamera::~VimbaXCamera()
   }
 }
 
-bool VimbaXCamera::is_alive()
+bool VimbaXCamera::is_alive() const
 {
   VmbCameraInfo camera_info{};
 
@@ -201,7 +201,7 @@ bool VimbaXCamera::is_alive()
   return (err == VmbErrorNotFound) ? false : true;
 }
 
-bool VimbaXCamera::has_feature(const std::string_view & name)
+bool VimbaXCamera::has_feature(const std::string_view & name) const
 {
   if (auto search = feature_info_map_.find(name.data()); search != feature_info_map_.end()) {
     return true;
@@ -1174,31 +1174,34 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
     info.trigger_source = *trigger_source;
   }
 
-  auto const ip_address =
-    feature_int_get(SFNCFeatures::GevDeviceIPAddress, camera_info_.localDeviceHandle);
-  if (ip_address) {
-    auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*ip_address));
-    info.ip_address =
-      std::to_string(u8ptr[3]) + "." +
-      std::to_string(u8ptr[2]) + "." +
-      std::to_string(u8ptr[1]) + "." +
-      std::to_string(u8ptr[0]);
-  }
-
-  auto const mac_address =
-    feature_int_get(SFNCFeatures::GevDeviceMACAddress, camera_info_.localDeviceHandle);
-  if (mac_address) {
-    auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*mac_address));
-
-    std::stringstream mac_address_stream{};
-    mac_address_stream << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[5]);
-    for (int i = 4; i >= 0; i--) {
-      mac_address_stream << ":" << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[i]);
+  if (has_feature(SFNCFeatures::GevDeviceIPAddress)) {
+    auto const ip_address =
+      feature_int_get(SFNCFeatures::GevDeviceIPAddress, camera_info_.localDeviceHandle);
+    if (ip_address) {
+      auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*ip_address));
+      info.ip_address =
+        std::to_string(u8ptr[3]) + "." +
+        std::to_string(u8ptr[2]) + "." +
+        std::to_string(u8ptr[1]) + "." +
+        std::to_string(u8ptr[0]);
     }
-
-    info.mac_address = mac_address_stream.str();
   }
 
+  if (has_feature(SFNCFeatures::GevDeviceMACAddress)) {
+    auto const mac_address =
+      feature_int_get(SFNCFeatures::GevDeviceMACAddress, camera_info_.localDeviceHandle);
+    if (mac_address) {
+      auto const u8ptr = reinterpret_cast<const uint8_t *>(&(*mac_address));
+
+      std::stringstream mac_address_stream{};
+      mac_address_stream << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[5]);
+      for (int i = 4; i >= 0; i--) {
+        mac_address_stream << ":" << std::hex << std::setfill('0') << std::setw(2) << int(u8ptr[i]);
+      }
+
+      info.mac_address = mac_address_stream.str();
+    }
+  }
 
   return info;
 }
