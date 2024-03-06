@@ -21,6 +21,7 @@ from vimbax_camera_msgs.srv import Status
 
 from conftest import vimbax_camera_node, camera_test_node_name, TestNode
 
+from test_helper import check_error
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_start_stop_services(test_node: TestNode, launch_context):
@@ -91,7 +92,8 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
     status = test_node.call_service_sync(status_service, Status.Request())
     assert status.streaming
 
-    assert stop_service.call(StreamStartStop.Request()).error == 0
+    stop_result = stop_service.call(StreamStartStop.Request())
+    check_error(stop_result.error)
     test_node.clear_queue()
     time.sleep(2.0)
     assert test_node.image_queue.empty()
@@ -99,7 +101,8 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
     status = test_node.call_service_sync(status_service, Status.Request())
     assert not status.streaming
 
-    assert start_service.call(StreamStartStop.Request()).error == 0
+    start_result = start_service.call(StreamStartStop.Request())
+    check_error(start_result.error)
 
     assert test_node.wait_for_frame(5.0)
 
