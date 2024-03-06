@@ -23,6 +23,7 @@ from conftest import vimbax_camera_node, camera_test_node_name, TestNode
 
 from test_helper import check_error
 
+
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_start_stop_services(test_node: TestNode, launch_context):
     start_service = test_node.create_client(
