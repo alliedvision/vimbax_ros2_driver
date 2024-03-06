@@ -4,6 +4,8 @@ set(_pytest_tests
     test_features.py
     test_streaming.py
     test_pixel_formats.py
+    test_events.py
+    test_load_save_settings.py
 )
 
 foreach(_test_path ${_pytest_tests})

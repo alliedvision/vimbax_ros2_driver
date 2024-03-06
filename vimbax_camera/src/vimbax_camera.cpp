@@ -173,12 +173,23 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
 
 VimbaXCamera::~VimbaXCamera()
 {
-  stop_streaming();
+  if (is_alive()) {
+    stop_streaming();
+  }
 
   if (api_ && camera_handle_) {
     api_->CameraClose(camera_handle_);
     camera_handle_ = nullptr;
   }
+}
+
+bool VimbaXCamera::is_alive()
+{
+  VmbCameraInfo camera_info{};
+
+  auto const err = api_->CameraInfoQueryByHandle(camera_handle_, &camera_info, sizeof(camera_info));
+
+  return (err == VmbErrorNotFound) ? false : true;
 }
 
 result<void> VimbaXCamera::start_streaming(
@@ -249,10 +260,12 @@ result<void> VimbaXCamera::stop_streaming()
     return {};
   }
 
-  auto const acqStopError = feature_command_run(SFNCFeatures::AcquisitionStop);
-  if (!acqStopError) {
-    RCLCPP_ERROR(get_logger(), "Acquisition stop failed with %d", acqStopError.error().code);
-    return acqStopError.error();
+  if (is_alive()) {
+    auto const acqStopError = feature_command_run(SFNCFeatures::AcquisitionStop);
+    if (!acqStopError) {
+      RCLCPP_ERROR(get_logger(), "Acquisition stop failed with %d", acqStopError.error().code);
+      return acqStopError.error();
+    }
   }
 
   auto const capStopError = api_->CaptureEnd(camera_handle_);
@@ -321,7 +334,7 @@ result<std::vector<std::string>> VimbaXCamera::features_list_get(void) const
     return error{err};
   }
 
-  for (auto count = 0; count < feature_count; count++) {
+  for (uint32_t count = 0; count < feature_count; count++) {
     feature_list.push_back(std::string(features[count].name));
   }
 
@@ -1132,7 +1145,6 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
 
   return info;
 }
-
 
 bool VimbaXCamera::is_streaming() const
 {

@@ -1,3 +1,17 @@
+# Copyright 2024 Allied Vision Technologies GmbH. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 # ROS client lib
 import rclpy
 from rclpy.node import Node
@@ -156,7 +170,7 @@ def test_pixel_formats(launch_context):
     node: PixelFormatTestNode = PixelFormatTestNode("pytest_client_node", timeout_sec=5.0)
 
     # The PixelFormat cannot be changed while the camera is streaming
-    assert node.stop_stream().error == 0
+    assert node.stop_stream().error.code == 0
 
     # We can only test the formats required and supported by the attached camera
     available_formats = REQUIRED_PIXEL_FORMATS.intersection(set(node.get_supported_pixel_formats()))
@@ -168,11 +182,11 @@ def test_pixel_formats(launch_context):
         LOGGER.info(f"Testing format: {format}")
 
         assert node.set_pixel_format(format).error.code == 0
-        assert node.start_stream().error == 0
+        assert node.start_stream().error.code == 0
 
         image: Image = node.get_latest_image()
 
-        assert node.stop_stream().error == 0
+        assert node.stop_stream().error.code == 0
         # Assert the pixel format of the image matches the requested format
         assert not image is None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
@@ -184,4 +198,4 @@ def test_invalid_pixel_format(launch_context):
     node: PixelFormatTestNode = PixelFormatTestNode("pytest_client_node", timeout_sec=5.0)
     node.stop_stream()
     # This should fail
-    assert node.set_pixel_format("").error != 0
+    assert node.set_pixel_format("").error.code != 0
