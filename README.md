@@ -2,6 +2,7 @@
 
 ## Prerequisites
 - ROS 2 humble is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
+- For running the system tests make sure the package "ros-humble-launch-pytests" is installed on your system.
 
 ## Build Instructions
 1. Setup the ROS2 environment 
