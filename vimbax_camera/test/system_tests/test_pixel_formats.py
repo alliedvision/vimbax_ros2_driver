@@ -92,8 +92,7 @@ test_node_name: str = "vimbax_camera_pytest"
 # Fixture to launch the vimbax_camera_node
 @launch_pytest.fixture
 def vimbax_camera_node():
-    """Launch the vimbax_camera_node"""
-
+    """Launch the vimbax_camera_node."""
     return launch.LaunchDescription(
         [
             actions.Node(
@@ -120,7 +119,7 @@ def init_and_shutdown_ros():
 
 
 class PixelFormatTestNode(Node):
-    """Custom ROS2 Node to make testing easier"""
+    """Custom ROS2 Node to make testing easier."""
 
     def __init__(self, name: str, timeout_sec: float = 10.0):
         super().__init__(name)
@@ -165,7 +164,7 @@ class PixelFormatTestNode(Node):
         return self.__call_service_sync(self.__stream_start_srv, StreamStartStop.Request())
 
     def get_supported_pixel_formats(self) -> List[str]:
-        """Receives the list of available pixel formats from the camera"""
+        """Receives the list of available pixel formats from the camera."""
         req: FeatureEnumInfoGet.Request = FeatureEnumInfoGet.Request()
         req.feature_name = "PixelFormat"
         res: FeatureEnumInfoGet.Response = self.__call_service_sync(self.__enum_info_get_srv, req)
@@ -173,14 +172,14 @@ class PixelFormatTestNode(Node):
         return res.available_values
 
     def set_pixel_format(self, format: str) -> FeatureEnumSet.Response:
-        """Sets the pixel format"""
+        """Set the pixel format published by the camera."""
         req: FeatureEnumSet.Request = FeatureEnumSet.Request()
         req.feature_name = "PixelFormat"
         req.value = format
         return self.__call_service_sync(self.__enum_set_srv, req)
 
     def get_latest_image(self) -> Image:
-        """Spins the default context until an Image is received from the Camera"""
+        """Spins the default context until an Image is received from the Camera."""
         # Clear the future to receive a new Image
         self.__image_future = rclpy.Future()
         rclpy.spin_until_future_complete(
