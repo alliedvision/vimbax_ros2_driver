@@ -226,4 +226,6 @@ def test_invalid_pixel_format(launch_context):
     node: PixelFormatTestNode = PixelFormatTestNode("pytest_client_node", timeout_sec=5.0)
     node.stop_stream()
     # This should fail
-    assert node.set_pixel_format("").error.code != 0
+    res = node.set_pixel_format("")
+    error_msg: str = "Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)"
+    assert res.error.code == -11,  error_msg.format(res.error.code, res.error.text)
