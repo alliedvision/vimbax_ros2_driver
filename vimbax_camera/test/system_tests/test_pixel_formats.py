@@ -28,12 +28,12 @@ import launch_pytest
 
 # VimbaX_Camera msgs
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
+from test_helper import check_error
 
 from typing import List
 
 
 import logging
-
 LOGGER = logging.getLogger(__name__)
 
 # The required formats are listed in requirement UNIRT-1118
@@ -168,6 +168,7 @@ class PixelFormatTestNode(Node):
         req: FeatureEnumInfoGet.Request = FeatureEnumInfoGet.Request()
         req.feature_name = "PixelFormat"
         res: FeatureEnumInfoGet.Response = self.__call_service_sync(self.__enum_info_get_srv, req)
+        check_error(res.error)
 
         return res.available_values
 
@@ -194,7 +195,7 @@ def test_pixel_formats(launch_context):
     node: PixelFormatTestNode = PixelFormatTestNode("pytest_client_node", timeout_sec=5.0)
 
     # The PixelFormat cannot be changed while the camera is streaming
-    assert node.stop_stream().error.code == 0
+    check_error(node.stop_stream().error)
 
     # We can only test the formats required and supported by the attached camera
     available_formats = REQUIRED_PIXEL_FORMATS.intersection(
@@ -207,12 +208,12 @@ def test_pixel_formats(launch_context):
         # Set the pixel format
         LOGGER.info(f"Testing format: {format}")
 
-        assert node.set_pixel_format(format).error.code == 0
-        assert node.start_stream().error.code == 0
+        check_error(node.set_pixel_format(format).error)
+        check_error(node.start_stream().error)
 
         image: Image = node.get_latest_image()
 
-        assert node.stop_stream().error.code == 0
+        check_error(node.stop_stream().error)
         # Assert the pixel format of the image matches the requested format
         assert image is not None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
