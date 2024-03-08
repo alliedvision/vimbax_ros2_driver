@@ -22,16 +22,21 @@ import rclpy.executors
 import launch_pytest
 import launch
 
+from launch.actions import ExecuteProcess
+
 from launch_ros.actions import Node
 
 from threading import Thread
 
 import queue
 import time
+import random
+import string
 
 from sensor_msgs.msg import Image
 
-camera_test_node_name = "vimbax_camera_pytest"
+camera_test_node_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+camera_test_node_name = f"vimbax_camera_pytest_{camera_test_node_id}"
 
 
 class TestNode(rclpy.node.Node):
@@ -71,7 +76,18 @@ class TestNode(rclpy.node.Node):
 
 @launch_pytest.fixture
 def vimbax_camera_node():
+
     return launch.LaunchDescription([
+        ExecuteProcess(
+            cmd=[
+                "ros2",
+                "node",
+                "list",
+                "--all"
+            ],
+            shell=True,
+            output='both',
+        ),
         Node(
             package='vimbax_camera',
             # namespace='avt_vimbax',
