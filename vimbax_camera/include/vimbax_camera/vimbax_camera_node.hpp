@@ -96,6 +96,7 @@ private:
   std::atomic_bool stream_restart_required_ = false;
   std::string last_camera_id_{};
   mutable std::shared_mutex camera_mutex_{};
+  mutable std::mutex stream_state_mutex_{};
 
   static std::string get_node_name();
 
