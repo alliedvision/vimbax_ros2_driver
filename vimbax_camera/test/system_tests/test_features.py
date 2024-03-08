@@ -46,7 +46,7 @@ from vimbax_camera_msgs.srv import FeatureStringSet
 
 from vimbax_camera_msgs.srv import FeatureRawGet
 
-from conftest import vimbax_camera_node, camera_test_node_name, TestNode
+from conftest import vimbax_camera_node, TestNode
 
 from test_helper import check_error, check_feature_info, ensure_access_mode, FeatureDataType
 
@@ -54,7 +54,7 @@ from test_helper import check_error, check_feature_info, ensure_access_mode, Fea
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_list(test_node: TestNode, launch_context):
     feature_list_service = test_node.create_client(
-        FeaturesListGet, f"/{camera_test_node_name}/features/list_get")
+        FeaturesListGet, f"/{test_node.camera_node_name()}/features/list_get")
     assert feature_list_service.wait_for_service(10)
 
     response = feature_list_service.call(FeaturesListGet.Request())
@@ -66,10 +66,10 @@ def test_feature_list(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_list_query(test_node: TestNode, launch_context):
     feature_list_service = test_node.create_client(
-        FeaturesListGet, f"/{camera_test_node_name}/features/list_get")
+        FeaturesListGet, f"/{test_node.camera_node_name()}/features/list_get")
     assert feature_list_service.wait_for_service(10)
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
 
     response = feature_list_service.call(FeaturesListGet.Request())
@@ -91,10 +91,10 @@ def test_feature_list_query(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_list_query_all(test_node: TestNode, launch_context):
     feature_list_service = test_node.create_client(
-        FeaturesListGet, f"/{camera_test_node_name}/features/list_get")
+        FeaturesListGet, f"/{test_node.camera_node_name()}/features/list_get")
     assert feature_list_service.wait_for_service(10)
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
 
     response = feature_list_service.call(FeaturesListGet.Request())
@@ -115,10 +115,10 @@ def test_feature_list_query_all(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_list_is_query_empty(test_node: TestNode, launch_context):
     feature_list_service = test_node.create_client(
-        FeaturesListGet, f"/{camera_test_node_name}/features/list_get")
+        FeaturesListGet, f"/{test_node.camera_node_name()}/features/list_get")
     assert feature_list_service.wait_for_service(10)
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
 
     response = feature_list_service.call(FeaturesListGet.Request())
@@ -138,10 +138,10 @@ def test_feature_list_is_query_empty(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_get_access_mode(test_node: TestNode, launch_context):
     feature_list_service = test_node.create_client(
-        FeaturesListGet, f"/{camera_test_node_name}/features/list_get")
+        FeaturesListGet, f"/{test_node.camera_node_name()}/features/list_get")
     assert feature_list_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
 
     response = feature_list_service.call(FeaturesListGet.Request())
@@ -159,25 +159,25 @@ def test_feature_get_access_mode(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_type_info_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_int_info_service = test_node.create_client(
-        FeatureIntInfoGet, f"/{camera_test_node_name}/features/int_info_get")
+        FeatureIntInfoGet, f"/{test_node.camera_node_name()}/features/int_info_get")
     assert feature_int_info_service.wait_for_service(10)
     feature_float_info_service = test_node.create_client(
-        FeatureFloatInfoGet, f"/{camera_test_node_name}/features/float_info_get")
+        FeatureFloatInfoGet, f"/{test_node.camera_node_name()}/features/float_info_get")
     assert feature_float_info_service.wait_for_service(10)
     feature_enum_info_service = test_node.create_client(
-        FeatureEnumInfoGet, f"/{camera_test_node_name}/features/enum_info_get")
+        FeatureEnumInfoGet, f"/{test_node.camera_node_name()}/features/enum_info_get")
     assert feature_enum_info_service.wait_for_service(10)
     feature_string_info_service = test_node.create_client(
-        FeatureStringInfoGet, f"/{camera_test_node_name}/features/string_info_get")
+        FeatureStringInfoGet, f"/{test_node.camera_node_name()}/features/string_info_get")
     assert feature_string_info_service.wait_for_service(10)
     feature_raw_info_service = test_node.create_client(
-        FeatureRawInfoGet, f"/{camera_test_node_name}/features/raw_info_get")
+        FeatureRawInfoGet, f"/{test_node.camera_node_name()}/features/raw_info_get")
     assert feature_raw_info_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -223,13 +223,13 @@ def test_feature_type_info_get(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_int_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_int_get_service = test_node.create_client(
-        FeatureIntGet, f"/{camera_test_node_name}/features/int_get")
+        FeatureIntGet, f"/{test_node.camera_node_name()}/features/int_get")
     assert feature_int_get_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -254,19 +254,19 @@ def test_feature_int_set(test_node: TestNode, launch_context):
     features_ignore = ["TestPendingAck", "CustomModuleRegData"]
 
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_int_get_service = test_node.create_client(
-        FeatureIntGet, f"/{camera_test_node_name}/features/int_get")
+        FeatureIntGet, f"/{test_node.camera_node_name()}/features/int_get")
     assert feature_int_get_service.wait_for_service(10)
     feature_int_set_service = test_node.create_client(
-        FeatureIntSet, f"/{camera_test_node_name}/features/int_set")
+        FeatureIntSet, f"/{test_node.camera_node_name()}/features/int_set")
     assert feature_int_set_service.wait_for_service(10)
     feature_int_info_service = test_node.create_client(
-        FeatureIntInfoGet, f"/{camera_test_node_name}/features/int_info_get")
+        FeatureIntInfoGet, f"/{test_node.camera_node_name()}/features/int_info_get")
     assert feature_int_info_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -309,13 +309,13 @@ def test_feature_int_set(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_float_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_float_get_service = test_node.create_client(
-        FeatureFloatGet, f"/{camera_test_node_name}/features/float_get")
+        FeatureFloatGet, f"/{test_node.camera_node_name()}/features/float_get")
     assert feature_float_get_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -342,19 +342,19 @@ def test_feature_float_set(test_node: TestNode, launch_context):
     ]
 
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_float_get_service = test_node.create_client(
-        FeatureFloatGet, f"/{camera_test_node_name}/features/float_get")
+        FeatureFloatGet, f"/{test_node.camera_node_name()}/features/float_get")
     assert feature_float_get_service.wait_for_service(10)
     feature_float_set_service = test_node.create_client(
-        FeatureFloatSet, f"/{camera_test_node_name}/features/float_set")
+        FeatureFloatSet, f"/{test_node.camera_node_name()}/features/float_set")
     assert feature_float_set_service.wait_for_service(10)
     feature_float_info_service = test_node.create_client(
-        FeatureFloatInfoGet, f"/{camera_test_node_name}/features/float_info_get")
+        FeatureFloatInfoGet, f"/{test_node.camera_node_name()}/features/float_info_get")
     assert feature_float_info_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -397,13 +397,13 @@ def test_feature_float_set(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_enum_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_enum_get_service = test_node.create_client(
-        FeatureEnumGet, f"/{camera_test_node_name}/features/enum_get")
+        FeatureEnumGet, f"/{test_node.camera_node_name()}/features/enum_get")
     assert feature_enum_get_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -430,19 +430,19 @@ def test_feature_enum_set(test_node: TestNode, launch_context):
     ]
 
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_enum_get_service = test_node.create_client(
-        FeatureEnumGet, f"/{camera_test_node_name}/features/enum_get")
+        FeatureEnumGet, f"/{test_node.camera_node_name()}/features/enum_get")
     assert feature_enum_get_service.wait_for_service(10)
     feature_enum_set_service = test_node.create_client(
-        FeatureEnumSet, f"/{camera_test_node_name}/features/enum_set")
+        FeatureEnumSet, f"/{test_node.camera_node_name()}/features/enum_set")
     assert feature_enum_set_service.wait_for_service(10)
     feature_enum_info_service = test_node.create_client(
-        FeatureEnumInfoGet, f"/{camera_test_node_name}/features/enum_info_get")
+        FeatureEnumInfoGet, f"/{test_node.camera_node_name()}/features/enum_info_get")
     assert feature_enum_info_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -485,13 +485,13 @@ def test_feature_enum_set(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_bool_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_bool_get_service = test_node.create_client(
-        FeatureBoolGet, f"/{camera_test_node_name}/features/bool_get")
+        FeatureBoolGet, f"/{test_node.camera_node_name()}/features/bool_get")
     assert feature_bool_get_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -516,16 +516,16 @@ def test_feature_bool_set(test_node: TestNode, launch_context):
     features_ignore = ["TestPattern", "ExposureActiveMode", "DevicePowerSavingMode"]
 
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_bool_get_service = test_node.create_client(
-        FeatureBoolGet, f"/{camera_test_node_name}/features/bool_get")
+        FeatureBoolGet, f"/{test_node.camera_node_name()}/features/bool_get")
     assert feature_bool_get_service.wait_for_service(10)
     feature_bool_set_service = test_node.create_client(
-        FeatureBoolSet, f"/{camera_test_node_name}/features/bool_set")
+        FeatureBoolSet, f"/{test_node.camera_node_name()}/features/bool_set")
     assert feature_bool_set_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -563,13 +563,13 @@ def test_feature_bool_set(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_string_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_string_get_service = test_node.create_client(
-        FeatureStringGet, f"/{camera_test_node_name}/features/string_get")
+        FeatureStringGet, f"/{test_node.camera_node_name()}/features/string_get")
     assert feature_string_get_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -592,19 +592,19 @@ def test_feature_string_get(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_string_set(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_string_get_service = test_node.create_client(
-        FeatureStringGet, f"/{camera_test_node_name}/features/string_get")
+        FeatureStringGet, f"/{test_node.camera_node_name()}/features/string_get")
     assert feature_string_get_service.wait_for_service(10)
     feature_string_set_service = test_node.create_client(
-        FeatureStringSet, f"/{camera_test_node_name}/features/string_set")
+        FeatureStringSet, f"/{test_node.camera_node_name()}/features/string_set")
     feature_string_set_service.wait_for_service(10)
     feature_string_info_service = test_node.create_client(
-        FeatureStringInfoGet, f"/{camera_test_node_name}/features/string_info_get")
+        FeatureStringInfoGet, f"/{test_node.camera_node_name()}/features/string_info_get")
     feature_string_info_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
@@ -648,13 +648,13 @@ def test_feature_string_set(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_feature_raw_get(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{camera_test_node_name}/feature_info_query")
+        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{camera_test_node_name}/features/access_mode_get")
+        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
     assert feature_access_mode_service.wait_for_service(10)
     feature_raw_get_service = test_node.create_client(
-        FeatureRawGet, f"/{camera_test_node_name}/features/raw_get")
+        FeatureRawGet, f"/{test_node.camera_node_name()}/features/raw_get")
     assert feature_raw_get_service.wait_for_service(10)
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())

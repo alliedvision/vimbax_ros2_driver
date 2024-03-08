@@ -35,16 +35,14 @@ import string
 
 from sensor_msgs.msg import Image
 
-camera_test_node_id = ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
-camera_test_node_name = f"vimbax_camera_pytest_{camera_test_node_id}"
-
 
 class TestNode(rclpy.node.Node):
     __test__ = False
 
-    def __init__(self, name="_test_node"):
+    def __init__(self, name, camera_node_name):
         rclpy.node.Node.__init__(self, name)
         self.image_queue = queue.Queue()
+        self._camera_node_name = camera_node_name
 
         self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self, ))
         self.ros_spin_thread.start()
@@ -55,7 +53,7 @@ class TestNode(rclpy.node.Node):
             self.image_queue.put(image)
 
         self.image_subscribtion = self.create_subscription(
-            Image, f"{camera_test_node_name}/image_raw", callback, 10
+            Image, f"{self._camera_node_name}/image_raw", callback, 10
             )
 
     def clear_queue(self):
@@ -73,10 +71,22 @@ class TestNode(rclpy.node.Node):
     def call_service_sync(self, service, request):
         return service.call(request)
 
+    def camera_node_name(self):
+        return self._camera_node_name
+
+
+@pytest.fixture
+def node_test_id():
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+
+
+@pytest.fixture
+def camera_test_node_name(node_test_id):
+    return f"vimbax_camera_pytest_{node_test_id}"
+
 
 @launch_pytest.fixture
-def vimbax_camera_node():
-
+def vimbax_camera_node(camera_test_node_name):
     return launch.LaunchDescription([
         ExecuteProcess(
             cmd=[
@@ -101,7 +111,7 @@ def vimbax_camera_node():
 
 
 @pytest.fixture
-def test_node():
+def test_node(node_test_id, camera_test_node_name):
     rclpy.init()
-    yield TestNode()
+    yield TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
     rclpy.shutdown()

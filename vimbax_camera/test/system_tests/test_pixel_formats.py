@@ -27,7 +27,7 @@ import pytest
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
 from test_helper import check_error
 
-from conftest import camera_test_node_name, vimbax_camera_node
+from conftest import vimbax_camera_node
 
 from typing import List
 
@@ -98,26 +98,25 @@ def init_and_shutdown_ros():
 class PixelFormatTestNode(Node):
     """Custom ROS2 Node to make testing easier."""
 
-    def __init__(self, name: str, timeout_sec: float = 10.0):
+    def __init__(self, name: str, test_node_name: str, timeout_sec: float = 10.0):
         super().__init__(name)
         self.__rcl_timeout_sec = float(timeout_sec)
         self.__enum_info_get_srv: Service = self.create_client(
-            srv_type=FeatureEnumInfoGet,
-            srv_name=f"/{camera_test_node_name}/features/enum_info_get"
+            srv_type=FeatureEnumInfoGet, srv_name=f"/{test_node_name}/features/enum_info_get"
         )
         self.__enum_set_srv: Service = self.create_client(
-            srv_type=FeatureEnumSet, srv_name=f"/{camera_test_node_name}/features/enum_set"
+            srv_type=FeatureEnumSet, srv_name=f"/{test_node_name}/features/enum_set"
         )
         self.__stream_start_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{camera_test_node_name}/stream_start"
+            srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_start"
         )
         self.__stream_stop_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{camera_test_node_name}/stream_stop"
+            srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_stop"
         )
         self.__image_future: Future = Future()
         self.__image_sub: Subscription = self.create_subscription(
             Image,
-            f"/{camera_test_node_name}/image_raw",
+            f"/{test_node_name}/image_raw",
             lambda msg: self.__image_future.set_result(msg),
             0,
         )
@@ -168,9 +167,10 @@ class PixelFormatTestNode(Node):
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
-def test_pixel_formats(launch_context):
+def test_pixel_formats(launch_context, node_test_id, camera_test_node_name):
 
-    node: PixelFormatTestNode = PixelFormatTestNode("pytest_client_node", timeout_sec=5.0)
+    node: PixelFormatTestNode = PixelFormatTestNode(
+        f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
 
     # The PixelFormat cannot be changed while the camera is streaming
     check_error(node.stop_stream().error)
@@ -199,9 +199,10 @@ def test_pixel_formats(launch_context):
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
-def test_invalid_pixel_format(launch_context):
+def test_invalid_pixel_format(launch_context, node_test_id, camera_test_node_name):
 
-    node: PixelFormatTestNode = PixelFormatTestNode("pytest_client_node", timeout_sec=5.0)
+    node: PixelFormatTestNode = PixelFormatTestNode(
+        f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
     node.stop_stream()
     # This should fail
     res = node.set_pixel_format("")
