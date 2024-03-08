@@ -326,7 +326,7 @@ def test_autostart_disabled_sub_unsub_repeat(launch_context, camera_test_node_na
 # TODO: Check if this is the intended behaviour or not
 # Verify that streaming continues when unsubscribing and resubscibing
 # @pytest.mark.launch(fixture=camera_node_without_autostart)
-#def test_autostart_disabled_continue_stream_with_sub_unsub(launch_context, camera_test_node_name):
+# def test_autostart_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
 #
 #     node = StreamAutostartTestNode("_test_node", camera_test_node_name)
 #
