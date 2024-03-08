@@ -23,17 +23,17 @@ from vimbax_camera_msgs.msg import EventData
 
 from vimbax_camera_events.event_subscriber import EventSubscriber
 
-from conftest import vimbax_camera_node, camera_test_node_name, TestNode
+from conftest import vimbax_camera_node, TestNode
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_genicam_events(test_node: TestNode, launch_context):
     enum_info_service = test_node.create_client(
-        FeatureEnumInfoGet, f"{camera_test_node_name}/features/enum_info_get"
+        FeatureEnumInfoGet, f"{test_node.camera_node_name()}/features/enum_info_get"
     )
     assert enum_info_service.wait_for_service(10)
     command_run_service = test_node.create_client(
-        FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
+        FeatureCommandRun, f"{test_node.camera_node_name()}/features/command_run"
     )
     assert command_run_service.wait_for_service(10)
 
@@ -43,7 +43,7 @@ def test_genicam_events(test_node: TestNode, launch_context):
     if "Test" not in enum_info_response.available_values:
         pytest.skip("Test event not supported")
 
-    subscriber = EventSubscriber(EventData, test_node, f"{camera_test_node_name}/events")
+    subscriber = EventSubscriber(EventData, test_node, f"{test_node.camera_node_name()}/events")
 
     on_event_event = Event()
 

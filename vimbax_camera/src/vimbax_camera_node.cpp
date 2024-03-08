@@ -1259,7 +1259,10 @@ result<void> VimbaXCameraNode::start_streaming()
 
   auto const buffer_count = node_->get_parameter(parameter_buffer_count).as_int();
 
-  std::shared_lock lock(camera_mutex_);
+  std::unique_lock stream_state_lock(stream_state_mutex_, std::defer_lock);
+  std::shared_lock camera_lock(camera_mutex_, std::defer_lock);
+  std::lock(stream_state_lock, camera_lock);
+
   auto error = camera_->start_streaming(
     buffer_count,
     [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
@@ -1292,7 +1295,10 @@ result<void> VimbaXCameraNode::stop_streaming()
     return error{VmbErrorNotFound};
   }
 
-  std::shared_lock lock(camera_mutex_);
+  std::unique_lock stream_state_lock(stream_state_mutex_, std::defer_lock);
+  std::shared_lock camera_lock(camera_mutex_, std::defer_lock);
+  std::lock(stream_state_lock, camera_lock);
+
   auto error = camera_->stop_streaming();
 
   RCLCPP_INFO(get_logger(), "Stream stopped");
