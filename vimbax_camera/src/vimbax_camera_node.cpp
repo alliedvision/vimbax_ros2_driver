@@ -1288,12 +1288,12 @@ result<void> VimbaXCameraNode::start_streaming()
       frame->header.set__frame_id(node_->get_parameter(parameter_frame_id).as_string());
 
       auto const camera_info = [&] {
-        auto const loaded_info =  camera_info_manager_->getCameraInfo();
+        auto const loaded_info = camera_info_manager_->getCameraInfo();
 
-        if (loaded_info.width != frame->width || loaded_info.height != frame->height)  {
+        if (loaded_info.width != frame->width || loaded_info.height != frame->height) {
           return sensor_msgs::msg::CameraInfo{}.set__width(frame->width).set__height(frame->height);
         }
-        
+
         return loaded_info;
       }().set__header(frame->header);
 
