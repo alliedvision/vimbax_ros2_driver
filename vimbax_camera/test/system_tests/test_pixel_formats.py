@@ -18,17 +18,16 @@ from rclpy.node import Node
 from rclpy.service import Service
 from rclpy import Future
 from rclpy.subscription import Subscription
-import launch
-from launch_ros import actions
 from sensor_msgs.msg import Image
 
 # pytest libs
 import pytest
-import launch_pytest
 
 # VimbaX_Camera msgs
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
 from test_helper import check_error
+
+from conftest import camera_test_node_name, vimbax_camera_node
 
 from typing import List
 
@@ -86,28 +85,6 @@ PFNC_TO_ROS = {
 }
 
 
-test_node_name: str = "vimbax_camera_pytest"
-
-
-# Fixture to launch the vimbax_camera_node
-@launch_pytest.fixture
-def vimbax_camera_node():
-    """Launch the vimbax_camera_node."""
-    return launch.LaunchDescription(
-        [
-            actions.Node(
-                package="vimbax_camera",
-                # namespace='avt_vimbax',
-                executable="vimbax_camera_node",
-                name=test_node_name,
-            ),
-            # Tell launch when to start the test
-            # If no ReadyToTest action is added, one will be appended automatically.
-            launch_pytest.actions.ReadyToTest(),
-        ]
-    )
-
-
 @pytest.fixture(autouse=True)
 def init_and_shutdown_ros():
     rclpy.init()
@@ -125,21 +102,22 @@ class PixelFormatTestNode(Node):
         super().__init__(name)
         self.__rcl_timeout_sec = float(timeout_sec)
         self.__enum_info_get_srv: Service = self.create_client(
-            srv_type=FeatureEnumInfoGet, srv_name=f"/{test_node_name}/features/enum_info_get"
+            srv_type=FeatureEnumInfoGet,
+            srv_name=f"/{camera_test_node_name}/features/enum_info_get"
         )
         self.__enum_set_srv: Service = self.create_client(
-            srv_type=FeatureEnumSet, srv_name=f"/{test_node_name}/features/enum_set"
+            srv_type=FeatureEnumSet, srv_name=f"/{camera_test_node_name}/features/enum_set"
         )
         self.__stream_start_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_start"
+            srv_type=StreamStartStop, srv_name=f"/{camera_test_node_name}/stream_start"
         )
         self.__stream_stop_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_stop"
+            srv_type=StreamStartStop, srv_name=f"/{camera_test_node_name}/stream_stop"
         )
         self.__image_future: Future = Future()
         self.__image_sub: Subscription = self.create_subscription(
             Image,
-            f"/{test_node_name}/image_raw",
+            f"/{camera_test_node_name}/image_raw",
             lambda msg: self.__image_future.set_result(msg),
             0,
         )
