@@ -31,6 +31,7 @@ namespace vimbax_camera
 {
 
 using helper::get_logger;
+using helper::vmb_error_to_string;
 
 std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::NodeOptions & options)
 {
@@ -342,8 +343,9 @@ bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
     auto const loadResult = camera_->settings_load(settingsFile);
     if (!loadResult) {
       RCLCPP_ERROR(
-        get_logger(), "Loading settings from file %s failed with %d",
-        settingsFile.c_str(), loadResult.error().code);
+        get_logger(), "Loading settings from file %s failed with error %d (%s)",
+        settingsFile.c_str(), loadResult.error().code,
+        (vmb_error_to_string(loadResult.error().code)).data());
     }
   }
 
@@ -359,7 +361,9 @@ bool VimbaXCameraNode::initialize_camera_observer()
     gVmbHandle, SFNCFeatures::EventSelector.data(), "CameraDiscovery");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -367,7 +371,9 @@ bool VimbaXCameraNode::initialize_camera_observer()
     gVmbHandle, SFNCFeatures::EventNotification.data(), "On");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -376,7 +382,9 @@ bool VimbaXCameraNode::initialize_camera_observer()
     this->camera_discovery_callback, reinterpret_cast<void *>(this));
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -389,14 +397,18 @@ bool VimbaXCameraNode::deinitialize_camera_observer()
     gVmbHandle, SFNCFeatures::EventSelector.data(), "CameraDiscovery");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
   err = api_->FeatureEnumSet(gVmbHandle, SFNCFeatures::EventNotification.data(), "Off");
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -405,7 +417,9 @@ bool VimbaXCameraNode::deinitialize_camera_observer()
     this->camera_discovery_callback);
 
   if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(get_logger(), "%s failed with error %d", __FUNCTION__, err);
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      (vmb_error_to_string(err)).data());
     return false;
   }
 
@@ -470,8 +484,8 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
     }
   } else {
     RCLCPP_ERROR(
-      get_logger(), "%s: Error while accessing EventCameraDiscoveryCameraID: %d", __FUNCTION__,
-      err);
+      get_logger(), "%s: Error while accessing EventCameraDiscoveryCameraID: %d (%s)", __FUNCTION__,
+      err, (vmb_error_to_string(err)).data());
   }
 }
 
@@ -1268,7 +1282,9 @@ result<void> VimbaXCameraNode::start_streaming()
 
       auto const queue_error = frame->queue();
       if (queue_error != VmbErrorSuccess) {
-        RCLCPP_ERROR(get_logger(), "Frame requeue failed with %d", queue_error);
+        RCLCPP_ERROR(
+          get_logger(), "Frame requeue failed with %d (%s)", queue_error,
+          (vmb_error_to_string(queue_error)).data());
       }
     });
 
