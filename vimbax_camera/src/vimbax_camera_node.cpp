@@ -519,7 +519,7 @@ bool VimbaXCameraNode::initialize_graph_notify()
               start_streaming();
               stream_stopped_by_service_ = false;
             }
-          } else if (subscriber_change < 0) {
+          } else if (subscriber_change < 0 && current_num_subscribers == 0) {
             if (is_streaming()) {
               stop_streaming();
             }
