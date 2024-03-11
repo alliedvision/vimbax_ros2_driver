@@ -494,8 +494,8 @@ bool VimbaXCameraNode::initialize_graph_notify()
         event->check_and_clear();
 
         if (is_available_) {
-          auto const subscriber_change = 
-            int64_t(current_num_subscribers) - int64_t(last_num_subscribers);
+          auto const subscriber_change =
+          int64_t(current_num_subscribers) - int64_t(last_num_subscribers);
 
           if (subscriber_change > 0) {
             if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
