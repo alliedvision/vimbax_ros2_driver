@@ -483,7 +483,7 @@ bool VimbaXCameraNode::initialize_graph_notify()
       size_t last_num_subscribers = 0;
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
-        node_->wait_for_graph_change(event, std::chrono::milliseconds(500));
+        node_->wait_for_graph_change(event, std::chrono::milliseconds(50));
         auto current_num_subscribers = image_publisher_.getNumSubscribers();
 
         if (stream_restart_required_) {
@@ -491,25 +491,28 @@ bool VimbaXCameraNode::initialize_graph_notify()
           stream_restart_required_ = false;
         }
 
-        if (event->check_and_clear()) {
-          if (is_available_) {
-            if (current_num_subscribers > 0) {
-              if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
-              !is_streaming() &&
-              (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers))
-              {
-                start_streaming();
-                stream_stopped_by_service_ = false;
-              }
-            } else {
-              if (is_streaming()) {
-                stop_streaming();
-              }
+        event->check_and_clear();
+
+        if (is_available_) {
+          auto const subscriber_change =
+          int64_t(current_num_subscribers) - int64_t(last_num_subscribers);
+
+          if (subscriber_change > 0) {
+            if (node_->get_parameter(parameter_autostart_stream).as_int() == 1 &&
+            !is_streaming() &&
+            (!stream_stopped_by_service_ || current_num_subscribers > last_num_subscribers))
+            {
+              start_streaming();
               stream_stopped_by_service_ = false;
             }
-
-            last_num_subscribers = current_num_subscribers;
+          } else if (subscriber_change < 0 && current_num_subscribers == 0) {
+            if (is_streaming()) {
+              stop_streaming();
+            }
+            stream_stopped_by_service_ = false;
           }
+
+          last_num_subscribers = current_num_subscribers;
         }
       }
     });
@@ -1245,7 +1248,10 @@ result<void> VimbaXCameraNode::start_streaming()
 
   auto const buffer_count = node_->get_parameter(parameter_buffer_count).as_int();
 
-  std::shared_lock lock(camera_mutex_);
+  std::unique_lock stream_state_lock(stream_state_mutex_, std::defer_lock);
+  std::shared_lock camera_lock(camera_mutex_, std::defer_lock);
+  std::lock(stream_state_lock, camera_lock);
+
   auto error = camera_->start_streaming(
     buffer_count,
     [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
@@ -1276,7 +1282,10 @@ result<void> VimbaXCameraNode::stop_streaming()
     return error{VmbErrorNotFound};
   }
 
-  std::shared_lock lock(camera_mutex_);
+  std::unique_lock stream_state_lock(stream_state_mutex_, std::defer_lock);
+  std::shared_lock camera_lock(camera_mutex_, std::defer_lock);
+  std::lock(stream_state_lock, camera_lock);
+
   auto error = camera_->stop_streaming();
 
   RCLCPP_INFO(get_logger(), "Stream stopped");
