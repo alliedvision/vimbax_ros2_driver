@@ -124,7 +124,7 @@ bool VimbaXCameraNode::initialize_events()
 {
   feature_invalidation_event_publisher_ =
     std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
-    node_, "~/feature_invalidation",
+    node_, "feature_invalidation",
     [this](const std::string & name) -> int32_t
     {
       std::shared_lock lock(camera_mutex_);
@@ -154,7 +154,7 @@ bool VimbaXCameraNode::initialize_events()
 
   event_event_publisher_ =
     std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
-    node_, "~/events", [this](const std::string & name) -> int32_t
+    node_, "events", [this](const std::string & name) -> int32_t
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
@@ -304,9 +304,9 @@ bool VimbaXCameraNode::initialize_publisher()
   auto qos = rmw_qos_profile_default;
   qos.depth = 10;
 
-  image_publisher_ = image_transport::create_publisher(node_.get(), "~/image_raw", qos);
+  camera_publisher_ = image_transport::create_camera_publisher(node_.get(), "image_raw", qos);
 
-  if (!image_publisher_) {
+  if (!camera_publisher_) {
     return false;
   }
 
@@ -349,7 +349,29 @@ bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
     }
   }
 
+  auto const info_res = camera_->camera_info_get();
+
+  if (!info_res) {
+    return false;
+  }
+
+  auto const camera_frame_id_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Frame id of published images").set__read_only(true);
+  node_->declare_parameter(
+    parameter_frame_id, "vimbax_camera_" + info_res->device_id, camera_frame_id_param_desc);
+
+
+  auto const camera_info_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Url of camera info file").set__read_only(true);
+
+  node_->declare_parameter(parameter_camera_info_url, "", camera_info_param_desc);
+
+  camera_info_manager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
+    node_.get(), info_res->device_id,
+    node_->get_parameter(parameter_camera_info_url).as_string());
+
   is_available_ = true;
+
   return true;
 }
 
@@ -498,7 +520,7 @@ bool VimbaXCameraNode::initialize_graph_notify()
       while (!stop_threads_.load(std::memory_order::memory_order_relaxed)) {
         auto event = node_->get_graph_event();
         node_->wait_for_graph_change(event, std::chrono::milliseconds(50));
-        auto current_num_subscribers = image_publisher_.getNumSubscribers();
+        auto current_num_subscribers = camera_publisher_.getNumSubscribers();
 
         if (stream_restart_required_) {
           start_streaming();
@@ -574,7 +596,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_int_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntGet>(
-    "~/features/int_get", [this](
+    "features/int_get", [this](
       const vimbax_camera_msgs::srv::FeatureIntGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntGet::Response::SharedPtr response)
     {
@@ -595,7 +617,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_int_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntSet>(
-    "~/features/int_set", [this](
+    "features/int_set", [this](
       const vimbax_camera_msgs::srv::FeatureIntSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntSet::Response::SharedPtr response)
     {
@@ -614,7 +636,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_int_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntInfoGet>(
-    "~/features/int_info_get", [this](
+    "features/int_info_get", [this](
       const vimbax_camera_msgs::srv::FeatureIntInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureIntInfoGet::Response::SharedPtr response)
     {
@@ -637,7 +659,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_float_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatGet>(
-    "~/features/float_get", [this](
+    "features/float_get", [this](
       const vimbax_camera_msgs::srv::FeatureFloatGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatGet::Response::SharedPtr response)
     {
@@ -659,7 +681,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_float_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatSet>(
-    "~/features/float_set", [this](
+    "features/float_set", [this](
       const vimbax_camera_msgs::srv::FeatureFloatSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatSet::Response::SharedPtr response)
     {
@@ -678,7 +700,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_float_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatInfoGet>(
-    "~/features/float_info_get", [this](
+    "features/float_info_get", [this](
       const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureFloatInfoGet::Response::SharedPtr response)
     {
@@ -702,7 +724,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_string_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringGet>(
-    "~/features/string_get", [this](
+    "features/string_get", [this](
       const vimbax_camera_msgs::srv::FeatureStringGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringGet::Response::SharedPtr response)
     {
@@ -723,7 +745,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_string_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringSet>(
-    "~/features/string_set", [this](
+    "features/string_set", [this](
       const vimbax_camera_msgs::srv::FeatureStringSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringSet::Response::SharedPtr response)
     {
@@ -742,7 +764,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_string_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringInfoGet>(
-    "~/features/string_info_get", [this](
+    "features/string_info_get", [this](
       const vimbax_camera_msgs::srv::FeatureStringInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureStringInfoGet::Response::SharedPtr response)
     {
@@ -763,7 +785,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_bool_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureBoolGet>(
-    "~/features/bool_get", [this](
+    "features/bool_get", [this](
       const vimbax_camera_msgs::srv::FeatureBoolGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureBoolGet::Response::SharedPtr response)
     {
@@ -784,7 +806,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_bool_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureBoolSet>(
-    "~/features/bool_set", [this](
+    "features/bool_set", [this](
       const vimbax_camera_msgs::srv::FeatureBoolSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureBoolSet::Response::SharedPtr response)
     {
@@ -803,7 +825,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_command_is_done_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureCommandIsDone>(
-    "~/features/command_is_done", [this](
+    "features/command_is_done", [this](
       const vimbax_camera_msgs::srv::FeatureCommandIsDone::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureCommandIsDone::Response::SharedPtr response)
     {
@@ -824,7 +846,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_command_run_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureCommandRun>(
-    "~/features/command_run", [this](
+    "features/command_run", [this](
       const vimbax_camera_msgs::srv::FeatureCommandRun::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureCommandRun::Response::SharedPtr response)
     {
@@ -843,7 +865,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_enum_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumGet>(
-    "~/features/enum_get", [this](
+    "features/enum_get", [this](
       const vimbax_camera_msgs::srv::FeatureEnumGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumGet::Response::SharedPtr response)
     {
@@ -864,7 +886,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_enum_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumSet>(
-    "~/features/enum_set", [this](
+    "features/enum_set", [this](
       const vimbax_camera_msgs::srv::FeatureEnumSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumSet::Response::SharedPtr response)
     {
@@ -883,7 +905,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_enum_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumInfoGet>(
-    "~/features/enum_info_get", [this](
+    "features/enum_info_get", [this](
       const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumInfoGet::Response::SharedPtr response)
     {
@@ -905,7 +927,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_enum_as_int_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsIntGet>(
-    "~/features/enum_as_int_get", [this](
+    "features/enum_as_int_get", [this](
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumAsIntGet::Response::SharedPtr response)
     {
@@ -927,7 +949,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_enum_as_string_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumAsStringGet>(
-    "~/features/enum_as_string_get", [this](
+    "features/enum_as_string_get", [this](
       const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureEnumAsStringGet::Response::SharedPtr response)
     {
@@ -950,7 +972,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_raw_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawGet>(
-    "~/features/raw_get", [this](
+    "features/raw_get", [this](
       const vimbax_camera_msgs::srv::FeatureRawGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawGet::Response::SharedPtr response)
     {
@@ -973,7 +995,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_raw_set_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawSet>(
-    "~/features/raw_set", [this](
+    "features/raw_set", [this](
       const vimbax_camera_msgs::srv::FeatureRawSet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawSet::Response::SharedPtr response)
     {
@@ -993,7 +1015,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_raw_info_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawInfoGet>(
-    "~/features/raw_info_get", [this](
+    "features/raw_info_get", [this](
       const vimbax_camera_msgs::srv::FeatureRawInfoGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureRawInfoGet::Response::SharedPtr response)
     {
@@ -1014,7 +1036,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_access_mode_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureAccessModeGet>(
-    "~/features/access_mode_get", [this](
+    "features/access_mode_get", [this](
       const vimbax_camera_msgs::srv::FeatureAccessModeGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureAccessModeGet::Response::SharedPtr response)
     {
@@ -1036,7 +1058,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   feature_info_query_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureInfoQuery>(
-    "~/feature_info_query", [this](
+    "feature_info_query", [this](
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeatureInfoQuery::Response::SharedPtr response)
     {
@@ -1091,7 +1113,7 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   features_list_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeaturesListGet>(
-    "~/features/list_get", [this](
+    "features/list_get", [this](
       const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
     {
@@ -1119,7 +1141,7 @@ bool VimbaXCameraNode::initialize_settings_services()
 
   settings_save_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
-    "~/settings/save", [this](
+    "settings/save", [this](
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
     {
@@ -1138,7 +1160,7 @@ bool VimbaXCameraNode::initialize_settings_services()
 
   settings_load_service_ =
     node_->create_service<vimbax_camera_msgs::srv::SettingsLoadSave>(
-    "~/settings/load", [this](
+    "settings/load", [this](
       const vimbax_camera_msgs::srv::SettingsLoadSave::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::SettingsLoadSave::Response::SharedPtr response)
     {
@@ -1163,7 +1185,7 @@ bool VimbaXCameraNode::initialize_status_services()
   RCLCPP_INFO(get_logger(), "Initializing status services ...");
 
   status_service_ = node_->create_service<vimbax_camera_msgs::srv::Status>(
-    "~/status", [this](
+    "status", [this](
       const vimbax_camera_msgs::srv::Status::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::Status::Response::SharedPtr response)
     {
@@ -1213,7 +1235,7 @@ bool VimbaXCameraNode::initialize_stream_services()
 
   stream_start_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
-    "~/stream_start", [this](
+    "stream_start", [this](
       const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
@@ -1233,7 +1255,7 @@ bool VimbaXCameraNode::initialize_stream_services()
 
   stream_stop_service_ =
     node_->create_service<vimbax_camera_msgs::srv::StreamStartStop>(
-    "~/stream_stop", [this](
+    "stream_stop", [this](
       const vimbax_camera_msgs::srv::StreamStartStop::Request::ConstSharedPtr,
       const vimbax_camera_msgs::srv::StreamStartStop::Response::SharedPtr response)
     {
@@ -1277,8 +1299,20 @@ result<void> VimbaXCameraNode::start_streaming()
       }
 
       lastFrameId = frame->get_frame_id();
+      frame->header.set__frame_id(node_->get_parameter(parameter_frame_id).as_string());
 
-      image_publisher_.publish(*frame);
+      auto const camera_info = [&] {
+        auto const loaded_info = camera_info_manager_->getCameraInfo();
+
+        if (loaded_info.width != frame->width || loaded_info.height != frame->height) {
+          return sensor_msgs::msg::CameraInfo{}.set__width(frame->width).set__height(frame->height);
+        }
+
+        return loaded_info;
+      }().set__header(frame->header);
+
+
+      camera_publisher_.publish(*frame, camera_info);
 
       auto const queue_error = frame->queue();
       if (queue_error != VmbErrorSuccess) {
