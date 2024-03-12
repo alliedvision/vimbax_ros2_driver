@@ -13,6 +13,7 @@
 // limitations under the License.
 
 #include <iostream>
+#include <queue>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -30,25 +31,52 @@ int main(int argc, char * argv[])
 
   auto node = rclcpp::Node::make_shared("_asynchronous_grab_cpp");
 
-  int64_t last_frame_id = -1;
   int64_t frames_missing = 0;
   int64_t frame_count = 0;
+  std::chrono::nanoseconds last_timestamp{0};
 
+  std::deque<uint64_t> diffs{};
+
+  auto const topic_name = "/" + args[1] + "/image_raw";
 
   auto subscription = image_transport::create_subscription(
-    node.get(), "/vimbax_camera_test/image_raw",
+    node.get(), topic_name,
     [&](sensor_msgs::msg::Image::ConstSharedPtr imgmsg) {
-      auto const frame_id = std::stol(imgmsg->header.frame_id);
-      auto const missing = frame_id - last_frame_id - 1;
+      auto const timestamp = std::chrono::nanoseconds{imgmsg->header.stamp.nanosec} +
+      std::chrono::seconds{imgmsg->header.stamp.sec};
 
-      if (missing > 0) {
-        frames_missing += missing;
-        std::cout << "Detected " << missing << " missing frames!" << std::endl;
+      auto const diff =
+      std::chrono::duration_cast<std::chrono::microseconds>(timestamp - last_timestamp).count();
+
+      auto const mfps = 1000000000 / diff;
+
+      if (diffs.size() > 0) {
+        if (diffs.size() > 100) {
+          diffs.pop_front();
+        }
+
+        uint64_t sum = 0;
+
+        for (auto const d : diffs) {
+          sum += d;
+        }
+
+        auto const avg = sum / diffs.size();
+
+        if (diff > avg) {
+          std::cout << "Missing frames detected!!!" << std::endl;
+          frames_missing++;
+        } else {
+          diffs.push_back(diff);
+        }
+
+      } else {
+        diffs.push_back(diff);
       }
 
-      std::cout << "Got frame " << frame_id << std::endl;
+      std::cout << "Got frame diff " << diff << " mfps: " << mfps << std::endl;
 
-      last_frame_id = frame_id;
+      last_timestamp = timestamp;
       frame_count++;
     }, "raw");
 

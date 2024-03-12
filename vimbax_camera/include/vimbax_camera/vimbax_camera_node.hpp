@@ -72,10 +72,8 @@ class VimbaXCameraNode
 {
 public:
   using NodeBaseInterface = rclcpp::node_interfaces::NodeBaseInterface;
+  explicit VimbaXCameraNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions{});
   ~VimbaXCameraNode();
-
-  static std::shared_ptr<VimbaXCameraNode> make_shared(
-    const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
   NodeBaseInterface::SharedPtr get_node_base_interface() const;
   static void camera_discovery_callback(
@@ -83,8 +81,6 @@ public:
   void on_camera_discovery_callback(const VmbHandle_t handle, const char * name);
 
 private:
-  VimbaXCameraNode() = default;
-
   using OnSetParametersCallbackHandle = rclcpp::Node::OnSetParametersCallbackHandle;
 
   const std::string parameter_camera_id = "camera_id";
@@ -103,6 +99,8 @@ private:
 
   static std::string get_node_name();
 
+
+  bool initialize(const rclcpp::NodeOptions & options);
   bool initialize_parameters();
   bool initialize_api();
   bool initialize_publisher();
