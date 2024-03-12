@@ -37,4 +37,4 @@ def main():
     if response.error.code == 0:
         print(f"Received status {response}")
     else:
-        print(f"Settings {args.operation} failed with {response.error}")
+        print(f"Getting status failed with {response.error}")

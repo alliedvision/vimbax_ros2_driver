@@ -117,7 +117,8 @@ public:
     bool startAcquisition = true);
   result<void> stop_streaming();
 
-  bool is_alive();
+  bool is_alive() const;
+  bool has_feature(const std::string_view & name) const;
 
   // Feature access
   result<std::vector<std::string>> features_list_get(void) const;
