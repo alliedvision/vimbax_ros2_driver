@@ -225,6 +225,7 @@ private:
   VmbHandle_t camera_handle_;
   std::vector<std::shared_ptr<Frame>> frames_;
   bool streaming_{false};
+  bool is_valid_pixel_format(VmbPixelFormatType pixel_format);
   VmbCameraInfo camera_info_;
   std::optional<uint64_t> timestamp_frequency_;
   std::unordered_map<std::string, std::function<void(const std::string &)>> invalidation_callbacks_;
