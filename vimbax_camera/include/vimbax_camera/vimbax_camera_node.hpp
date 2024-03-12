@@ -26,6 +26,7 @@
 #include <rclcpp/rclcpp.hpp>
 
 #include <image_transport/image_transport.hpp>
+#include <camera_info_manager/camera_info_manager.hpp>
 
 #include <vimbax_camera_msgs/srv/features_list_get.hpp>
 #include <vimbax_camera_msgs/srv/feature_int_get.hpp>
@@ -90,6 +91,8 @@ private:
   const std::string parameter_settings_file = "settings_file";
   const std::string parameter_buffer_count = "buffer_count";
   const std::string parameter_autostart_stream = "autostart";
+  const std::string parameter_frame_id = "camera_frame_id";
+  const std::string parameter_camera_info_url = "camera_info_url";
 
   std::atomic_bool stream_stopped_by_service_ = false;
   std::atomic_bool is_available_ = false;
@@ -123,7 +126,7 @@ private:
   std::shared_ptr<VimbaXCamera> camera_;
 
   // Publishers
-  image_transport::Publisher image_publisher_;
+  image_transport::CameraPublisher camera_publisher_;
 
   // Services
   rclcpp::Service<vimbax_camera_msgs::srv::FeaturesListGet>::SharedPtr
@@ -192,6 +195,8 @@ private:
     event_event_publisher_;
 
   OnSetParametersCallbackHandle::SharedPtr parameter_callback_handle_;
+
+  std::shared_ptr<camera_info_manager::CameraInfoManager> camera_info_manager_;
 
   rclcpp::CallbackGroup::SharedPtr feature_callback_group_;
   rclcpp::CallbackGroup::SharedPtr settings_load_save_callback_group_;

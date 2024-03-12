@@ -20,8 +20,17 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='vimbax_camera',
-            namespace='vimbax_camera_test',
+            namespace='vimbax_camera_calib',
             executable='vimbax_camera_node',
-            name='vimbax_camera_test'
+            name='vimbax_camera_calib'
+        ),
+        Node(
+            package='camera_calibration',
+            executable='cameracalibrator',
+            remappings=[
+                ('/image', '/vimbax_camera_calib/image_raw'),
+                ('/camera/set_camera_info', '/vimbax_camera_calib/set_camera_info'),
+            ],
+            arguments=["--size", "9x6", "--square", "0.108"]
         )
     ])
