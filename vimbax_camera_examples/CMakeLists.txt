@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_components REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(image_transport REQUIRED)
 find_package(vimbax_camera_msgs REQUIRED)
@@ -21,6 +22,20 @@ ament_target_dependencies(
         "image_transport"
         "vimbax_camera_msgs"
 )
+
+add_library(asynchronous_grab_performance SHARED src/asynchronous_grab_performance.cpp)
+ament_target_dependencies(
+        asynchronous_grab_performance
+        "rclcpp"
+        "rclcpp_components"
+        "image_transport"
+        "vimbax_camera_msgs"
+)
+
+rclcpp_components_register_nodes(asynchronous_grab_performance
+        "vimbax_camera_examples::AsynchronousGrabPerformance"
+)
+
 
 add_executable(event_viewer_cpp src/event_viewer.cpp)
 ament_target_dependencies(
@@ -36,6 +51,12 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+install(TARGETS asynchronous_grab_performance
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin
+)
+
 install(TARGETS asynchronous_grab_cpp DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
@@ -45,4 +66,5 @@ install(DIRECTORY
 
 ament_python_install_package(${PROJECT_NAME} SCRIPTS_DESTINATION lib/${PROJECT_NAME})
 
+ament_export_libraries(asynchronous_grab_performance)
 ament_package()
