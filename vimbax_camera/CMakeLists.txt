@@ -39,9 +39,6 @@ ament_target_dependencies(
         "vimbax_camera_events"
 )
 
-#add_executable(${PROJECT_NAME}_node src/vimbax_camera_main.cpp)
-#target_compile_features(${PROJECT_NAME}_node PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
-#target_link_libraries(${PROJECT_NAME}_node ${PROJECT_NAME})
 rclcpp_components_register_node(${PROJECT_NAME}
     PLUGIN "vimbax_camera::VimbaXCameraNode"
     EXECUTABLE vimbax_camera_node
@@ -56,8 +53,6 @@ install(TARGETS ${PROJECT_NAME}
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin
 )
-
-#install(TARGETS ${PROJECT_NAME}_node DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
     find_package(ament_lint_auto REQUIRED)
