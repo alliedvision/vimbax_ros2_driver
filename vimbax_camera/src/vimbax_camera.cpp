@@ -121,7 +121,7 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
         }
       }
     }
-
+    // TODO: Remove warning
     RCLCPP_WARN(get_logger(), "No matching camera found, falling back to VmbCameraOpen");
 
     auto const optHandle = openCamera(name);
@@ -411,28 +411,50 @@ result<bool> VimbaXCamera::feature_command_is_done(const std::string_view & name
   return value;
 }
 
-result<void> VimbaXCamera::feature_command_run(const std::string_view & name) const
+result<void> VimbaXCamera::feature_command_run(const std::string_view & name, 
+  const std::optional<std::chrono::milliseconds> & timeout) const
 {
-  return feature_command_run(name, camera_handle_);
+  return feature_command_run(name, camera_handle_, timeout);
 }
 
 result<void> VimbaXCamera::feature_command_run(
-  const std::string_view & name, VmbHandle_t handle) const
+  const std::string_view & name, VmbHandle_t handle,
+  const std::optional<std::chrono::milliseconds> & timeout) const
 {
+  using namespace std::chrono_literals;
+  auto const default_timeout = 1s;
+
   auto const run_error = api_->FeatureCommandRun(handle, name.data());
 
   if (run_error != VmbErrorSuccess) {
     return error{run_error};
   }
 
-  bool done{false};
-  api_->FeatureCommandIsDone(handle, name.data(), &done);
+  auto const poll_start_tp = std::chrono::steady_clock::now();
 
-  while (!done) {
+  auto is_timed_out = [&]() -> bool {
+    auto const now_tp = std::chrono::steady_clock::now();
+    auto const diff = now_tp - poll_start_tp;
+
+    return diff >= timeout.value_or(default_timeout);
+  };
+
+  bool done{false};
+  
+  do {
+    auto const done_error = api_->FeatureCommandIsDone(handle, name.data(), &done);
+    if (done_error != VmbErrorSuccess) {
+      return error{done_error};
+    }
+
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
-    api_->FeatureCommandIsDone(handle, name.data(), &done);
-  }
+    if (is_timed_out()) {
+      RCLCPP_ERROR(get_logger(), "Waiting for command done timed out!");
+      return error{VmbErrorTimeout};
+    }
+
+  } while(!done);
 
   return {};
 }

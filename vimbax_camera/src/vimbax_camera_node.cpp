@@ -256,6 +256,11 @@ bool VimbaXCameraNode::initialize_parameters()
   .set__description("Auto start stream while subscribing to image publisher").set__read_only(false);
   node_->declare_parameter(parameter_autostart_stream, 1, autostartStreamParamDesc);
 
+  auto const command_feature_timeout_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Timeout for command features");
+  node_->declare_parameter(
+    parameter_command_feature_timeout, 0, command_feature_timeout_param_desc);
+
   parameter_callback_handle_ = node_->add_on_set_parameters_callback(
     [this](
       const std::vector<rclcpp::Parameter> & params) -> rcl_interfaces::msg::SetParametersResult {
@@ -357,16 +362,18 @@ bool VimbaXCameraNode::initialize_camera(bool reconnect /*= false*/)
     return false;
   }
 
-  auto const camera_frame_id_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
-  .set__description("Frame id of published images").set__read_only(true);
-  node_->declare_parameter(
-    parameter_frame_id, "vimbax_camera_" + info_res->device_id, camera_frame_id_param_desc);
+  if (!reconnect) {
+    auto const camera_frame_id_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+    .set__description("Frame id of published images").set__read_only(true);
+    node_->declare_parameter(
+      parameter_frame_id, "vimbax_camera_" + info_res->device_id, camera_frame_id_param_desc);
 
 
-  auto const camera_info_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
-  .set__description("Url of camera info file").set__read_only(true);
+    auto const camera_info_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+    .set__description("Url of camera info file").set__read_only(true);
 
-  node_->declare_parameter(parameter_camera_info_url, "", camera_info_param_desc);
+    node_->declare_parameter(parameter_camera_info_url, "", camera_info_param_desc);
+  }
 
   camera_info_manager_ = std::make_shared<camera_info_manager::CameraInfoManager>(
     node_.get(), info_res->device_id,
@@ -853,8 +860,13 @@ bool VimbaXCameraNode::initialize_feature_services()
       const vimbax_camera_msgs::srv::FeatureCommandRun::Response::SharedPtr response)
     {
       std::shared_lock lock(camera_mutex_);
+
+      auto const timeout = node_->get_parameter(parameter_command_feature_timeout).as_int();
+
       if (is_available_) {
-        auto const result = camera_->feature_command_run(request->feature_name);
+        auto const result = camera_->feature_command_run(
+          request->feature_name,
+          timeout > 0 ? std::optional{std::chrono::milliseconds{timeout}} : std::nullopt);
         if (!result) {
           response->set__error(result.error().to_error_msg());
         }
@@ -1369,5 +1381,6 @@ VimbaXCameraNode::NodeBaseInterface::SharedPtr VimbaXCameraNode::get_node_base_i
 }
 
 }  // namespace vimbax_camera
+
 
 RCLCPP_COMPONENTS_REGISTER_NODE(vimbax_camera::VimbaXCameraNode)

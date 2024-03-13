@@ -126,7 +126,8 @@ public:
   result<bool> feature_command_is_done(
     const std::string_view & name) const;
   result<void> feature_command_run(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const std::optional<std::chrono::milliseconds> & timeout = std::nullopt) const;
 
   result<int64_t> feature_int_get(
     const std::string_view & name) const;
@@ -209,7 +210,9 @@ private:
 
   static void on_feature_invalidation(VmbHandle_t, const char * name, void * context);
 
-  result<void> feature_command_run(const std::string_view & name, VmbHandle_t handle) const;
+  result<void> feature_command_run(
+    const std::string_view & name, VmbHandle_t handle,
+    const std::optional<std::chrono::milliseconds> & timeout = std::nullopt) const;
 
   result<int64_t> feature_int_get(const std::string_view & name, VmbHandle_t handle) const;
 
