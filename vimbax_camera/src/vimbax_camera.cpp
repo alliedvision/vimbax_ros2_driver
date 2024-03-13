@@ -226,6 +226,13 @@ result<void> VimbaXCamera::start_streaming(
       return error{payloadSizeError};
     }
 
+    auto const pixel_format = get_pixel_format();
+
+    if (!is_valid_pixel_format(*pixel_format)) {
+      RCLCPP_ERROR(get_logger(), "Unsupported pixel format");
+      return error{VmbErrorNotSupported};
+    }
+
     auto alignment{1};
 
     if (has_feature(SFNCFeatures::StreamBufferAlignment)) {
@@ -1316,19 +1323,51 @@ VimbaXCamera::get_event_meta_data(const std::string_view & name)
   return meta_data_list;
 }
 
+bool VimbaXCamera::is_valid_pixel_format(VmbPixelFormatType pixel_format)
+{
+  switch (pixel_format) {
+    case VmbPixelFormatMono8:
+    case VmbPixelFormatMono12:
+    case VmbPixelFormatMono16:
+    case VmbPixelFormatBayerGR8:
+    case VmbPixelFormatBayerRG8:
+    case VmbPixelFormatBayerGB8:
+    case VmbPixelFormatBayerBG8:
+    case VmbPixelFormatBayerGR10:
+    case VmbPixelFormatBayerRG10:
+    case VmbPixelFormatBayerGB10:
+    case VmbPixelFormatBayerBG10:
+    case VmbPixelFormatBayerGR12:
+    case VmbPixelFormatBayerRG12:
+    case VmbPixelFormatBayerGB12:
+    case VmbPixelFormatBayerBG12:
+    case VmbPixelFormatBayerGR16:
+    case VmbPixelFormatBayerRG16:
+    case VmbPixelFormatBayerGB16:
+    case VmbPixelFormatBayerBG16:
+    case VmbPixelFormatRgb8:
+    case VmbPixelFormatBgr8:
+    case VmbPixelFormatYuv422_8:
+      return true;
+    default:
+      return false;
+  }
+
+  return false;
+}
 
 result<std::shared_ptr<VimbaXCamera::Frame>> VimbaXCamera::Frame::create(
   std::shared_ptr<VimbaXCamera> camera,
   size_t size,
   size_t alignment)
 {
-  auto const pixelFormat = camera->get_pixel_format();
+  auto const pixel_format = camera->get_pixel_format();
 
-  if (!pixelFormat) {
-    return pixelFormat.error();
+  if (!pixel_format) {
+    return pixel_format.error();
   }
 
-  uint32_t const bpp = (*pixelFormat >> 16) & 0xFF;
+  uint32_t const bpp = (*pixel_format >> 16) & 0xFF;
 
   auto const width = camera->feature_int_get(SFNCFeatures::Width);
   auto const height = camera->feature_int_get(SFNCFeatures::Height);
@@ -1405,7 +1444,6 @@ void VimbaXCamera::Frame::on_frame_ready()
   width = vmb_frame_.width;
   height = vmb_frame_.height;
   is_bigendian = false;
-  header.frame_id = std::to_string(vmb_frame_.frameID);
   std::chrono::nanoseconds vmbTimeStamp{timestamp_to_ns(vmb_frame_.timestamp)};
   auto const seconds = std::chrono::floor<std::chrono::seconds>(vmbTimeStamp);
   auto const nanoseconds =

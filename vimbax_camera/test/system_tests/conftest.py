@@ -100,7 +100,7 @@ def vimbax_camera_node(camera_test_node_name):
         ),
         Node(
             package='vimbax_camera',
-            # namespace='avt_vimbax',
+            namespace=camera_test_node_name,
             executable='vimbax_camera_node',
             name=camera_test_node_name
         ),

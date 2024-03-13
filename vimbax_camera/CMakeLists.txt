@@ -19,6 +19,7 @@ set(vimbax_camera_node_SRCS
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(image_transport REQUIRED)
+find_package(camera_info_manager REQUIRED)
 find_package(vimbax_camera_msgs REQUIRED)
 find_package(vimbax_camera_events REQUIRED)
 
@@ -31,6 +32,7 @@ ament_target_dependencies(
         ${PROJECT_NAME}
         "rclcpp"
         "image_transport"
+        "camera_info_manager"
         "vimbax_camera_msgs"
         "vimbax_camera_events"
 )
