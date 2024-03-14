@@ -21,6 +21,7 @@
     }};
 
 #include <rclcpp/rclcpp.hpp>
+#include <rclcpp_components/register_node_macro.hpp>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
@@ -33,71 +34,72 @@ namespace vimbax_camera
 using helper::get_logger;
 using helper::vmb_error_to_string;
 
-std::shared_ptr<VimbaXCameraNode> VimbaXCameraNode::make_shared(const rclcpp::NodeOptions & options)
+VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
 {
-  auto camera_node = std::shared_ptr<VimbaXCameraNode>(new VimbaXCameraNode{});
+  if (!initialize(options)) {
+    throw std::runtime_error("VimbaXCameraNode initialization failed");
+  }
+}
 
-  if (!camera_node) {
-    return {};
+bool VimbaXCameraNode::initialize(const rclcpp::NodeOptions & options)
+{
+  node_ = helper::create_node(get_node_name(), options);
+
+  if (!node_) {
+    return false;
   }
 
-  camera_node->node_ = helper::create_node(get_node_name(), options);
-
-  if (!camera_node->node_) {
-    return {};
+  if (!initialize_parameters()) {
+    return false;
   }
 
-  if (!camera_node->initialize_parameters()) {
-    return {};
+  if (!initialize_api()) {
+    return false;
   }
 
-  if (!camera_node->initialize_api()) {
-    return {};
+  if (!initialize_camera_observer()) {
+    return false;
   }
 
-  if (!camera_node->initialize_camera_observer()) {
-    return {};
+  if (!initialize_camera()) {
+    return false;
   }
 
-  if (!camera_node->initialize_camera()) {
-    return {};
+  if (!initialize_callback_groups()) {
+    return false;
   }
 
-  if (!camera_node->initialize_callback_groups()) {
-    return {};
+  if (!initialize_publisher()) {
+    return false;
   }
 
-  if (!camera_node->initialize_publisher()) {
-    return {};
+  if (!initialize_feature_services()) {
+    return false;
   }
 
-  if (!camera_node->initialize_feature_services()) {
-    return {};
+  if (!initialize_settings_services()) {
+    return false;
   }
 
-  if (!camera_node->initialize_settings_services()) {
-    return {};
+  if (!initialize_status_services()) {
+    return false;
   }
 
-  if (!camera_node->initialize_status_services()) {
-    return {};
+  if (!initialize_stream_services()) {
+    return false;
   }
 
-  if (!camera_node->initialize_stream_services()) {
-    return {};
+  if (!initialize_events()) {
+    return false;
   }
 
-  if (!camera_node->initialize_events()) {
-    return {};
-  }
-
-  if (!camera_node->initialize_graph_notify()) {
-    return {};
+  if (!initialize_graph_notify()) {
+    return false;
   }
 
 
   RCLCPP_INFO(get_logger(), "Initialization done!");
-  return camera_node;
+  return true;
 }
 
 VimbaXCameraNode::~VimbaXCameraNode()
@@ -1367,3 +1369,5 @@ VimbaXCameraNode::NodeBaseInterface::SharedPtr VimbaXCameraNode::get_node_base_i
 }
 
 }  // namespace vimbax_camera
+
+RCLCPP_COMPONENTS_REGISTER_NODE(vimbax_camera::VimbaXCameraNode)
