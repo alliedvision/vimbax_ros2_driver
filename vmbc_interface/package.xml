@@ -2,13 +2,12 @@
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
   <name>vmbc_interface</name>
-  <version>0.0.0</version>
-  <description>Vimba X interface package</description>
+  <version>1.0.5</version>
+  <description>VmbC interface package</description>
   <maintainer email="karsten.hoepke@alliedvision.com">Karsten Höpke</maintainer>
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
-  <buildtool_depend>ament_cmake_python</buildtool_depend>
 
   <depend>rclcpp</depend>
 

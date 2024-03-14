@@ -13,12 +13,12 @@
   THIS SOFTWARE IS PROVIDED BY THE AUTHOR "AS IS" AND ANY EXPRESS OR IMPLIED
   WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF TITLE,
   NON-INFRINGEMENT, MERCHANTABILITY AND FITNESS FOR A PARTICULAR  PURPOSE ARE
-  DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, 
-  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+  DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT,
+  INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED  
-  AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR 
-  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE 
+  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED
+  AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR
+  TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
@@ -26,7 +26,7 @@
 /**
  * \file
  * \brief Main header file for the VmbC API.
- * 
+ *
  * This file describes all necessary definitions for using Allied Vision's
  * VmbC API. These type definitions are designed to be portable from other
  * languages and other operating systems.
@@ -36,7 +36,7 @@
  *    - Vmb"Action"                                        example: ::VmbStartup()
  *    - Vmb"Entity""Action" or Vmb"ActionTarget""Action"   example: ::VmbCameraOpen()
  *    - Vmb"Entity""SubEntity/ActionTarget""Action"        example: ::VmbFeatureCommandRun()
- * 
+ *
  * - Strings (generally declared as "const char *") are assumed to have a trailing 0 character
  * - All pointer parameters should of course be valid, except if stated otherwise.
  * - To ensure compatibility with older programs linked against a former version of the API,
@@ -91,24 +91,24 @@ static const VmbHandle_t gVmbHandle = VMB_API_HANDLE(VmbHandle_t);
 
 /**
  * \brief Retrieve the version number of VmbC.
- * 
+ *
  * This function can be called at anytime, even before the API is
  * initialized. All other version numbers may be queried via feature access.
- * 
+ *
  * \param[out]  versionInfo             Pointer to the struct where version information resides
  * \param[in]   sizeofVersionInfo       Size of structure in bytes
- * 
+ *
  *
  * \return An error code indicating success or the type of error.
  *
  * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback.
- * 
+ *
  * \retval ::VmbErrorStructSize         The given struct size is not valid for this version of the API
  *
  * \retval ::VmbErrorBadParameter       \p versionInfo is null.
- * 
+ *
  */
 IMEXPORTC VmbError_t VMB_CALL VmbVersionQuery ( VmbVersionInfo_t*   versionInfo,
                                                 VmbUint32_t         sizeofVersionInfo );
@@ -125,9 +125,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbVersionQuery ( VmbVersionInfo_t*   versionInfo,
 
 /**
  * \brief Initializes the VmbC API.
- * 
+ *
  * Note: This function must be called before any VmbC function other than ::VmbVersionQuery() is run.
- * 
+ *
  * \param[in]   pathConfiguration       A string containing a semicolon (Windows) or colon (other os) separated list of paths. The paths contain directories to search for .cti files,
  *                                      paths to .cti files and optionally the path to a configuration xml file. If null is passed, the .cti files from the default configuration xml
  *	                                    file are considered. If no paths are configured in the xml file, the paths from the GENICAM_GENTL{32|64}_PATH environment variable are considered.
@@ -136,31 +136,31 @@ IMEXPORTC VmbError_t VMB_CALL VmbVersionQuery ( VmbVersionInfo_t*   versionInfo,
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorAlready            This function was called before and call to ::VmbShutdown has been executed on a non-callback thread
  *
  * \retval ::VmbErrorInvalidCall        If called from a callback or ::VmbShutdown is currently running
- * 
+ *
  * \retval ::VmbErrorXml                If parsing the settings xml is unsuccessful; a missing default xml file does not result in this error.
- * 
+ *
  * \retval ::VmbErrorTLNotFound         A transport layer that was marked as required was not found.
- * 
+ *
  * \retval ::VmbErrorNoTL               No transport layer was found on the system; note that some of the transport layers may have been filtered out via the settings file.
- * 
+ *
  * \retval ::VmbErrorIO                 A log file should be written according to the settings xml file, but this log file could not be opened.
- * 
+ *
  * \retval ::VmbErrorBadParameter       \p pathConfiguration contains only separator and whitespace chars.
- * 
+ *
  */
 IMEXPORTC VmbError_t VMB_CALL VmbStartup (const VmbFilePathChar_t* pathConfiguration);
 
 /**
  * \brief Perform a shutdown of the API.
- * 
+ *
  * This frees some resources and deallocates all physical resources if applicable.
- * 
+ *
  * The call is silently ignored, if executed from a callback.
- * 
+ *
  */
 IMEXPORTC void VMB_CALL VmbShutdown ( void );
 
@@ -197,7 +197,7 @@ IMEXPORTC void VMB_CALL VmbShutdown ( void );
  * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadParameter       \p numFound is null
@@ -234,7 +234,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbCamerasList ( VmbCameraInfo_t*   cameraInfo,
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorBadParameter       \p info is null
- * 
+ *
  * \retval ::VmbErrorBadHandle          The handle does not correspond to a camera
  */
 IMEXPORTC VmbError_t VMB_CALL VmbCameraInfoQueryByHandle(   VmbHandle_t         cameraHandle,
@@ -256,13 +256,13 @@ IMEXPORTC VmbError_t VMB_CALL VmbCameraInfoQueryByHandle(   VmbHandle_t         
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadParameter       \p idString or \p info are null or \p idString is the empty string
- * 
+ *
  * \retval ::VmbErrorNotFound           No camera with the given id is found
  *
  * \retval ::VmbErrorStructSize         The given struct size is not valid for this API version
@@ -273,20 +273,20 @@ IMEXPORTC VmbError_t VMB_CALL VmbCameraInfoQuery ( const char*         idString,
 
 /**
  * \brief Open the specified camera.
- * 
+ *
  * \param[in]   idString            ID of the camera.
  * \param[in]   accessMode          The desired access mode.
  * \param[out]  cameraHandle        The remote device handle of the camera, if opened successfully.
- * 
+ *
  * A camera may be opened in a specific access mode, which determines
  * the level of control you have on a camera.
  * Examples for idString:
- * 
+ *
  * "DEV_81237473991" for an ID given by a transport layer,
  * "169.254.12.13" for an IP address,
- * "000F314C4BE5" for a MAC address or 
+ * "000F314C4BE5" for a MAC address or
  * "DEV_1234567890" for an ID as reported by Vmb
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
@@ -301,7 +301,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbCameraInfoQuery ( const char*         idString,
  * \retval ::VmbErrorBadParameter       If \p idString or \p cameraHandle are null
  *
  * \retval ::VmbErrorInvalidAccess      A camera with the given id was found, but could not be opened
- * 
+ *
  * \retval ::VmbErrorNotFound           The designated camera cannot be found
  */
 IMEXPORTC VmbError_t VMB_CALL VmbCameraOpen ( const char*      idString,
@@ -310,21 +310,21 @@ IMEXPORTC VmbError_t VMB_CALL VmbCameraOpen ( const char*      idString,
 
 /**
  * \brief Close the specified camera.
- * 
+ *
  * Depending on the access mode this camera was opened with, events are killed,
  * callbacks are unregistered, and camera control is released.
- * 
+ *
  * \param[in]   cameraHandle        A valid camera handle
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorInUse              The camera is currently in use with ::VmbChunkDataAccess
- * 
+ *
  * \retval ::VmbErrorBadHandle          The handle does not correspond to an open camera
  *
  * \retval ::VmbErrorInvalidCall        If called from frame callback or chunk access callback
@@ -346,29 +346,29 @@ IMEXPORTC VmbError_t VMB_CALL VmbCameraClose ( const VmbHandle_t  cameraHandle )
 
 /**
  * \brief List all the features for this entity.
- * 
+ *
  * This function lists all implemented features, whether they are currently available or not.
  * The list of features does not change as long as the entity is connected.
  *
  * This function is usually called twice: once with an empty list to query the length
  * of the list, and then again with a list of the correct length.
- * 
+ *
  * If ::VmbErrorMoreData is returned and \p numFound is non-null, the total number of features has been written to \p numFound.
- * 
+ *
  * If there are more elements in \p featureInfoList than features available, the remaining elements
  * are filled with zero-initialized ::VmbFeatureInfo_t structs.
- * 
+ *
  * \param[in]   handle                  Handle for an entity that exposes features
  * \param[out]  featureInfoList         An array of ::VmbFeatureInfo_t to be filled by the API. May be null if \p numFund is used for size query.
  * \param[in]   listLength              Number of ::VmbFeatureInfo_t elements provided
  * \param[out]  numFound                Number of ::VmbFeatureInfo_t elements found. May be null if \p featureInfoList is not null.
  * \param[in]   sizeofFeatureInfo       Size of a ::VmbFeatureInfo_t entry
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorStructSize         The given struct size of ::VmbFeatureInfo_t is not valid for this version of the API
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
@@ -389,27 +389,27 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeaturesList ( VmbHandle_t         handle,
 
 /**
  * \brief Query information about the constant properties of a feature.
- * 
+ *
  * Users provide a pointer to ::VmbFeatureInfo_t, which is then set to the internal representation.
- * 
+ *
  * \param[in]   handle                  Handle for an entity that exposes features
  * \param[in]   name                    Name of the feature
  * \param[out]  featureInfo             The feature info to query
  * \param[in]   sizeofFeatureInfo       Size of the structure
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorStructSize         The given struct size of ::VmbFeatureInfo_t is not valid for this version of the API
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadParameter       \p name or \p featureInfo are null
  *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
- * 
+ *
  * \retval ::VmbErrorNotFound           A feature with the given name does not exist.
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
@@ -428,7 +428,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureInfoQuery ( const VmbHandle_t   handle,
  * The list of features does not change while the camera/interface is connected.
  * This function is usually called twice: once with an empty array to query the length
  * of the list, and then again with an array of the correct length.
- * 
+ *
  * \param[in]   handle                  Handle for an entity that exposes features
  * \param[in]   name                    Name of the feature
  * \param[out]  featureInfoList         An array of ::VmbFeatureInfo_t to be filled by the API. May be null if \p numFound is used for size query.
@@ -440,7 +440,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureInfoQuery ( const VmbHandle_t   handle,
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorBadParameter       \p name is null or both \p featureInfoList and \p numFound are null
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
@@ -462,20 +462,20 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureListSelected ( const VmbHandle_t  handle
 
 /**
  * \brief Return the dynamic read and write capabilities of this feature.
- * 
+ *
  * The access mode of a feature may change. For example, if "PacketSize"
  * is locked while image data is streamed, it is only readable.
- * 
+ *
  * \param[in]   handle              Handle for an entity that exposes features.
  * \param[in]   name                Name of the feature.
  * \param[out]  isReadable          Indicates if this feature is readable. May be null.
  * \param[out]  isWriteable         Indicates if this feature is writable. May be null.
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadParameter       \p name is null or both \p isReadable and \p isWriteable are null
@@ -504,11 +504,11 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureAccessQuery ( const VmbHandle_t   handle
 
 /**
  * \brief Get the value of an integer feature.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[out]  value       Value to get
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
@@ -527,7 +527,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureAccessQuery ( const VmbHandle_t   handle
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntGet ( const VmbHandle_t   handle,
@@ -536,11 +536,11 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntGet ( const VmbHandle_t   handle,
 
 /**
  * \brief Set the value of an integer feature.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[in]   value       Value to set
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
@@ -561,11 +561,11 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntGet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidAccess      The feature is unavailable or not writable
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  *
  * \retval ::VmbErrorInvalidValue       If value is either out of bounds or not an increment of the minimum
- * 
+ *
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntSet ( const VmbHandle_t   handle,
                                                  const char*         name,
@@ -573,13 +573,13 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntSet ( const VmbHandle_t   handle,
 
 /**
  * \brief Query the range of an integer feature.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[out]  min         Minimum value to be returned. May be null.
  * \param[out]  max         Maximum value to be returned. May be null.
- * 
- * 
+ *
+ *
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
@@ -603,11 +603,11 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntRangeQuery ( const VmbHandle_t   hand
 
 /**
  * \brief Query the increment of an integer feature.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[out]  value       Value of the increment to get.
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
@@ -616,11 +616,11 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntRangeQuery ( const VmbHandle_t   hand
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadParameter       If \p name or \p value are null
- * 
+ *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           The feature was not found
- * 
+ *
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Integer
  *
  * \retval ::VmbErrorInvalidAccess      The information is unavailable or cannot be read
@@ -631,21 +631,21 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntIncrementQuery ( const VmbHandle_t   
 
 /**
  * \brief Retrieves info about the valid value set of an integer feature.
- * 
+ *
  * Retrieves information about the set of valid values of an integer feature. If null is passed as buffer,
  * only the size of the set is determined and written to bufferFilledCount; Otherwise the largest possible
  * number of elements of the valid value set is copied to buffer.
- * 
+ *
  * \param[in]   handle                  The handle for the entity the feature information is retrieved from
  * \param[in]   name                    The name of the feature to retrieve the info for; if null is passed ::VmbErrorBadParameter is returned
  * \param[in]   buffer                  The array to copy the valid values to or null if only the size of the set is requested
  * \param[in]   bufferSize              The size of buffer; if buffer is null, the value is ignored
  * \param[out]  setSize                 The total number of elements in the set; the value is set, if ::VmbErrorMoreData is returned
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess                        The call was successful 
+ * \retval ::VmbErrorSuccess                        The call was successful
  *
  * \retval ::VmbErrorApiNotStarted                  ::VmbStartup() was not called before the current command
  *
@@ -654,7 +654,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntIncrementQuery ( const VmbHandle_t   
  * \retval ::VmbErrorBadHandle                      The given handle is not valid
  *
  * \retval ::VmbErrorNotFound                       The feature was not found
- * 
+ *
  * \retval ::VmbErrorWrongType                      The type of the feature is not Integer
  *
  * \retval ::VmbErrorValidValueSetNotPresent        The feature does not provide a valid value set
@@ -684,15 +684,15 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntValidValueSetQuery(const VmbHandle_t 
 
 /**
  * \brief Get the value of a float feature.
- * 
+ *
  * \param[in]   handle  Handle for an entity that exposes features
  * \param[in]   name    Name of the feature
  * \param[out]  value   Value to get
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess            The call was successful 
+ * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
@@ -705,9 +705,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureIntValidValueSetQuery(const VmbHandle_t 
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Float
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatGet ( const VmbHandle_t   handle,
@@ -716,15 +716,15 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatGet ( const VmbHandle_t   handle,
 
 /**
  * \brief Set the value of a float feature.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[in]   value       Value to set
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess            The call was successful 
+ * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
@@ -741,7 +741,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatGet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  *
  * \retval ::VmbErrorInvalidValue       If value is not within valid bounds
@@ -752,19 +752,19 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatSet ( const VmbHandle_t   handle,
 
 /**
  * \brief Query the range of a float feature.
- * 
+ *
  * Only one of the values may be queried if the other parameter is set to null,
  * but if both parameters are null, an error is returned.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[out]  min         Minimum value to be returned. May be null.
  * \param[out]  max         Maximum value to be returned. May be null.
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess            The call was successful 
+ * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorBadParameter       \p name is null or both \p min and \p max are null
  *
@@ -785,16 +785,16 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatRangeQuery ( const VmbHandle_t   ha
 
 /**
  * \brief Query the increment of a float feature.
- * 
+ *
  * \param[in]   handle              Handle for an entity that exposes features
  * \param[in]   name                Name of the feature
  * \param[out]  hasIncrement        `true` if this float feature has an increment.
  * \param[out]  value               Value of the increment to get.
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess            The call was successful 
+ * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorBadParameter       \p name is null or both \p value and \p hasIncrement are null
  *
@@ -805,7 +805,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatRangeQuery ( const VmbHandle_t   ha
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  *
  * \retval ::VmbErrorNotFound           The feature was not found
@@ -830,7 +830,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatIncrementQuery ( const VmbHandle_t 
 
 /**
  * \brief Get the value of an enumeration feature.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[out]  value       The current enumeration value. The returned value is a
@@ -839,7 +839,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatIncrementQuery ( const VmbHandle_t 
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess            The call was successful 
+ * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorBadParameter       \p name or \p value are null
  *
@@ -850,9 +850,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureFloatIncrementQuery ( const VmbHandle_t 
  * \retval ::VmbErrorNotFound           The feature was not found
  *
  * \retval ::VmbErrorWrongType          The type of feature featureName is not Enumeration
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature is not available
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
@@ -886,7 +886,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumGet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Enumeration
  *
  * \retval ::VmbErrorNotAvailable       The feature is not available
- * 
+ *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
@@ -899,9 +899,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumSet ( const VmbHandle_t   handle,
 
 /**
  * \brief Query the value range of an enumeration feature.
- * 
+ *
  * All elements not filled with the names of enum entries by the function are set to null.
- * 
+ *
  * \param[in]   handle          Handle for an entity that exposes features
  * \param[in]   name            Name of the feature
  * \param[out]  nameArray       An array of enumeration value names; may be null if \p numFound is used for size query
@@ -920,7 +920,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumSet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           The feature was not found
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature \p name is not implemented
  *
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Enumeration
@@ -935,7 +935,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumRangeQuery ( const VmbHandle_t   han
 
 /**
  * \brief Check if a certain value of an enumeration is available.
- * 
+ *
  * \param[in]   handle              Handle for an entity that exposes features
  * \param[in]   name                Name of the feature
  * \param[in]   value               Value to check
@@ -955,11 +955,11 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumRangeQuery ( const VmbHandle_t   han
  * \retval ::VmbErrorNotFound           The feature was not found
  *
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Enumeration
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature \p name is not implemented
  *
  * \retval ::VmbErrorInvalidValue       There is no enum entry with string representation of \p value for the given enum feature
- * 
+ *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  */
@@ -970,9 +970,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumIsAvailable ( const VmbHandle_t   ha
 
 /**
  * \brief Get the integer value for a given enumeration string value.
- * 
+ *
  * Converts a name of an enum member into an int value ("Mono12Packed" to 0x10C0006)
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the feature
  * \param[in]   value       The enumeration value to get the integer value for
@@ -990,9 +990,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumIsAvailable ( const VmbHandle_t   ha
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           No feature with the given name was found
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature \p name is not implemented
- * 
+ *
  * \retval ::VmbErrorInvalidValue       \p value is not the name of a enum entry for the feature
  *
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Enumeration
@@ -1004,9 +1004,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumAsInt ( const VmbHandle_t   handle,
 
 /**
  * \brief Get the enumeration string value for a given integer value.
- * 
+ *
  * Converts an int value to a name of an enum member (e.g. 0x10C0006 to "Mono12Packed")
- * 
+ *
  * \param[in]   handle              Handle for an entity that exposes features
  * \param[in]   name                Name of the feature
  * \param[in]   intValue            The numeric value
@@ -1015,7 +1015,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumAsInt ( const VmbHandle_t   handle,
  *
  * \return An error code indicating success or the type of error that occurred.
  *
- * \retval ::VmbErrorSuccess            The call was successful 
+ * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
@@ -1024,9 +1024,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumAsInt ( const VmbHandle_t   handle,
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           No feature with the given name was found
- * 
+ *
  * \retval ::VmbErrorNotImplemented     No feature \p name is not implemented
- * 
+ *
  * \retval ::VmbErrorInvalidValue       \p intValue is not the int value of an enum entry
  *
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Enumeration
@@ -1038,7 +1038,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumAsString ( VmbHandle_t   handle,
 
 /**
  * \brief Get infos about an entry of an enumeration feature.
- * 
+ *
  * \param[in]   handle                      Handle for an entity that exposes features
  * \param[in]   featureName                 Name of the feature
  * \param[in]   entryName                   Name of the enum entry of that feature
@@ -1059,9 +1059,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumAsString ( VmbHandle_t   handle,
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           The feature was not found
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature \p name is not implemented
- * 
+ *
  * \retval ::VmbErrorInvalidValue       There is no enum entry with a string representation of \p entryName
  *
  * \retval ::VmbErrorWrongType          The type of feature featureName is not Enumeration
@@ -1085,16 +1085,16 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumEntryGet ( const VmbHandle_t        
 
 /**
  * \brief Get the value of a string feature.
- * 
+ *
  * This function is usually called twice: once with an empty buffer to query the length
  * of the string, and then again with a buffer of the correct length.
  *
  * The value written to \p sizeFilled includes the terminating 0 character of the string.
- * 
+ *
  * If a \p buffer is provided and there its  insufficient to hold all the data, the longest
  * possible prefix fitting the buffer is copied to \p buffer; the last element of \p buffer is
  * set to 0 case.
- * 
+ *
  * \param[in]   handle          Handle for an entity that exposes features
  * \param[in]   name            Name of the string feature
  * \param[out]  buffer          String buffer to fill. May be null if \p sizeFilled is used for size query.
@@ -1103,25 +1103,25 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureEnumEntryGet ( const VmbHandle_t        
  *
  *
  * \return An error code indicating the type of error, if any.
- * 
+ *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorBadParameter       \p name is null, both \p buffer and \p sizeFilled are null or \p buffer is non-null and bufferSize is 0
- * 
+ *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
- * 
+ *
  * \retval ::VmbErrorNotFound           The feature was not found
- * 
+ *
  * \retval ::VmbErrorWrongType          The type of feature \p name is not String
- * 
+ *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
- * 
+ *
  * \retval ::VmbErrorMoreData           The given buffer size was too small
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringGet ( const VmbHandle_t   handle,
@@ -1159,7 +1159,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringGet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidValue       If length of value exceeded the maximum length
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringSet ( const VmbHandle_t   handle,
@@ -1168,9 +1168,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringSet ( const VmbHandle_t   handle,
 
 /**
  * \brief Get the maximum length of a string feature.
- * 
+ *
  * The length reported does not include the terminating 0 char.
- * 
+ *
  * Note: For some features the maximum size is not fixed and may change.
  *
  * \param[in]   handle          Handle for an entity that exposes features
@@ -1193,7 +1193,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringSet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringMaxlengthQuery ( const VmbHandle_t   handle,
@@ -1234,9 +1234,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureStringMaxlengthQuery ( const VmbHandle_t
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Boolean
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
- * 
+ *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureBoolGet ( const VmbHandle_t   handle,
@@ -1268,7 +1268,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureBoolGet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  *
  * \retval ::VmbErrorInvalidValue       If value is not within valid bounds
@@ -1300,7 +1300,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureBoolSet ( const VmbHandle_t   handle,
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            If no error
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a feature callback or chunk access callback
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
@@ -1314,7 +1314,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureBoolSet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Command
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
@@ -1324,7 +1324,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureCommandRun ( const VmbHandle_t   handle,
 
 /**
  * \brief Check if a feature command is done.
- * 
+ *
  * \param[in]   handle      Handle for an entity that exposes features
  * \param[in]   name        Name of the command feature
  * \param[out]  isDone      State of the command.
@@ -1335,7 +1335,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureCommandRun ( const VmbHandle_t   handle,
  * \retval ::VmbErrorSuccess            If no error
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorBadParameter       If \p name or \p isDone are null
@@ -1347,9 +1347,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureCommandRun ( const VmbHandle_t   handle,
  * \retval ::VmbErrorWrongType          The type of feature \p name is not Command
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureCommandIsDone ( const VmbHandle_t   handle,
@@ -1369,7 +1369,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureCommandIsDone ( const VmbHandle_t   hand
 
 /**
  * \brief Read the memory contents of an area given by a feature name.
- * 
+ *
  * This feature type corresponds to a top-level "Register" feature in GenICam.
  * Data transfer is split up by the transport layer if the feature length is too large.
  * You can get the size of the memory area addressed by the feature name by ::VmbFeatureRawLengthQuery().
@@ -1398,7 +1398,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureCommandIsDone ( const VmbHandle_t   hand
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawGet ( const VmbHandle_t   handle,
@@ -1439,7 +1439,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawGet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawSet ( const VmbHandle_t   handle,
@@ -1474,7 +1474,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawSet ( const VmbHandle_t   handle,
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorNotImplemented     The feature isn't implemented
- * 
+ *
  * \retval ::VmbErrorNotAvailable       The feature isn't available currently
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawLengthQuery ( const VmbHandle_t   handle,
@@ -1511,9 +1511,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawLengthQuery ( const VmbHandle_t   han
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            If no error
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorBadParameter       If \p name or \p callback are null
@@ -1521,9 +1521,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureRawLengthQuery ( const VmbHandle_t   han
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           No feature with \p name was found for the module associated with \p handle
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature \p name is not implemented
- * 
+ *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFeatureInvalidationRegister ( VmbHandle_t              handle,
@@ -1549,13 +1549,13 @@ IMEXPORTC VmbError_t VMB_CALL VmbFeatureInvalidationRegister ( VmbHandle_t      
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
- * 
+ *
  * \retval ::VmbErrorBadParameter       If \p name or \p callback are null
- * 
+ *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
  *
  * \retval ::VmbErrorNotFound           No feature with \p name was found for the module associated with \p handle or there was no listener to unregister
- * 
+ *
  * \retval ::VmbErrorNotImplemented     The feature \p name is not implemented
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
@@ -1616,15 +1616,15 @@ IMEXPORTC VmbError_t VMB_CALL VmbPayloadSizeGet(VmbHandle_t     handle,
  * \retval ::VmbErrorSuccess            If no error
  *
  * \retval ::VmbErrorStructSize         The given struct size is not valid for this version of the API
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a frame callback or a chunk access callback
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadHandle          The given camera handle is not valid
  *
  * \retval ::VmbErrorBadParameter       \p frame is null
- * 
+ *
  * \retval ::VmbErrorAlready            The frame has already been announced
  *
  * \retval ::VmbErrorBusy               The underlying transport layer does not support announcing frames during acquisition
@@ -1650,7 +1650,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFrameAnnounce ( VmbHandle_t        handle,
  * \retval ::VmbErrorSuccess            If no error
  *
  * \retval ::VmbErrorInvalidCall        If called from a frame callback or a chunk access callback
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
@@ -1660,7 +1660,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFrameAnnounce ( VmbHandle_t        handle,
  * \retval ::VmbErrorBusy               The underlying transport layer does not support revoking frames during acquisition
  *
  * \retval ::VmbErrorNotFound           The given frame could not be found for the stream
- * 
+ *
  * \retval ::VmbErrorInUse              The frame is currently still in use (e.g. in a running frame callback)
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFrameRevoke ( VmbHandle_t          handle,
@@ -1669,7 +1669,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFrameRevoke ( VmbHandle_t          handle,
 
 /**
  * \brief Revoke all frames assigned to a certain stream or camera.
- * 
+ *
  * In case of an failure some of the frames may have been revoked. To prevent this it is recommended to call
  * ::VmbCaptureQueueFlush for the same handle before invoking this function.
  *
@@ -1685,7 +1685,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbFrameRevoke ( VmbHandle_t          handle,
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadHandle          \p handle is not valid
- * 
+ *
  * \retval ::VmbErrorInUse              One of the frames of the stream is still in use
  */
 IMEXPORTC VmbError_t VMB_CALL VmbFrameRevokeAll ( VmbHandle_t  handle );
@@ -1702,13 +1702,13 @@ IMEXPORTC VmbError_t VMB_CALL VmbFrameRevokeAll ( VmbHandle_t  handle );
  * \retval ::VmbErrorSuccess                    If no error
  *
  * \retval ::VmbErrorInvalidCall                If called from a frame callback or a chunk access callback
- * 
+ *
  * \retval ::VmbErrorApiNotStarted              ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadHandle                  The given handle is not valid; this includes the camera no longer being open
  *
  * \retval ::VmbErrorInvalidAccess              Operation is invalid with the current access mode
- * 
+ *
  * \retval ::VmbErrorMoreData                   The buffer size of the announced frames is insufficient
  *
  * \retval ::VmbErrorInsufficientBufferCount    The operation requires more buffers to be announced; see the StreamAnnounceBufferMinimum stream feature
@@ -1726,7 +1726,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureStart ( VmbHandle_t  handle );
  *
  * \note This function waits for the completion of the last callback for the current capture.
  *       If the callback does not return in finite time, this function may not return in finite time either.
- * 
+ *
  * \param[in]   handle      Handle for a stream or camera
  *
  *
@@ -1735,7 +1735,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureStart ( VmbHandle_t  handle );
  * \retval ::VmbErrorSuccess            If no error
  *
  * \retval ::VmbErrorInvalidCall        If called from a frame callback or a chunk access callback
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadHandle          \p handle is not valid
@@ -1751,7 +1751,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureEnd ( VmbHandle_t handle );
  * If the frame was announced with ::VmbFrameAnnounce() before, the application
  * has to ensure that the frame is also revoked by calling ::VmbFrameRevoke() or
  * ::VmbFrameRevokeAll() when cleaning up.
- * 
+ *
  * \warning \p callback should to return in finite time. Otherwise ::VmbCaptureEnd and
  *          operations resulting in the stream being closed may not return.
  *
@@ -1763,19 +1763,19 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureEnd ( VmbHandle_t handle );
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
- * 
+ *
  * \retval ::VmbErrorBadParameter       If \p frame is null
- * 
+ *
  * \retval ::VmbErrorBadHandle          No stream related to \p handle could be found
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorInternalFault      The buffer or bufferSize members of \p frame have been set to null or zero respectively
- * 
+ *
  * \retval ::VmbErrorNotFound           The frame is not a frame announced for the given stream
- * 
+ *
  * \retval ::VmbErrorAlready            The frame is currently queued
  */
 IMEXPORTC VmbError_t VMB_CALL VmbCaptureFrameQueue ( VmbHandle_t        handle,
@@ -1784,9 +1784,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureFrameQueue ( VmbHandle_t        handle,
 
 /**
  * \brief Wait for a queued frame to be filled (or dequeued).
- * 
+ *
  * The frame needs to be queued and not filled for the function to complete successfully.
- * 
+ *
  * If a camera handle is passed, the first stream of the camera is used.
  *
  * \param[in]   handle          Handle of a camera or stream
@@ -1801,19 +1801,19 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureFrameQueue ( VmbHandle_t        handle,
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
- * 
+ *
  * \retval ::VmbErrorBadParameter       If \p frame or the buffer of \p frame are null or the the buffer size of \p frame is 0
  *
  * \retval ::VmbErrorBadHandle          No stream related to \p handle could be found
  *
- * \retval ::VmbErrorNotFound           The frame is not one currently queued for the stream 
- * 
+ * \retval ::VmbErrorNotFound           The frame is not one currently queued for the stream
+ *
  * \retval ::VmbErrorAlready            The frame has already been dequeued or VmbCaptureFrameWait has been called already for this frame
- * 
+ *
  * \retval ::VmbErrorInUse              If the frame was queued with a frame callback
- * 
+ *
  * \retval ::VmbErrorTimeout            Call timed out
- * 
+ *
  * \retval ::VmbErrorIncomplete         Capture is not active when the function is called
  */
 IMEXPORTC VmbError_t VMB_CALL VmbCaptureFrameWait ( const VmbHandle_t   handle,
@@ -1827,9 +1827,9 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureFrameWait ( const VmbHandle_t   handle,
  * Control of all the currently queued frames will be returned to the user,
  * leaving no frames in the capture queue.
  * After this call, no frame notification will occur until frames are queued again
- * 
+ *
  * Frames need to be revoked separately, if desired.
- * 
+ *
  * This function can only succeeds, if no capture is currently active.
  * If ::VmbCaptureStart has been called for the stream, but no successful call to ::VmbCaptureEnd
  * happened, the function fails with error code ::VmbErrorInUse.
@@ -1840,13 +1840,13 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureFrameWait ( const VmbHandle_t   handle,
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            If no error
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorBadHandle          No stream related to \p handle could be found.
- * 
+ *
  * \retval ::VmbErrorInUse              There is currently an active capture
  */
 IMEXPORTC VmbError_t VMB_CALL VmbCaptureQueueFlush(VmbHandle_t handle);
@@ -1861,7 +1861,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureQueueFlush(VmbHandle_t handle);
  * \defgroup TransportLayer Transport Layer Enumeration & Information
  * \{
  */
- 
+
 /**
  * \brief List all the transport layers that are used by the API.
  *
@@ -1873,16 +1873,16 @@ IMEXPORTC VmbError_t VMB_CALL VmbCaptureQueueFlush(VmbHandle_t handle);
  * \param[in]       listLength                      Number of entries in the caller's transportLayerInfo array.
  * \param[in,out]   numFound                        Number of transport layers found. May be more than listLength.
  * \param[in]       sizeofTransportLayerInfo        Size of one ::VmbTransportLayerInfo_t entry (ignored if \p transportLayerInfo is null).
- * 
+ *
  *
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            The call was successful
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorInternalFault      An internal fault occurred
  *
  * \retval ::VmbErrorNotImplemented     One of the transport layers does not provide the required information
@@ -1912,8 +1912,8 @@ IMEXPORTC VmbError_t VMB_CALL VmbTransportLayersList ( VmbTransportLayerInfo_t* 
 /**
  * \brief List all the interfaces that are currently visible to the API.
  *
- * Note: All the interfaces known via GenICam transport layers are listed by this 
- *       command and filled into the provided array. Interfaces may correspond to 
+ * Note: All the interfaces known via GenICam transport layers are listed by this
+ *       command and filled into the provided array. Interfaces may correspond to
  *       adapter cards or frame grabber cards.
  *       This function is usually called twice: once with an empty array to query the length
  *       of the list, and then again with an array of the correct length.
@@ -1933,7 +1933,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbTransportLayersList ( VmbTransportLayerInfo_t* 
  * \retval ::VmbErrorSuccess            The call was successful
  *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadParameter       \p numFound is null
@@ -2047,21 +2047,21 @@ IMEXPORTC VmbError_t VMB_CALL VmbMemoryWrite ( const VmbHandle_t   handle,
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            If no error
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
  *
  * \retval ::VmbErrorBadParameter       If \p filePath is or the settings struct is invalid
- * 
+ *
  * \retval ::VmbErrorStructSize         If sizeofSettings the struct size does not match the size of the struct expected by the API
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
  *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
- * 
+ *
  * \retval ::VmbErrorNotFound           The provided handle is insufficient to identify all the modules that should be saved
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
- * 
+ *
  * \retval ::VmbErrorIO                 There was an issue writing the file.
  */
 IMEXPORTC VmbError_t VMB_CALL VmbSettingsSave(VmbHandle_t                           handle,
@@ -2092,27 +2092,27 @@ IMEXPORTC VmbError_t VMB_CALL VmbSettingsSave(VmbHandle_t                       
  * \return An error code indicating success or the type of error that occurred.
  *
  * \retval ::VmbErrorSuccess            If no error
- * 
+ *
  * \retval ::VmbErrorApiNotStarted      ::VmbStartup() was not called before the current command
- * 
+ *
  * \retval ::VmbErrorInvalidCall        If called from a chunk access callback
- * 
+ *
  * \retval ::VmbErrorStructSize         If sizeofSettings the struct size does not match the size of the struct expected by the API
  *
  * \retval ::VmbErrorWrongType          \p handle is neither null nor a transport layer, interface, local device, remote device or stream handle
  *
  * \retval ::VmbErrorBadHandle          The given handle is not valid
- * 
+ *
  * \retval ::VmbErrorAmbiguous          The modules to restore the settings for cannot be uniquely identified based on the information available
- * 
+ *
  * \retval ::VmbErrorNotFound           The provided handle is insufficient to identify all the modules that should be restored
- * 
+ *
  * \retval ::VmbErrorRetriesExceeded    Some or all of the features could not be restored with the max iterations specified
  *
  * \retval ::VmbErrorInvalidAccess      Operation is invalid with the current access mode
  *
  * \retval ::VmbErrorBadParameter       If \p filePath is null or the settings struct is invalid
- * 
+ *
  * \retval ::VmbErrorIO                 There was an issue with reading the file.
  */
 IMEXPORTC VmbError_t VMB_CALL VmbSettingsLoad(VmbHandle_t                           handle,
@@ -2155,7 +2155,7 @@ IMEXPORTC VmbError_t VMB_CALL VmbSettingsLoad(VmbHandle_t                       
  *                                          (e.g. the frame could have been reenqueued before the chunk access could happen).
  *
  * \retval ::VmbErrorNotFound               The frame is currently not announced for a stream
- * 
+ *
  * \retval ::VmbErrorDeviceNotOpen          If the device the frame was received from is no longer open
  *
  * \retval ::VmbErrorNoChunkData            \p frame does not contain chunk data
