@@ -35,6 +35,9 @@ import string
 
 from sensor_msgs.msg import Image
 
+from vimbax_camera_msgs.srv import FeatureEnumSet
+from vimbax_camera_msgs.srv import FeatureCommandRun
+
 
 class TestNode(rclpy.node.Node):
     __test__ = False
@@ -113,5 +116,25 @@ def vimbax_camera_node(camera_test_node_name):
 @pytest.fixture
 def test_node(node_test_id, camera_test_node_name):
     rclpy.init()
-    yield TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    enum_set_client = test_node.create_client(
+        FeatureEnumSet, f"{camera_test_node_name}/features/enum_set"
+    )
+    command_run_client = test_node.create_client(
+        FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
+    )
+    enum_set_client.wait_for_service(10)
+    command_run_client.wait_for_service(10)
+
+    enum_set_client.call(FeatureEnumSet.Request(
+        feature_name="UserSetSelector",
+        value="UserSetDefault"
+    ))
+
+    command_run_client.call(FeatureCommandRun.Request(
+        feature_name="UserSetLoad"
+    ))
+
+    yield test_node
+
     rclpy.shutdown()

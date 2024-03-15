@@ -12,7 +12,7 @@ foreach(_test_path ${_pytest_tests})
     get_filename_component(_test_name ${_test_path} NAME_WE)
     ament_add_pytest_test(${_test_name} ${_test_path}
         APPEND_ENV PYTHONPATH=${CMAKE_CURRENT_BINARY_DIR}
-        TIMEOUT 60
+        TIMEOUT 240
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
     )
 endforeach()
