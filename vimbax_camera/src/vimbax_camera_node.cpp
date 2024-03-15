@@ -253,7 +253,9 @@ bool VimbaXCameraNode::initialize_parameters()
   node_->declare_parameter(parameter_buffer_count, 7, bufferCountParamDesc);
 
   auto const autostartStreamParamDesc = rcl_interfaces::msg::ParameterDescriptor{}
-  .set__description("Auto start/stop stream while subscribing/unsubscribing to image publisher").set__read_only(false);
+  .set__description(
+    "Auto start/stop stream while subscribing/unsubscribing to image publisher").set__read_only(
+    false);
   node_->declare_parameter(parameter_autostream, 1, autostartStreamParamDesc);
 
   parameter_callback_handle_ = node_->add_on_set_parameters_callback(
@@ -544,7 +546,9 @@ bool VimbaXCameraNode::initialize_graph_notify()
               stream_stopped_by_service_ = false;
             }
           } else if (subscriber_change < 0 && current_num_subscribers == 0) {
-            if (is_streaming()) {
+            if (node_->get_parameter(parameter_autostream).as_int() == 1 &&
+            is_streaming())
+            {
               stop_streaming();
             }
             stream_stopped_by_service_ = false;
