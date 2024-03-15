@@ -121,7 +121,7 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
         }
       }
     }
-    
+
     RCLCPP_DEBUG(get_logger(), "No matching camera found, falling back to VmbCameraOpen");
 
     auto const optHandle = openCamera(name);
@@ -411,7 +411,8 @@ result<bool> VimbaXCamera::feature_command_is_done(const std::string_view & name
   return value;
 }
 
-result<void> VimbaXCamera::feature_command_run(const std::string_view & name, 
+result<void> VimbaXCamera::feature_command_run(
+  const std::string_view & name,
   const std::optional<std::chrono::milliseconds> & timeout) const
 {
   return feature_command_run(name, camera_handle_, timeout);
@@ -433,14 +434,14 @@ result<void> VimbaXCamera::feature_command_run(
   auto const poll_start_tp = std::chrono::steady_clock::now();
 
   auto is_timed_out = [&]() -> bool {
-    auto const now_tp = std::chrono::steady_clock::now();
-    auto const diff = now_tp - poll_start_tp;
+      auto const now_tp = std::chrono::steady_clock::now();
+      auto const diff = now_tp - poll_start_tp;
 
-    return diff >= timeout.value_or(default_timeout);
-  };
+      return diff >= timeout.value_or(default_timeout);
+    };
 
   bool done{false};
-  
+
   do {
     auto const done_error = api_->FeatureCommandIsDone(handle, name.data(), &done);
     if (done_error != VmbErrorSuccess) {
@@ -453,7 +454,6 @@ result<void> VimbaXCamera::feature_command_run(
       RCLCPP_ERROR(get_logger(), "Waiting for command done timed out!");
       return error{VmbErrorTimeout};
     }
-
   } while(!done);
 
   return {};

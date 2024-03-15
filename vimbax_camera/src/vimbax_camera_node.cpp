@@ -1336,7 +1336,7 @@ result<void> VimbaXCameraNode::start_streaming()
       }
     });
 
-  if (error.error().code == VmbErrorSuccess) {
+  if (!error) {
     RCLCPP_INFO(get_logger(), "Stream started using %ld buffers", buffer_count);
   }
   return error;
