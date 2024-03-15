@@ -86,7 +86,7 @@ private:
   const std::string parameter_camera_id = "camera_id";
   const std::string parameter_settings_file = "settings_file";
   const std::string parameter_buffer_count = "buffer_count";
-  const std::string parameter_autostart_stream = "autostart";
+  const std::string parameter_autostream = "autostream";
   const std::string parameter_frame_id = "camera_frame_id";
   const std::string parameter_camera_info_url = "camera_info_url";
 
