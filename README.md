@@ -132,6 +132,7 @@ Only if [automatic stream](#automatic-stream) is enabled.
 | autostream | When true the [automatic stream](#automatic-stream) is enabled. |
 | camera_frame_id | ROS 2 frame id of the camera. |
 | camera_info_url | Url to ROS 2 camera info file. |
+| command_feature_timeout | Timeout for command features. |
 
 ## Common message types
 
