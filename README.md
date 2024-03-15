@@ -15,6 +15,30 @@ Download the debian package from the release page and install it using the follo
 sudo apt-get install ros-humble-vimbax-camera-driver.deb
 ```
 
+## Getting started 
+
+Setup the ROS 2 environment:
+```shell
+source /opt/ros/humble/setup.bash
+```
+
+To start the Vimba X ROS 2 node run:
+```shell
+ros2 run vimbax_camera vimbax_camera_node 
+```
+By default the Vimba X ROS 2 node will open the first available camera. If you want to open a specific camera, you can use *camera_id* parameter by adding `--ros-args -p camera_id:=<camera to open>`. The *camera_id* can be the device id, extended device id, serial number, ip address or mac address. 
+The node will publish all topics and service under the namespace `vimbax_camera_<pid>`, where `pid` 
+is the process id of the camera node process.
+
+An example can be start by running:
+```shell
+ros2 run vimbax_camera_examples <example name>
+```
+The following examples are available:
+- asynchronous_grab: Stream images from the camera node and print image info to console.
+- asynchronous_grab_opencv: Stream images from the camera node and display them using opencv imshow.
+- event_viewer: View 
+
 ## Build Instructions
 1. Setup the ROS2 environment
     ```shell
