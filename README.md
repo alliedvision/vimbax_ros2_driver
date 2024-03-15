@@ -1,6 +1,6 @@
 # Vimba X ROS 2 camera driver
 
-## Compability 
+## Compability
 - ROS 2 humble
 - Nvidia Jetpack 5.x (arm64)
 - Ubuntu 22.04 (x86_64)
@@ -12,18 +12,18 @@
 ## Installation
 Download the debian package from the release page and install it using the following command:
 ```
-sudo apt-get install ros-humble-vimbax-camera-driver.deb 
+sudo apt-get install ros-humble-vimbax-camera-driver.deb
 ```
 
 ## Build Instructions
-1. Setup the ROS2 environment 
+1. Setup the ROS2 environment
     ```shell
-    source /opt/ros/humble/setup.bash 
+    source /opt/ros/humble/setup.bash
     ```
 
 2. Initialize and update rosdep if not already done
     ```shell
-    rosdep init 
+    rosdep init
     rosdep update
     ```
 
@@ -36,30 +36,30 @@ sudo apt-get install ros-humble-vimbax-camera-driver.deb
 4. Clone this repository into the workspace
     ```shell
     git clone ...
-    ``` 
+    ```
 5. Install dependencies
     ```shell
     cd ~/ros2_ws/
     rosdep install --from-path src --ignore-src
     ```
-   
-6. Run the actual build 
+
+6. Run the actual build
     ```shell
     cd ~/ros2_ws/
     colcon build --cmake-args -DVMB_DIR=<path to VimbaX installation>
-    ```  
-    The optional VMB_DIR cmake argument can be used to specify the path to the Vimba X installation 
+    ```
+    The optional VMB_DIR cmake argument can be used to specify the path to the Vimba X installation
     that used for testing.
 
 7. Run unit tests (optional)
     ```shell
     colcon test
-    ```  
+    ```
 
 8. Print test results (optional)
     ```shell
     colcon test-result --verbose
-    ```  
+    ```
 
 ## Debug Instructions (VSCode)
 * Install ROS extension (from Microsoft) within VSCode
@@ -67,48 +67,50 @@ sudo apt-get install ros-humble-vimbax-camera-driver.deb
 * Search and execute "ROS: Start"
 * Search and execute "ROS: Update C++ properties"
 * Type CTRL-SHIFT-b and select "colcon" to build the project
-* Type CTRL-SHIFT-d and select "ROS: Lauch" to start debug session
+* Type CTRL-SHIFT-d and select "ROS: Launch" to start debug session
 
-## Automatic stream start 
+## Automatic stream
 
-The streaming automatically start if a node subscribes to the *image_raw* or any other image 
-topic of the camera node. The automatic stream start can be enabled and disable using the
-*autostart* parameter. 
+The streaming automatically starts if a node subscribes to the *image_raw* or any other image
+topic of the camera node. The streaming automatically stops if a node unsubscribes from the
+*image_raw* or any other image topic of the camera node.
+The automatic stream start/stop can be enabled and disabled using the
+*autostream* parameter.
 
-## GenICam events 
+## GenICam events
 
 GenICam events and feature invalidations can be used using the vimbax_camera_events package. For more details please look into the events examples in the vimbax_camera_examples package.
 
-## Parameters 
+## Parameters
 
 | Name | Description |
 |------|-------------|
 | camera_id | Id of camera to open. Can be the device id, extended device id, serial number, ip or mac address. |
 | settings_file | Path to xml settings file to load on startup. <br> **The file must point to a valid file on system that the node runs on.** |
 | buffer_count | Number of buffers used for streaming. <br> **Can't be change during streaming.** |
-| autostart | When true the [automatic stream start](#automatic-stream-start) is enabled. |
+| autostream | When true the [automatic stream](#automatic-stream) is enabled. |
 | camera_frame_id | ROS 2 frame id of the camera. |
 | camera_info_url | Url to ROS 2 camera info file. |
 
 ## Common message types
 
-### vimbax_camera_msgs/Error 
+### vimbax_camera_msgs/Error
 
 | Name | Type | Description |
 |------|------|-------------|
 | code | int32 | Error code of the operation. <br> 0 on success. |
-| text | string | Error code as a string.  <br> Only valid if the *code* is not 0. | 
+| text | string | Error code as a string.  <br> Only valid if the *code* is not 0. |
 
 ### vimbax_camera_msgs/FeatureFlags
 | Name | Type | Description |
 |------|------|-------------|
 | flag_none | bool | No additional information is provided |
-| flag_read | bool | Static info about read access. Current status depends on access mode, check with the [access_mode_get](#camera-node-nsfeaturesaccess_mode_get) service | 
+| flag_read | bool | Static info about read access. Current status depends on access mode, check with the [access_mode_get](#camera-node-nsfeaturesaccess_mode_get) service |
 | flag_write | bool | Static info about write access. Current status depends on access mode, check with the [access_mode_get](#camera-node-nsfeaturesaccess_mode_get) service |
-| flag_volatile | bool | Value may change at any time | 
-| flag_modify_write | bool | Value may change after a write | 
+| flag_volatile | bool | Value may change at any time |
+| flag_modify_write | bool | Value may change after a write |
 
-### vimbax_camera_msgs/FeatureInfo 
+### vimbax_camera_msgs/FeatureInfo
 | Name | Type | Description |
 |------|------|-------------|
 | name | string | Name of the feature. |
@@ -118,14 +120,14 @@ GenICam events and feature invalidations can be used using the vimbax_camera_eve
 | unit | string | Unit of the feature. |
 | data_type | uint32 | Feature data type: <br> 0: Unknown <br> 1: Int <br> 2: Float <br> 3: Enum <br> 4: String <br> 5: Bool <br> 6: Command <br> 7: Raw <br> 8: None |
 | flags | [FeatureFlags](#vimbax_camera_msgsfeatureflags) | Access flags for this feature |
-| polling_time | uint32 | Predefined polling time for volatile features | 
+| polling_time | uint32 | Predefined polling time for volatile features |
 
-## Available services 
+## Available services
 
-### /\<camera node ns>/feature_info_query 
+### /\<camera node ns>/feature_info_query
 #### Description
 
-Query the feature information for the features given in *feature_names*. If the *feature_names* 
+Query the feature information for the features given in *feature_names*. If the *feature_names*
 is empty, then the information for all features will be returned.
 
 
@@ -151,14 +153,14 @@ This service reads the current access mode of the feature *feature_name*
 
 | Name | Type | Description |
 |------|------|-------------|
-| feature_name | string | Name of the feature for getting the current access mode | 
+| feature_name | string | Name of the feature for getting the current access mode |
 
 #### Response
 
 | Name | Type | Description |
 |------|------|-------------|
-| is_readable | bool | True if the feature can currently be read otherwise false | 
-| is_writeable | bool | True if the feature can currently be written otherwise false | 
+| is_readable | bool | True if the feature can currently be read otherwise false |
+| is_writeable | bool | True if the feature can currently be written otherwise false |
 | error | [Error](#vimbax_camera_msgserror)  | Result of the request |
 
 ### /\<camera node ns>/features/bool_get
@@ -177,9 +179,9 @@ Reads the current value of the bool feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | value | bool | Current bool value of the feature |
-| error | [Error](#vimbax_camera_msgserror) | Result of the feature read | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the feature read |
 
-### /\<camera node ns>/features/bool_set 
+### /\<camera node ns>/features/bool_set
 #### Description
 
 Set the value of the bool feature *feature_name* to *value*
@@ -195,9 +197,9 @@ Set the value of the bool feature *feature_name* to *value*
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the feature write | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the feature write |
 
-### /\<camera node ns>/features/command_is_done 
+### /\<camera node ns>/features/command_is_done
 #### Description
 
 Check if the command feature *feature_name* has finished.
@@ -213,12 +215,12 @@ Check if the command feature *feature_name* has finished.
 | Name | Type | Description |
 |------|------|-------------|
 | is_done | bool | True if the command feature execution has finished |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/command_run 
+### /\<camera node ns>/features/command_run
 #### Description
 
-Run the command feature *feature_name* and waits until it's done, so a call to is_done is not needed. 
+Run the command feature *feature_name* and waits until it's done, so a call to is_done is not needed.
 
 #### Request
 
@@ -231,9 +233,9 @@ Run the command feature *feature_name* and waits until it's done, so a call to i
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the feature execution | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the feature execution |
 
-### /\<camera node ns>/features/enum_as_int_get 
+### /\<camera node ns>/features/enum_as_int_get
 #### Description
 
 Get the corresponding integer value for enum option *option* of feature *feature_name*
@@ -250,12 +252,12 @@ Get the corresponding integer value for enum option *option* of feature *feature
 | Name | Type | Description |
 |------|------|-------------|
 | value | int64 | Integer value of option |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/enum_as_string_get 
+### /\<camera node ns>/features/enum_as_string_get
 #### Description
 
-Get the enum string representation for the enum integer value *value* of the feature *feature_name* 
+Get the enum string representation for the enum integer value *value* of the feature *feature_name*
 
 #### Request
 
@@ -269,9 +271,9 @@ Get the enum string representation for the enum integer value *value* of the fea
 | Name | Type | Description |
 |------|------|-------------|
 | option | string | String representation of the enum value |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/enum_get 
+### /\<camera node ns>/features/enum_get
 #### Description
 
 Read the current option of the enum feature *feature_name*
@@ -287,12 +289,12 @@ Read the current option of the enum feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | option | string | Current enum feature option |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/enum_info_get 
+### /\<camera node ns>/features/enum_info_get
 #### Description
 
-Get the type specific feature info the enum feature *feature_name*. 
+Get the type specific feature info the enum feature *feature_name*.
 
 #### Request
 
@@ -306,9 +308,9 @@ Get the type specific feature info the enum feature *feature_name*.
 |------|------|-------------|
 | possible_values | string[] | List of all exsiting enum options |
 | available_values | string[] | List of the currently available enum options |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/enum_set  
+### /\<camera node ns>/features/enum_set
 #### Description
 
 Sets the value of the enum feature *feature_name* to *value*
@@ -324,9 +326,9 @@ Sets the value of the enum feature *feature_name* to *value*
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/float_get 
+### /\<camera node ns>/features/float_get
 #### Description
 
 Reads the current value of the float feature *feature_name*
@@ -342,9 +344,9 @@ Reads the current value of the float feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | value | float64 | Current value of the float feature |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/float_info_get 
+### /\<camera node ns>/features/float_info_get
 #### Description
 
 Get the type specific feature information (limits) of the float feature *feature_name*
@@ -363,9 +365,9 @@ Get the type specific feature information (limits) of the float feature *feature
 | max | float64 | Maximum value of the feature |
 | inc | float64 | Increment of the feature |
 | inc_available | bool | True when the *inc* field contains a valid value otherwise false |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/float_set  
+### /\<camera node ns>/features/float_set
 #### Description
 
 Set the value of the float feature *feature_name* to *value*
@@ -381,9 +383,9 @@ Set the value of the float feature *feature_name* to *value*
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/int_get 
+### /\<camera node ns>/features/int_get
 #### Description
 
 Read the current value of the int feature *feature_name*
@@ -399,9 +401,9 @@ Read the current value of the int feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | value | int64 | Current value of the int feature |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/int_info_get 
+### /\<camera node ns>/features/int_info_get
 #### Description
 
 Get the type specific feature information (limits) of the int feature *feature_name*
@@ -419,9 +421,9 @@ Get the type specific feature information (limits) of the int feature *feature_n
 | min | int64 | Minimum feature value |
 | max | int64 | Maximum feature value |
 | inc | int64 | Increment of the feature |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/int_set 
+### /\<camera node ns>/features/int_set
 #### Description
 
 Set the value of the int feature *feature_name* to *value*
@@ -437,9 +439,9 @@ Set the value of the int feature *feature_name* to *value*
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/list_get 
+### /\<camera node ns>/features/list_get
 #### Description
 
 Get a list of all available feature names
@@ -454,9 +456,9 @@ Get a list of all available feature names
 | Name | Type | Description |
 |------|------|-------------|
 | feature_list | string[] | List containing all feature names of the camera |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/raw_get 
+### /\<camera node ns>/features/raw_get
 #### Description
 
 Get the data of the raw feature *feature_name*
@@ -473,9 +475,9 @@ Get the data of the raw feature *feature_name*
 |------|------|-------------|
 | buffer | byte[] | Contains the data of the raw feature |
 | buffer_size | uint32 | Length of the feature data |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/raw_info_get 
+### /\<camera node ns>/features/raw_info_get
 #### Description
 
 Get the type specific feature information of the raw feature *feature_name*
@@ -491,9 +493,9 @@ Get the type specific feature information of the raw feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | max_length | int64 | Maximum length of the raw feature data |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/raw_set 
+### /\<camera node ns>/features/raw_set
 #### Description
 
 Set the raw feature *feature_name* to the data in *buffer*
@@ -509,9 +511,9 @@ Set the raw feature *feature_name* to the data in *buffer*
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/string_get 
+### /\<camera node ns>/features/string_get
 #### Description
 
 Get the current value of the string feature *feature_name*
@@ -527,9 +529,9 @@ Get the current value of the string feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | value | string | Current value of the string feature |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/string_info_get 
+### /\<camera node ns>/features/string_info_get
 #### Description
 
 Get the type specific feature info of the string feature *feature_name*
@@ -545,9 +547,9 @@ Get the type specific feature info of the string feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | max_length | int64 | Maximum length of the string value |
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/features/string_set 
+### /\<camera node ns>/features/string_set
 #### Description
 
 Set the string feature *feature_name* to *value*
@@ -563,14 +565,14 @@ Set the string feature *feature_name* to *value*
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/settings/load 
+### /\<camera node ns>/settings/load
 #### Description
 
-Load the camera setting from the xml file *filename*. 
+Load the camera setting from the xml file *filename*.
 
-**The path to the settings file must point to an existing file system that the node runs on.** 
+**The path to the settings file must point to an existing file system that the node runs on.**
 
 #### Request
 
@@ -582,14 +584,14 @@ Load the camera setting from the xml file *filename*.
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/settings/save 
+### /\<camera node ns>/settings/save
 #### Description
 
-Save the camera setting to the xml file *filename*. 
+Save the camera setting to the xml file *filename*.
 
-**The path to the settings file must point to an existing directory system that the node runs on.** 
+**The path to the settings file must point to an existing directory system that the node runs on.**
 
 #### Request
 
@@ -601,9 +603,9 @@ Save the camera setting to the xml file *filename*.
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
-### /\<camera node ns>/status 
+### /\<camera node ns>/status
 #### Description
 
 Get status information of the connected camera.
@@ -617,13 +619,13 @@ Get status information of the connected camera.
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 | display_name | string | Display name of the camera |
 | model_name | string | Model name of the camera |
 | device_firmware_version | string | Firmware version of the camera |
 | device_id | string | Device id of the camera. Corresponds to the camera feature "DeviceFirmwareVersion". |
-| device_user_id | string | Device user id of the camera. Corresponds to the camera feature "DeviceUserID". | 
-| device_serial_number | string | Serial number of the camera | 
+| device_user_id | string | Device user id of the camera. Corresponds to the camera feature "DeviceUserID". |
+| device_serial_number | string | Serial number of the camera |
 | interface_id | string | Id of the GenTL interface module |
 | transport_layer_id | string | Id of the GenTL transport layer module |
 | streaming | bool | True if the camera is currently streaming otherwise false |
@@ -636,7 +638,7 @@ Get status information of the connected camera.
 | ip_address | string | IP address of the camera. <br> **Only valid for GigE vision cameras**
 | mac_address | string | MAC address of the camera. <br> **Only valid for GigE vision cameras**
 
-### /\<camera node ns>/stream_start 
+### /\<camera node ns>/stream_start
 #### Description
 
 Start the streaming of the camera.
@@ -650,7 +652,7 @@ Start the streaming of the camera.
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
 ### /\<camera node ns>/stream_stop
 #### Description
@@ -666,4 +668,4 @@ Stop the streaming of the camera.
 
 | Name | Type | Description |
 |------|------|-------------|
-| error | [Error](#vimbax_camera_msgserror) | Result of the operation | 
+| error | [Error](#vimbax_camera_msgserror) | Result of the operation |
