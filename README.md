@@ -41,7 +41,8 @@ To start the Vimba X ROS 2 node run:
 ```shell
 ros2 run vimbax_camera vimbax_camera_node 
 ```
-By default the Vimba X ROS 2 node will open the first available camera. If you want to open a specific camera, you can use *camera_id* parameter by adding `--ros-args -p camera_id:=<camera to open>`. The *camera_id* can be the device id, extended device id, serial number, ip address or mac address. 
+By default the Vimba X ROS 2 node will open the first available camera. If you want to open a specific camera, you can use *camera_id* parameter by adding `--ros-args -p camera_id:=<camera to open>`. The *camera_id* can be the device id, extended device id, serial number, ip address or mac address. The
+node will always open the camera exclusive access mode. If the no camera is available or the specified camera is opened by another application, the node startup fails and an error message is printed. 
 The node will publish all topics and service under the namespace `vimbax_camera_<pid>`, where `pid` 
 is the process id of the camera node process.
 
@@ -100,11 +101,6 @@ The following examples are available:
     colcon test-result --verbose
     ```
 
-## Getting started
-[TODO] How to run an example
-
-
-
 ## Supported pixel formats
 The following PFNC pixel formats are supported:
 - Mono8
@@ -141,7 +137,7 @@ GenICam events and feature invalidations can be used using the vimbax_camera_eve
 
 ## Camera disconnect and reconnect
 
-If a camera (GigE or USB) is disconnected while the camera node is already runnig, the node
+If a camera (GigE or USB) is disconnected while the camera node is already running, the node
 will wait for the camera to reappear and then reconnect to the camera. If the camera was streaming
 while it is disconnected, the stream will be restarted after the camera is reconnected.
 Only if [automatic stream](#automatic-stream) is enabled.
@@ -372,7 +368,7 @@ Get the type specific feature info the enum feature *feature_name*.
 
 | Name | Type | Description |
 |------|------|-------------|
-| possible_values | string[] | List of all exsiting enum options |
+| possible_values | string[] | List of all existing enum options |
 | available_values | string[] | List of the currently available enum options |
 | error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
@@ -737,10 +733,13 @@ Stop the streaming of the camera.
 | error | [Error](#vimbax_camera_msgserror) | Result of the operation |
 
 ## Troubleshooting
-- [TODO] Finding and listing cameras
-- [TODO] Camera opened by different application
 
-## Debug Instructions (VS Code)
+### Finding and listing cameras
+For listing all available cameras please use the [list cameras example](https://docs.alliedvision.com/Vimba_X/Vimba_X_DeveloperGuide/examplesOverview.html#list-cameras) from Vimba X SDK installation.
+After running the example use can use the printed `Camera Id` or `Serial Number` as *camera_id* 
+parameter for opening a specific camera. 
+
+### Debug Instructions (VS Code)
 * Install ROS extension (from Microsoft) within VS Code
 * Type CTRL-SHIFT-p to open the command palette
 * Search and execute "ROS: Start"
