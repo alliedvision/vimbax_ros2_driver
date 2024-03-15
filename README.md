@@ -1,13 +1,28 @@
 # Vimba X ROS 2 camera driver
 
+## Beta Disclaimer
+
+Please be aware that all code revisions not explicitly listed in the Github Release section are
+considered a **Beta Version**.
+
+For Beta Versions, the following applies in addition to the GPLv2 License:
+
+THE SOFTWARE IS PRELIMINARY AND STILL IN TESTING AND VERIFICATION PHASE AND IS PROVIDED ON AN “AS
+IS” AND “AS AVAILABLE” BASIS AND IS BELIEVED TO CONTAIN DEFECTS. THE PRIMARY PURPOSE OF THIS EARLY
+ACCESS IS TO OBTAIN FEEDBACK ON PERFORMANCE AND THE IDENTIFICATION OF DEFECTS IN THE SOFTWARE,
+HARDWARE AND DOCUMENTATION.
+
 ## Compability
 - ROS 2 humble
 - Nvidia Jetpack 5.x (arm64)
 - Ubuntu 22.04 (x86_64)
+- All cameras supported by Vimba X
 
 ## Prerequisites
 - ROS 2 humble is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
 - For running the system tests make sure the package "ros-humble-launch-pytests" is installed on your system.
+- [Vimba X 2023-4](https://www.alliedvision.com/en/products/software/vimba-x-sdk/) or later
+- For CSI cameras make sure to install the drivers available on [github](https://github.com/alliedvision/linux_nvidia_jetson)
 
 ## Installation
 Download the debian package from the release page and install it using the following command:
@@ -67,13 +82,13 @@ The following examples are available:
     rosdep install --from-path src --ignore-src
     ```
 
-6. Run the actual build
+6. Run the build
     ```shell
     cd ~/ros2_ws/
     colcon build --cmake-args -DVMB_DIR=<path to VimbaX installation>
     ```
     The optional VMB_DIR cmake argument can be used to specify the path to the Vimba X installation
-    that used for testing.
+    used for testing.
 
 7. Run unit tests (optional)
     ```shell
@@ -85,13 +100,32 @@ The following examples are available:
     colcon test-result --verbose
     ```
 
-## Debug Instructions (VSCode)
-* Install ROS extension (from Microsoft) within VSCode
-* Type CTRL-SHIFT-p to open the command palette
-* Search and execute "ROS: Start"
-* Search and execute "ROS: Update C++ properties"
-* Type CTRL-SHIFT-b and select "colcon" to build the project
-* Type CTRL-SHIFT-d and select "ROS: Launch" to start debug session
+## Getting started
+[TODO] How to run an example
+
+
+
+## Supported pixel formats
+The following PFNC pixel formats are supported:
+- Mono8
+- Mono12/16
+- BGR8
+- RGB8
+- BayerBG8
+- BayerGB8
+- BayerRG8
+- BayerGR8
+- BayerRG10/12
+- BayerBG10/12
+- BayerGB10/12
+- BayerGR10/12
+- BayerRG16
+- BayerBG16
+- BayerGB16
+- BayerGR16
+- YCBCR422_8
+
+If a pixel format is used that is not supported the stream will not start.
 
 ## Automatic stream
 
@@ -105,6 +139,13 @@ The automatic stream start/stop can be enabled and disabled using the
 
 GenICam events and feature invalidations can be used using the vimbax_camera_events package. For more details please look into the events examples in the vimbax_camera_examples package.
 
+## Camera disconnect and reconnect
+
+If a camera (GigE or USB) is disconnected while the camera node is already runnig, the node
+will wait for the camera to reappear and then reconnect to the camera. If the camera was streaming
+while it is disconnected, the stream will be restarted after the camera is reconnected.
+Only if [automatic stream](#automatic-stream) is enabled.
+
 ## Parameters
 
 | Name | Description |
@@ -115,6 +156,7 @@ GenICam events and feature invalidations can be used using the vimbax_camera_eve
 | autostream | When true the [automatic stream](#automatic-stream) is enabled. |
 | camera_frame_id | ROS 2 frame id of the camera. |
 | camera_info_url | Url to ROS 2 camera info file. |
+| command_feature_timeout | Timeout for command features. |
 
 ## Common message types
 
@@ -693,3 +735,17 @@ Stop the streaming of the camera.
 | Name | Type | Description |
 |------|------|-------------|
 | error | [Error](#vimbax_camera_msgserror) | Result of the operation |
+
+## Troubleshooting
+- [TODO] Finding and listing cameras
+- [TODO] Camera opened by different application
+
+## Debug Instructions (VS Code)
+* Install ROS extension (from Microsoft) within VS Code
+* Type CTRL-SHIFT-p to open the command palette
+* Search and execute "ROS: Start"
+* Search and execute "ROS: Update C++ properties"
+* Type CTRL-SHIFT-b and select "colcon" to build the project
+* Type CTRL-SHIFT-d and select "ROS: Launch" to start debug session
+
+
