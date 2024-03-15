@@ -115,6 +115,13 @@ The automatic stream start/stop can be enabled and disabled using the
 
 GenICam events and feature invalidations can be used using the vimbax_camera_events package. For more details please look into the events examples in the vimbax_camera_examples package.
 
+## Camera disconnect and reconnect
+
+If a camera (GigE or USB) is disconnected while the camera node is already runnig, the node
+will wait for the camera to reappear and then reconnect to the camera. If the camera was streaming
+while it is disconnected, the stream will be restarted after the camera is reconnected.
+Only if [automatic stream](#automatic-stream) is enabled.
+
 ## Parameters
 
 | Name | Description |
