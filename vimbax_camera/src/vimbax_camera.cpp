@@ -121,8 +121,8 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
         }
       }
     }
-    // TODO: Remove warning
-    RCLCPP_WARN(get_logger(), "No matching camera found, falling back to VmbCameraOpen");
+    
+    RCLCPP_DEBUG(get_logger(), "No matching camera found, falling back to VmbCameraOpen");
 
     auto const optHandle = openCamera(name);
 
