@@ -53,7 +53,14 @@ ros2 run vimbax_camera_examples <example name>
 The following examples are available:
 - asynchronous_grab: Stream images from the camera node and print image info to console.
 - asynchronous_grab_opencv: Stream images from the camera node and display them using opencv imshow.
-- event_viewer: View 
+- event_viewer: Show GenICam events on the console.
+- feature_command_execute: How to run a command feature.
+- feature_get: How to get a feature value. 
+- feature_info_get: How to get the type specific feature information.
+- feature_set: Change the value of a feature.
+- list_feature: How to list all available features.
+- settings_load_save: Load or save the camera settings to a xml file.
+- status_get: How to use the status service to get the current camera status.
 
 ## Build Instructions
 1. Setup the ROS2 environment
