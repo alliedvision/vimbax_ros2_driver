@@ -128,7 +128,7 @@ The following PFNC pixel formats are supported:
 - BayerGR16
 - YCBCR422_8
 
-If a pixel format is used that is not supported the stream will not start.
+If an unsupported pixel format is used the stream will not start.
 
 ## Automatic stream
 
@@ -145,7 +145,7 @@ GenICam events and feature invalidations can be used using the vimbax_camera_eve
 ## Camera disconnect and reconnect
 
 If a camera (GigE or USB) is disconnected while the camera node is already running, the node
-will wait for the camera to reappear and then reconnect to the camera. If the camera was streaming
+will wait for the camera to reappear and then reconnect to it. If the camera was streaming
 while it is disconnected, the stream will be restarted after the camera is reconnected.
 Only if [automatic stream](#automatic-stream) is enabled.
 
@@ -289,7 +289,7 @@ Check if the command feature *feature_name* has finished.
 ### /\<camera node ns>/features/command_run
 #### Description
 
-Run the command feature *feature_name* and waits until it's done, so a call to is_done is not needed.
+Run the command feature *feature_name* and wait until it's done, so a call to is_done is not needed.
 
 #### Request
 
@@ -363,7 +363,7 @@ Read the current option of the enum feature *feature_name*
 ### /\<camera node ns>/features/enum_info_get
 #### Description
 
-Get the type specific feature info the enum feature *feature_name*.
+Get the type specific feature info of the enum feature *feature_name*.
 
 #### Request
 
@@ -701,7 +701,7 @@ Get status information of the connected camera.
 | width | uint32 | Currently set width of the image. Equals the value of the camera feature "Width" |
 | height | uint32 | Currently set height of the image. Equals the value of the camera feature "Height" |
 | frame_rate | float64 | Currently set frame rate of the camera |
-| pixel_format | string | Currently set pixelformat. Equals the camera feature "PixelFormat" |
+| pixel_format | string | Currently set pixel format. Equals the camera feature "PixelFormat" |
 | trigger_mode | string | Current trigger mode |
 | trigger_source | string | Current trigger source |
 | ip_address | string | IP address of the camera. <br> **Only valid for GigE vision cameras**
@@ -743,7 +743,7 @@ Stop the streaming of the camera.
 
 ### Finding and listing cameras
 For listing all available cameras please use the [list cameras example](https://docs.alliedvision.com/Vimba_X/Vimba_X_DeveloperGuide/examplesOverview.html#list-cameras) from Vimba X SDK installation.
-After running the example use can use the printed `Camera Id` or `Serial Number` as *camera_id* 
+After running the example you can use the printed `Camera Id` or `Serial Number` as *camera_id* 
 parameter for opening a specific camera. 
 
 ### Debug Instructions (VS Code)
