@@ -23,9 +23,7 @@ from asyncio import Future
 
 from sensor_msgs.msg import Image
 
-last_frame_id = -1
 frames_recv = 0
-frames_missing = 0
 
 
 def main():
@@ -50,24 +48,15 @@ def main():
     node = Node("_asynchronous_grab")
 
     def on_frame(msg: Image):
-        global last_frame_id
         global frames_recv
-        global frames_missing
-        frame_id = int(msg.header.frame_id)
-        missing = frame_id - last_frame_id - 1
 
-        if frames_recv > 0:
-            frames_missing += missing
         if args.info:
-            if missing > 0:
-                print(f"{missing} frame missing!")
             print(f"Frame id {msg.header.frame_id} Size {msg.width}x{msg.height} "
                   + f"Format {msg.encoding}")
         else:
             print(".", end='', flush=True)
 
         frames_recv += 1
-        last_frame_id = frame_id
         if args.count > 0 and frames_recv >= args.count:
             stop_future.set_result(None)
 
@@ -76,4 +65,3 @@ def main():
     rclpy.spin_until_future_complete(node, stop_future)
 
     print(f"Received frames {frames_recv}")
-    print(f"Missing frames {frames_missing}")

@@ -31,7 +31,7 @@ def main():
 
     node = Node("_feature_command_execute")
 
-    event_subscriber = EventSubscriber(EventData, node, f"/{args.node_name}/events")
+    event_subscriber = EventSubscriber(EventData, node, f"{args.node_name}/events")
 
     def print_event_data(event):
         for entry in event.entries:
