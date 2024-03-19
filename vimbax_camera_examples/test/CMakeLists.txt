@@ -1,7 +1,7 @@
 find_package(ament_cmake_pytest REQUIRED)
 
 set(_pytest_tests
-    test_feature_get.py
+    test_features.py
     test_event_viewer.py
 )
 
