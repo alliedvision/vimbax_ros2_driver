@@ -61,7 +61,6 @@ The following examples are available:
 - list_feature: How to list all available features.
 - settings_load_save: Load or save the camera settings to a xml file.
 - status_get: How to use the status service to get the current camera status.
-- event_viewer: View
 
 ## Build Instructions
 1. Setup the ROS2 environment
