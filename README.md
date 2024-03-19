@@ -27,10 +27,10 @@ HARDWARE AND DOCUMENTATION.
 ## Installation
 Download the debian package from the release page and install it using the following command:
 ```
-sudo apt-get install ros-humble-vimbax-camera-driver.deb
+sudo apt install ./ros-humble-vimbax-camera-driver.deb
 ```
 
-## Getting started 
+## Getting started
 
 Setup the ROS 2 environment:
 ```shell
@@ -39,11 +39,11 @@ source /opt/ros/humble/setup.bash
 
 To start the Vimba X ROS 2 node run:
 ```shell
-ros2 run vimbax_camera vimbax_camera_node 
+ros2 run vimbax_camera vimbax_camera_node
 ```
 By default the Vimba X ROS 2 node will open the first available camera. If you want to open a specific camera, you can use *camera_id* parameter by adding `--ros-args -p camera_id:=<camera to open>`. The *camera_id* can be the device id, extended device id, serial number, ip address or mac address. The
-node will always open the camera exclusive access mode. If the no camera is available or the specified camera is opened by another application, the node startup fails and an error message is printed. 
-The node will publish all topics and service under the namespace `vimbax_camera_<pid>`, where `pid` 
+node will always open the camera exclusive access mode. If the no camera is available or the specified camera is opened by another application, the node startup fails and an error message is printed.
+The node will publish all topics and service under the namespace `vimbax_camera_<pid>`, where `pid`
 is the process id of the camera node process.
 
 An example can be start by running:
@@ -55,12 +55,13 @@ The following examples are available:
 - asynchronous_grab_opencv: Stream images from the camera node and display them using opencv imshow.
 - event_viewer: Show GenICam events on the console.
 - feature_command_execute: How to run a command feature.
-- feature_get: How to get a feature value. 
+- feature_get: How to get a feature value.
 - feature_info_get: How to get the type specific feature information.
 - feature_set: Change the value of a feature.
 - list_feature: How to list all available features.
 - settings_load_save: Load or save the camera settings to a xml file.
 - status_get: How to use the status service to get the current camera status.
+- event_viewer: View
 
 ## Build Instructions
 1. Setup the ROS2 environment
@@ -743,8 +744,8 @@ Stop the streaming of the camera.
 
 ### Finding and listing cameras
 For listing all available cameras please use the [list cameras example](https://docs.alliedvision.com/Vimba_X/Vimba_X_DeveloperGuide/examplesOverview.html#list-cameras) from Vimba X SDK installation.
-After running the example you can use the printed `Camera Id` or `Serial Number` as *camera_id* 
-parameter for opening a specific camera. 
+After running the example you can use the printed `Camera Id` or `Serial Number` as *camera_id*
+parameter for opening a specific camera.
 
 ### Debug Instructions (VS Code)
 * Install ROS extension (from Microsoft) within VS Code
