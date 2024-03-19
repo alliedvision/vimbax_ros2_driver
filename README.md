@@ -746,6 +746,10 @@ For listing all available cameras please use the [list cameras example](https://
 After running the example you can use the printed `Camera Id` or `Serial Number` as *camera_id*
 parameter for opening a specific camera.
 
+### Camera calibration
+If an error message regarding a missing camera calibration file appears it can be ignored.
+For more information see [ROS2 camera calibration documentation](https://docs.ros.org/en/rolling/p/camera_calibration/tutorial_mono.html).
+
 ### Debug Instructions (VS Code)
 * Install ROS extension (from Microsoft) within VS Code
 * Type CTRL-SHIFT-p to open the command palette
