@@ -17,7 +17,7 @@ import launch
 from launch_ros.actions import Node
 from conftest import call_service, assert_clean_shutdown
 from vimbax_camera_msgs.srv import FeatureCommandRun
-from launch.actions.shutdown_action import Shutdown
+from typing import List
 import logging
 import re
 
@@ -65,11 +65,11 @@ def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node, 
 
     assert_clean_shutdown(launch_context, action)
 
-    lines: List[str] = action.get_stdout().strip().split(sep='\n')
-    
+    lines: List[str] = action.get_stdout().strip().split(sep="\n")
+
     assert 3 == len(lines), "The example should output 3 lines!"
     assert "Got event Test" == lines[0].strip()
 
-    assert re.match('EventTestTimestamp: [0-9]+', lines[1].strip()) is not None
+    assert re.match("EventTestTimestamp: [0-9]+", lines[1].strip()) is not None
 
     assert "EventTest: 20479" == lines[2].strip()

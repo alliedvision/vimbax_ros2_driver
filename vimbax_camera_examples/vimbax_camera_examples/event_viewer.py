@@ -22,7 +22,7 @@ from vimbax_camera_msgs.msg import EventData
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
     parser.add_argument("events", nargs="+")
 
     (args, rosargs) = parser.parse_known_args()
@@ -31,7 +31,7 @@ def main():
 
     node = Node("_feature_command_execute")
 
-    event_subscriber = EventSubscriber(EventData, node, f"{args.node_name}/events")
+    event_subscriber = EventSubscriber(EventData, node, f"{args.node_namespace}/events")
 
     def print_event_data(event):
         for entry in event.entries:
@@ -47,7 +47,10 @@ def main():
 
         event_subscribtions.append(event_subscriber.subscribe_event(event_name, event_callback))
 
-    rclpy.spin(node)
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
 
     for event_subscribtion in event_subscribtions:
-        event_subscribtion.destory()
+        event_subscribtion.destroy()
