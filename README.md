@@ -47,7 +47,7 @@ node will always open the camera in exclusive access mode. If no camera is avail
 The node will publish all topics and service under the namespace `vimbax_camera_<pid>`, where `pid`
 is the process id of the camera node process.
 
-An example can be start by running:
+An example can be started by running:
 ```shell
 ros2 run vimbax_camera_examples <example name> vimbax_camera_<pid>
 ```
