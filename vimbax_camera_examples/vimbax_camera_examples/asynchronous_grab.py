@@ -37,7 +37,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
     parser.add_argument("-i", "--info", action="store_true", help="Show frame infos")
     parser.add_argument("-c", "--count", type=int, default=0, help="Frame count until stop stream")
 
@@ -60,8 +60,8 @@ def main():
         if args.count > 0 and frames_recv >= args.count:
             stop_future.set_result(None)
 
-    node.create_subscription(Image, f"{args.node_name}/image_raw", on_frame, 10)
+    node.create_subscription(Image, f"{args.node_namespace}/image_raw", on_frame, 10)
 
     rclpy.spin_until_future_complete(node, stop_future)
 
-    print(f"Received frames {frames_recv}")
+    print(f"\nReceived frames {frames_recv}")
