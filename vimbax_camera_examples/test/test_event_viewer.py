@@ -19,6 +19,7 @@ from conftest import call_service, assert_clean_shutdown
 from vimbax_camera_msgs.srv import FeatureCommandRun
 from launch.actions.shutdown_action import Shutdown
 import logging
+import re
 
 LOGGER = logging.getLogger(__name__)
 
@@ -40,7 +41,7 @@ def event_viewer_node(camera_node_action, camera_test_node_name):
             Node(
                 package="vimbax_camera_examples",
                 executable="event_viewer",
-                arguments=[f"/{camera_test_node_name}", ""],
+                arguments=[f"/{camera_test_node_name}", "Test"],
                 cached_output=True,
             ),
             camera_node_action,
@@ -50,7 +51,7 @@ def event_viewer_node(camera_node_action, camera_test_node_name):
 
 
 @pytest.mark.launch(fixture=event_viewer_node)
-def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node):
+def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node, launch_service):
 
     action: Node = event_viewer_node.describe_sub_entities()[0]
 
@@ -60,8 +61,15 @@ def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node):
         FeatureCommandRun.Request(feature_name="TestEventGenerate"),
     )
 
-    Shutdown(reason="Needed for test").execute(launch_context)
+    launch_service.shutdown()
 
     assert_clean_shutdown(launch_context, action)
-    expected = ""
-    assert expected == action.get_stdout().strip()
+
+    lines: List[str] = action.get_stdout().strip().split(sep='\n')
+    
+    assert 3 == len(lines), "The example should output 3 lines!"
+    assert "Got event Test" == lines[0].strip()
+
+    assert re.match('EventTestTimestamp: [0-9]+', lines[1].strip()) is not None
+
+    assert "EventTest: 20479" == lines[2].strip()
