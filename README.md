@@ -20,6 +20,7 @@ HARDWARE AND DOCUMENTATION.
 
 ## Prerequisites
 - ROS 2 humble is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
+- For NVIDIA Jetson boards please follow the [NVIDIA ISAAC ROS installation guide](https://nvidia-isaac-ros.github.io/getting_started/isaac_ros_buildfarm_cdn.html#setup)
 - For running the system tests make sure the package "ros-humble-launch-pytests" is installed on your system.
 - [Vimba X 2023-4](https://www.alliedvision.com/en/products/software/vimba-x-sdk/) or later
 - For CSI cameras make sure to install the drivers available on [github](https://github.com/alliedvision/linux_nvidia_jetson)
