@@ -68,7 +68,8 @@ PFNC_TO_ROS = {
     "RGB8": "rgb8",
     "BayerBG8": "bayer_bggr8",
     "BayerGB8": "bayer_gbrg8",
-    "BayerRG8": "bayer_rggb8",  # TODO: Maybe add bayer_grbg8 after requirement clarification
+    "BayerRG8": "bayer_rggb8",
+    "BayerGR8": "bayer_grbg8",
     "BayerRG16": "bayer_rggb16",
     "BayerRG12": "bayer_rggb16",
     "BayerRG10": "bayer_rggb16",
@@ -81,7 +82,7 @@ PFNC_TO_ROS = {
     "BayerGR16": "bayer_grbg16",
     "BayerGR12": "bayer_grbg16",
     "BayerGR10": "bayer_grbg16",
-    "YCBCR422_8": "yuv422",
+    "YCbCr422_8": "yuv422",
 }
 
 
