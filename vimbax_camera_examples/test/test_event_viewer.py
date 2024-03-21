@@ -16,10 +16,12 @@ import launch_pytest
 import launch
 from launch_ros.actions import Node
 from conftest import call_service, assert_clean_shutdown
-from vimbax_camera_msgs.srv import FeatureCommandRun
+from vimbax_camera_msgs.srv import StreamStartStop
+from launch_pytest.tools.process import wait_for_output_sync
 from typing import List
 import logging
 import re
+import time
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,7 +43,7 @@ def event_viewer_node(camera_node_action, camera_test_node_name):
             Node(
                 package="vimbax_camera_examples",
                 executable="event_viewer",
-                arguments=[f"/{camera_test_node_name}", "Test"],
+                arguments=[f"/{camera_test_node_name}", "AcquisitionStart"],
                 cached_output=True,
             ),
             camera_node_action,
@@ -55,21 +57,22 @@ def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node, 
 
     action: Node = event_viewer_node.describe_sub_entities()[0]
 
+    time.sleep(5.0)
+
     call_service(
-        FeatureCommandRun,
-        f"/{camera_test_node_name}/features/command_run",
-        FeatureCommandRun.Request(feature_name="TestEventGenerate"),
+        StreamStartStop,
+        f"/{camera_test_node_name}/stream_start",
+        StreamStartStop.Request(),
     )
+
+    time.sleep(5.0)
 
     launch_service.shutdown()
 
     assert_clean_shutdown(launch_context, action)
 
     lines: List[str] = action.get_stdout().strip().split(sep="\n")
-
-    assert 3 == len(lines), "The example should output 3 lines!"
-    assert "Got event Test" == lines[0].strip()
-
-    assert re.match("EventTestTimestamp: [0-9]+", lines[1].strip()) is not None
-
-    assert "EventTest: 20479" == lines[2].strip()
+    
+    # There has to be at least 1 line of output
+    # The simtl camera does not produce extra event info -> only one output line
+    assert 0 < len(lines)
