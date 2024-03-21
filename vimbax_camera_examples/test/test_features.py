@@ -133,7 +133,7 @@ def execute_command_node(camera_node_action, camera_test_node_name):
             Node(
                 package="vimbax_camera_examples",
                 executable="feature_command_execute",
-                arguments=[f"/{camera_test_node_name}", "TestEventGenerate"],
+                arguments=[f"/{camera_test_node_name}", "CounterReset"],
                 cached_output=True,
             ),
             camera_node_action,
@@ -147,7 +147,7 @@ def test_execute_command(launch_context, camera_test_node_name, execute_command_
 
     action = execute_command_node.describe_sub_entities()[0]
 
-    expected = "Successfully executed command TestEventGenerate"
+    expected = "Successfully executed command CounterReset"
 
     assert_clean_shutdown(launch_context, action)
 
