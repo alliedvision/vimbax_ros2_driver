@@ -155,7 +155,6 @@ def test_execute_command(launch_context, camera_test_node_name, execute_command_
     assert expected == action.get_stdout().strip()
 
 
-
 @launch_pytest.fixture
 def list_features_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
@@ -179,7 +178,7 @@ def test_list_features(launch_context, camera_test_node_name, list_features_node
 
     assert_clean_shutdown(launch_context, action)
 
-    lines: List[str] = action.get_stdout().strip().split(sep='\n')
+    lines: List[str] = action.get_stdout().strip().split(sep="\n")
 
     assert 0 < len(lines), "The output should contain more than 0 lines!"
 
@@ -187,10 +186,8 @@ def test_list_features(launch_context, camera_test_node_name, list_features_node
     feature_names_set = set([x.strip().split()[1] for x in feature_names])
 
     res: FeaturesListGet.Result = call_service(
-            FeaturesListGet,
-            f"{camera_test_node_name}/features/list_get",
-            FeaturesListGet.Request()
+        FeaturesListGet, f"{camera_test_node_name}/features/list_get", FeaturesListGet.Request()
     )
-    
+
     diff = set(res.feature_list).difference(feature_names_set)
     assert 0 == len(diff), "The example should ouput all features!"
