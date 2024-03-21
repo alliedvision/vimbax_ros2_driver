@@ -40,7 +40,8 @@ def camera_node_with_autostart(camera_test_node_name):
                 package="vimbax_camera",
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
-                parameters=[{"autostart": 1}],
+                namespace=camera_test_node_name,
+                parameters=[{"autostart": True}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -58,7 +59,8 @@ def camera_node_without_autostart(camera_test_node_name):
                 package="vimbax_camera",
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
-                parameters=[{"autostart": 0}],
+                namespace=camera_test_node_name,
+                parameters=[{"autostart": False}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -228,6 +230,9 @@ def test_autostart_enabled_multiple_subscribers(launch_context, camera_test_node
     )
 
     assert second_sub is not None
+
+    img = node.get_latest_image()
+    assert img is not None
 
     assert node.is_streaming()
 

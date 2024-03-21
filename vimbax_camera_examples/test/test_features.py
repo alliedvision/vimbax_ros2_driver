@@ -16,8 +16,9 @@ import launch_pytest
 import launch
 from launch_ros.actions import Node
 from conftest import call_service, assert_clean_shutdown
-from vimbax_camera_msgs.srv import FeatureEnumGet, FeatureEnumInfoGet
+from vimbax_camera_msgs.srv import FeatureEnumGet, FeatureEnumInfoGet, FeaturesListGet
 import logging
+from typing import List
 
 LOGGER = logging.getLogger(__name__)
 
@@ -152,3 +153,44 @@ def test_execute_command(launch_context, camera_test_node_name, execute_command_
     assert_clean_shutdown(launch_context, action)
 
     assert expected == action.get_stdout().strip()
+
+
+
+@launch_pytest.fixture
+def list_features_node(camera_node_action, camera_test_node_name):
+    return launch.LaunchDescription(
+        [
+            Node(
+                package="vimbax_camera_examples",
+                executable="list_features",
+                arguments=[f"/{camera_test_node_name}"],
+                cached_output=True,
+            ),
+            camera_node_action,
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
+@pytest.mark.launch(fixture=list_features_node)
+def test_list_features(launch_context, camera_test_node_name, list_features_node):
+
+    action = list_features_node.describe_sub_entities()[0]
+
+    assert_clean_shutdown(launch_context, action)
+
+    lines: List[str] = action.get_stdout().strip().split(sep='\n')
+
+    assert 0 < len(lines), "The output should contain more than 0 lines!"
+
+    feature_names: List[str] = list(filter(lambda x: x.strip().startswith("name:"), lines))
+    feature_names_set = set([x.strip().split()[1] for x in feature_names])
+
+    res: FeaturesListGet.Result = call_service(
+            FeaturesListGet,
+            f"{camera_test_node_name}/features/list_get",
+            FeaturesListGet.Request()
+    )
+    
+    diff = set(res.feature_list).difference(feature_names_set)
+    assert 0 == len(diff), "The example should ouput all features!"
