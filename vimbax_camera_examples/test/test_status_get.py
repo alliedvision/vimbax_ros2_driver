@@ -16,10 +16,8 @@ import launch_pytest
 import launch
 from launch_ros.actions import Node
 from conftest import call_service, assert_clean_shutdown
-from vimbax_camera_msgs.srv import StreamStartStop
-from typing import List
+from vimbax_camera_msgs.srv import Status
 import logging
-import time
 
 LOGGER = logging.getLogger(__name__)
 
@@ -35,13 +33,13 @@ def camera_node_action(camera_test_node_name):
 
 
 @launch_pytest.fixture
-def event_viewer_node(camera_node_action, camera_test_node_name):
+def status_get_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
                 package="vimbax_camera_examples",
-                executable="event_viewer",
-                arguments=[f"/{camera_test_node_name}", "AcquisitionStart"],
+                executable="status_get",
+                arguments=[f"/{camera_test_node_name}"],
                 cached_output=True,
             ),
             camera_node_action,
@@ -50,27 +48,21 @@ def event_viewer_node(camera_node_action, camera_test_node_name):
     )
 
 
-@pytest.mark.launch(fixture=event_viewer_node)
-def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node, launch_service):
+@pytest.mark.launch(fixture=status_get_node)
+def test_status_get(launch_context, camera_test_node_name, status_get_node, launch_service):
 
-    action: Node = event_viewer_node.describe_sub_entities()[0]
+    action: Node = status_get_node.describe_sub_entities()[0]
 
-    time.sleep(5.0)
-
-    call_service(
-        StreamStartStop,
-        f"/{camera_test_node_name}/stream_start",
-        StreamStartStop.Request(),
+    res: Status.Response() = call_service(
+        Status,
+        f"/{camera_test_node_name}/status",
+        Status.Request(),
     )
 
-    time.sleep(5.0)
+    assert res is not None
 
-    launch_service.shutdown()
+    expected: str = f"Received status {res}"
 
     assert_clean_shutdown(launch_context, action)
 
-    lines: List[str] = action.get_stdout().strip().split(sep="\n")
-
-    # There has to be at least 1 line of output
-    # The simtl camera does not produce extra event info -> only one output line
-    assert 0 < len(lines)
+    assert action.get_stdout().strip() == expected

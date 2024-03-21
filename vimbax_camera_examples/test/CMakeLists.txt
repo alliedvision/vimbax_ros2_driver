@@ -4,6 +4,7 @@ set(_pytest_tests
     test_features.py
     test_event_viewer.py
     test_asynchronous_grab.py
+    test_status_get.py
 )
 
 foreach(_test_path ${_pytest_tests})
