@@ -6,7 +6,7 @@ set(_pytest_tests
     test_pixel_formats.py
     test_events.py
     test_load_save_settings.py
-    test_stream_autostart.py
+    test_autostream_param.py
 )
 
 foreach(_test_path ${_pytest_tests})
