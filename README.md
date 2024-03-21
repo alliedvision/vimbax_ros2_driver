@@ -16,7 +16,7 @@ HARDWARE AND DOCUMENTATION.
 - ROS 2 humble
 - Nvidia Jetpack 5.x (arm64)
 - Ubuntu 22.04 (x86_64)
-- All cameras supported by Vimba X
+- Allied Vision Alvium cameras
 
 ## Prerequisites
 - ROS 2 humble is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
@@ -161,7 +161,7 @@ Only if [automatic stream](#automatic-stream) is enabled.
 | camera_id | Id of camera to open. Can be the device id, extended device id, serial number, ip or mac address. |
 | settings_file | Path to xml settings file to load on startup. <br> **The file must point to a valid file on system that the node runs on.** |
 | buffer_count | Number of buffers used for streaming. <br> **Can't be change during streaming.** |
-| autostream | When true the [automatic stream](#automatic-stream) is enabled. |
+| autostream | When set to 1 the [automatic stream](#automatic-stream) is enabled. |
 | camera_frame_id | ROS 2 frame id of the camera. |
 | camera_info_url | Url to ROS 2 camera info file. |
 | command_feature_timeout | Timeout for command features. |
