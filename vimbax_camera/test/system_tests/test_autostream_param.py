@@ -32,7 +32,7 @@ import time
 
 # Fixture to launch the vimbax_camera_node
 @launch_pytest.fixture
-def camera_node_with_autostart(camera_test_node_name):
+def camera_node_with_autostream(camera_test_node_name):
     """Launch the vimbax_camera_node."""
     return launch.LaunchDescription(
         [
@@ -40,7 +40,8 @@ def camera_node_with_autostart(camera_test_node_name):
                 package="vimbax_camera",
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
-                parameters=[{"autostart": 1}],
+                namespace=camera_test_node_name,
+                parameters=[{"autostream": 1}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -50,7 +51,7 @@ def camera_node_with_autostart(camera_test_node_name):
 
 
 @launch_pytest.fixture
-def camera_node_without_autostart(camera_test_node_name):
+def camera_node_without_autostream(camera_test_node_name):
     """Launch the vimbax_camera_node."""
     return launch.LaunchDescription(
         [
@@ -58,7 +59,8 @@ def camera_node_without_autostart(camera_test_node_name):
                 package="vimbax_camera",
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
-                parameters=[{"autostart": 0}],
+                namespace=camera_test_node_name,
+                parameters=[{"autostream": 0}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -67,7 +69,7 @@ def camera_node_without_autostart(camera_test_node_name):
     )
 
 
-class StreamAutostartTestNode(Node):
+class StreamAutostreamTestNode(Node):
     """Custom ROS2 Node to make testing easier."""
 
     def __init__(self, name: str, cam_node_name: str, timeout_sec: float = 10.0):
@@ -151,9 +153,9 @@ def init_and_shutdown_ros():
 
 
 # Verify that node.is_streaming works as intended
-@pytest.mark.launch(fixture=camera_node_without_autostart)
+@pytest.mark.launch(fixture=camera_node_without_autostream)
 def test_streaming_status_attribute(launch_context, camera_test_node_name):
-    node = StreamAutostartTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 
     node.subscribe()
 
@@ -174,12 +176,12 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name):
     assert img is None
 
 
-# Verify node starts automatically streaming when autostart is enabled
-@pytest.mark.launch(fixture=camera_node_with_autostart)
-def test_autostart_enabled(launch_context, camera_test_node_name):
+# Verify node starts automatically streaming when autostream is enabled
+@pytest.mark.launch(fixture=camera_node_with_autostream)
+def test_autostream_enabled(launch_context, camera_test_node_name):
 
     # Detecting the graph change can take quite a lot of time therefore timeout needs to be large
-    node = StreamAutostartTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 
     assert not node.is_streaming()
 
@@ -201,11 +203,11 @@ def test_autostart_enabled(launch_context, camera_test_node_name):
 
 
 # Verify node keeps streaming when one of multiple subs unsubscribes
-@pytest.mark.launch(fixture=camera_node_with_autostart)
-def test_autostart_enabled_multiple_subscribers(launch_context, camera_test_node_name):
+@pytest.mark.launch(fixture=camera_node_with_autostream)
+def test_autostream_enabled_multiple_subscribers(launch_context, camera_test_node_name):
 
     # Detecting the graph change can take quite a lot of time therefore timeout needs to be large
-    node = StreamAutostartTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 
     assert not node.is_streaming()
 
@@ -229,6 +231,9 @@ def test_autostart_enabled_multiple_subscribers(launch_context, camera_test_node
 
     assert second_sub is not None
 
+    img = node.get_latest_image()
+    assert img is not None
+
     assert node.is_streaming()
 
     node.unsubscribe()
@@ -247,10 +252,10 @@ def test_autostart_enabled_multiple_subscribers(launch_context, camera_test_node
 
 
 # Verify node starts streaming when unsubscribing and subscribing multiple times
-@pytest.mark.launch(fixture=camera_node_with_autostart)
-def test_autostart_enabled_sub_unsub_repeat(launch_context, camera_test_node_name):
+@pytest.mark.launch(fixture=camera_node_with_autostream)
+def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_name):
 
-    node = StreamAutostartTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 
     for i in range(10):
         node.subscribe()
@@ -270,10 +275,10 @@ def test_autostart_enabled_sub_unsub_repeat(launch_context, camera_test_node_nam
 
 
 # Verify that the node starts streaming after the StreamStart service is called
-@pytest.mark.launch(fixture=camera_node_without_autostart)
-def test_autostart_disabled(launch_context, camera_test_node_name):
+@pytest.mark.launch(fixture=camera_node_without_autostream)
+def test_autostream_disabled(launch_context, camera_test_node_name):
 
-    node = StreamAutostartTestNode("_test_node", camera_test_node_name, timeout_sec=5.0)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name, timeout_sec=5.0)
 
     assert not node.is_streaming()
 
@@ -297,10 +302,10 @@ def test_autostart_disabled(launch_context, camera_test_node_name):
 
 
 # Verify that streaming works when subscribing and unsubscibing
-@pytest.mark.launch(fixture=camera_node_without_autostart)
-def test_autostart_disabled_sub_unsub_repeat(launch_context, camera_test_node_name):
+@pytest.mark.launch(fixture=camera_node_without_autostream)
+def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_name):
 
-    node = StreamAutostartTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 
     for _ in range(10):
         node.subscribe()
@@ -325,10 +330,10 @@ def test_autostart_disabled_sub_unsub_repeat(launch_context, camera_test_node_na
 
 # TODO: Check if this is the intended behaviour or not
 # Verify that streaming continues when unsubscribing and resubscibing
-# @pytest.mark.launch(fixture=camera_node_without_autostart)
-# def test_autostart_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
+# @pytest.mark.launch(fixture=camera_node_without_autostream)
+# def test_autostream_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
 #
-#     node = StreamAutostartTestNode("_test_node", camera_test_node_name)
+#     node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 #
 #     check_error(node.start_stream().error)
 #

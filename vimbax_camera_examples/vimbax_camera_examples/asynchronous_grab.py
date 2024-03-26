@@ -48,7 +48,6 @@ def main():
     node = Node("_asynchronous_grab")
 
     def on_frame(msg: Image):
-        global last_frame_id
         global frames_recv
 
         if args.info:

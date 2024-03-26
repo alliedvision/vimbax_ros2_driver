@@ -2,11 +2,9 @@ find_package(ament_cmake_pytest REQUIRED)
 
 set(_pytest_tests
     test_features.py
-    test_streaming.py
-    test_pixel_formats.py
-    test_events.py
-    test_load_save_settings.py
-    test_autostream_param.py
+    test_event_viewer.py
+    test_asynchronous_grab.py
+    test_status_get.py
 )
 
 foreach(_test_path ${_pytest_tests})
