@@ -1372,6 +1372,8 @@ bool VimbaXCamera::is_valid_pixel_format(VmbPixelFormatType pixel_format)
     case VmbPixelFormatRgb8:
     case VmbPixelFormatBgr8:
     case VmbPixelFormatYuv422_8:
+    case VmbPixelFormatYCbCr422_8:
+    case VmbPixelFormatYCbCr422_8_CbYCrY:
       return true;
     default:
       return false;
