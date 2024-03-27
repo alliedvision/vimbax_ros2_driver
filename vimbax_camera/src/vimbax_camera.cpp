@@ -285,6 +285,8 @@ result<void> VimbaXCamera::start_streaming(
       }
     }
 
+    RCLCPP_INFO(get_logger(), "Stream started");
+
     streaming_ = true;
   }
 
