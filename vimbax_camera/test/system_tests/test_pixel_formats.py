@@ -22,43 +22,46 @@ from sensor_msgs.msg import Image
 
 # pytest libs
 import pytest
+import launch_pytest
+import launch_ros
+from launch import LaunchDescription
+from launch.actions import ExecuteProcess
 
 # VimbaX_Camera msgs
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
 from test_helper import check_error
 
-from conftest import vimbax_camera_node
-
 from typing import List
 
 
 import logging
-LOGGER = logging.getLogger(__name__)
+LOGGER = logging.getLogger()
 
 # The required formats are listed in requirement UNIRT-1118
-REQUIRED_PIXEL_FORMATS = {
+REQUIRED_PIXEL_FORMATS = [
     "Mono8",
-    "Mono16",
     "Mono12",
-    "BGR8",
+    "Mono16",
     "RGB8",
-    "BayerBG8",
-    "BayerGB8",
-    "BayerRG8",
+    "BGR8",
     "BayerRG16",
     "BayerRG12",
     "BayerRG10",
+    "BayerRG8",
     "BayerBG16",
     "BayerBG12",
     "BayerBG10",
+    "BayerBG8",
     "BayerGB16",
     "BayerGB12",
     "BayerGB10",
+    "BayerGB8",
     "BayerGR16",
     "BayerGR12",
     "BayerGR10",
+    "BayerGR8",
     "YCBCR422_8",
-}
+]
 
 PFNC_TO_ROS = {
     "Mono8": "mono8",
@@ -167,23 +170,48 @@ class PixelFormatTestNode(Node):
         return self.__image_future.result()
 
 
-@pytest.mark.launch(fixture=vimbax_camera_node)
-def test_pixel_formats(launch_context, node_test_id, camera_test_node_name):
+@launch_pytest.fixture(scope='class')
+def vimbax_camera_node_class_scope():
+    return LaunchDescription([
+        ExecuteProcess(
+            cmd=[
+                "ros2",
+                "node",
+                "list",
+                "--all"
+            ],
+            shell=True,
+            output='both',
+        ),
+        launch_ros.actions.Node(
+            package='vimbax_camera',
+            namespace="/test_pixel_formats",
+            executable='vimbax_camera_node',
+            name="test_pixel_formats"
+        ),
+        launch_pytest.actions.ReadyToTest()
+    ])
 
-    node: PixelFormatTestNode = PixelFormatTestNode(
-        f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
 
-    # The PixelFormat cannot be changed while the camera is streaming
-    check_error(node.stop_stream().error)
+@pytest.mark.launch(fixture=vimbax_camera_node_class_scope)
+class TestPixelFormat:
+    """One VimbaXCamera node is started for all tests."""
 
-    # We can only test the formats required and supported by the attached camera
-    available_formats = REQUIRED_PIXEL_FORMATS.intersection(
-        set(node.get_supported_pixel_formats())
-    )
+    @pytest.mark.parametrize("format", REQUIRED_PIXEL_FORMATS)
+    def test_format(self, format, launch_context, node_test_id):
 
-    LOGGER.info(f"Available Pixel Formats: {available_formats}")
+        node: PixelFormatTestNode = PixelFormatTestNode(
+            f"pytest_client_node_{node_test_id}", "test_pixel_formats", timeout_sec=5.0)
 
-    for format in available_formats:
+        # The PixelFormat cannot be changed while the camera is streaming
+        check_error(node.stop_stream().error)
+
+        # We can only test the formats required and supported by the attached camera
+        if not (format in node.get_supported_pixel_formats()):
+            pytest.skip(f"{format} is not supported by current camera")
+            node.destroy_node()
+            return
+
         # Set the pixel format
         LOGGER.info(f"Testing format: {format}")
 
@@ -197,15 +225,17 @@ def test_pixel_formats(launch_context, node_test_id, camera_test_node_name):
         assert image is not None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
         assert image.encoding == PFNC_TO_ROS[format]
+        node.destroy_node()
 
+    def test_invalid_value(self, launch_context, node_test_id):
 
-@pytest.mark.launch(fixture=vimbax_camera_node)
-def test_invalid_pixel_format(launch_context, node_test_id, camera_test_node_name):
-
-    node: PixelFormatTestNode = PixelFormatTestNode(
-        f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
-    node.stop_stream()
-    # This should fail
-    res = node.set_pixel_format("")
-    error_msg: str = "Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)"
-    assert res.error.code == -11,  error_msg.format(res.error.code, res.error.text)
+        node: PixelFormatTestNode = PixelFormatTestNode(
+            f"pytest_client_node_{node_test_id}", "test_pixel_formats", timeout_sec=5.0)
+        try:
+            node.stop_stream()
+            # This should fail
+            res = node.set_pixel_format("")
+            error_msg: str = "Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)"
+            assert res.error.code == -11,  error_msg.format(res.error.code, res.error.text)
+        finally:
+            node.destroy_node()
