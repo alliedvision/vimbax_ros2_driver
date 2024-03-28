@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+import rclpy
 
 from threading import Event
 
@@ -51,8 +52,12 @@ def test_genicam_events(test_node: TestNode, launch_context):
         on_event_event.set()
 
     subscriber.subscribe_event("Test", on_event)
-    run_result = command_run_service.call(
+    future = command_run_service.call_async(
         FeatureCommandRun.Request(feature_name="TestEventGenerate")
     )
+    rclpy.spin_until_future_complete(node=test_node, future=future, timeout_sec=10.0)
+    assert future.done(), "Service call did not complete in time"
+    run_result = future.result()
+
     assert run_result.error.code == 0
     assert on_event_event.wait(1)
