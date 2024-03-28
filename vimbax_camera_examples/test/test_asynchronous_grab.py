@@ -16,9 +16,6 @@ import launch_pytest
 import launch
 from launch_ros.actions import Node
 from conftest import assert_clean_shutdown
-import logging
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture
@@ -48,7 +45,7 @@ def async_grab_node(camera_node_action, camera_test_node_name):
 
 
 @pytest.mark.launch(fixture=async_grab_node)
-def test_event_viewer(launch_context, camera_test_node_name, async_grab_node):
+def test_asynchronous_grab(launch_context, camera_test_node_name, async_grab_node):
 
     action: Node = async_grab_node.describe_sub_entities()[0]
 
