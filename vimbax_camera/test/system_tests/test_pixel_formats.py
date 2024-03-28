@@ -29,7 +29,7 @@ from launch.actions import ExecuteProcess
 
 # VimbaX_Camera msgs
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
-from test_helper import check_error
+from test_helper import check_error, call_service_with_timeout
 
 from typing import List
 
@@ -132,11 +132,7 @@ class PixelFormatTestNode(Node):
         assert self.__stream_stop_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
 
     def __call_service_sync(self, srv: Service, request):
-        future = srv.call_async(request)
-        rclpy.spin_until_future_complete(
-            node=self, future=future, timeout_sec=self.__rcl_timeout_sec
-        )
-        return future.result()
+        return call_service_with_timeout(self, srv, request, self.__rcl_timeout_sec)
 
     def stop_stream(self) -> StreamStartStop.Response:
         return self.__call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())

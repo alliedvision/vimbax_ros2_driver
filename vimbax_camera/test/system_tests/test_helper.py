@@ -20,6 +20,7 @@ from vimbax_camera_msgs.msg import Error
 from vimbax_camera_msgs.msg import FeatureInfo
 
 from vimbax_camera_msgs.srv import FeatureAccessModeGet
+import rclpy
 
 
 class FeatureDataType(Enum):
@@ -88,3 +89,12 @@ def filter_features(features: List[FeatureInfo], acces_mode_service, type: Featu
         )
 
     return [feat for feat in features if check(feat)]
+
+
+def call_service_with_timeout(node, service, req, timeout_sec=10.0):
+    future = service.call_async(req)
+    rclpy.spin_until_future_complete(node=node, future=future, timeout_sec=timeout_sec)
+    assert future.done(), f"Service call did not complete in {timeout_sec}s"
+    if future.exception() is not None:
+        raise future.exception()
+    return future.result()
