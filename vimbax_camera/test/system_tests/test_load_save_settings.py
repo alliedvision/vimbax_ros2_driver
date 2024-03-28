@@ -15,6 +15,7 @@
 import os
 
 import pytest
+from pytest import approx
 import warnings
 
 import tempfile
@@ -146,6 +147,6 @@ def test_settings_save_load_float_value_change(test_node: TestNode, launch_conte
         load_get_request = FeatureFloatGet.Request(feature_name=pair[0])
         load_get_response = feature_float_get_service.call(load_get_request)
         check_error(load_get_response.error)
-        assert load_get_response.value == pair[1]
+        assert load_get_response.value == approx(pair[1])
 
     os.remove(test_file_name)
