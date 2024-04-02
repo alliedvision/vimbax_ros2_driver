@@ -186,6 +186,9 @@ def test_autostream_enabled_multiple_subscribers(launch_context, camera_test_nod
     # while the streaming starts. Therefore wait for images with the timeout of the node
     img = node.get_latest_image()
     assert img is not None
+    # Without this sleep the camera does not update its status fast enough
+    time.sleep(1.0)
+    assert node.is_streaming()
 
     def discard(msg):
         pass
