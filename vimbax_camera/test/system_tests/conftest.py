@@ -51,7 +51,8 @@ class TestNode(rclpy.node.Node):
 
         def spin_thread():
             try:
-                rclpy.spin_until_future_complete(self, future=self.__shutdown_future)
+                while rclpy.ok() and not self.__shutdown_future.done():
+                    rclpy.spin_once(self, timeout_sec=0.1)
             except KeyboardInterrupt:
                 pass
 
@@ -147,11 +148,15 @@ def test_node(node_test_id, camera_test_node_name):
     enum_set_client.wait_for_service(10)
     command_run_client.wait_for_service(10)
 
-    enum_set_client.call(
+    test_node.call_service_sync(
+        enum_set_client,
         FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault")
     )
 
-    command_run_client.call(FeatureCommandRun.Request(feature_name="UserSetLoad"))
+    test_node.call_service_sync(
+        command_run_client,
+        FeatureCommandRun.Request(feature_name="UserSetLoad")
+    )
 
     yield test_node
 
