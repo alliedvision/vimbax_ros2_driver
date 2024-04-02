@@ -47,9 +47,20 @@ class TestNode(rclpy.node.Node):
         rclpy.node.Node.__init__(self, name)
         self.image_queue = queue.Queue()
         self._camera_node_name = camera_node_name
+        self.__shutdown_future = rclpy.Future()
 
-        self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self,))
+        def spin_thread():
+            try:
+                rclpy.spin_until_future_complete(self, future=self.__shutdown_future)
+            except KeyboardInterrupt:
+                pass
+
+        self.ros_spin_thread = Thread(target=spin_thread)
         self.ros_spin_thread.start()
+
+    def __del__(self):
+        self.__shutdown_future.set_result(None)
+        self.ros_spin_thread.join()
 
     def subscribe_image_raw(self):
 
