@@ -14,10 +14,7 @@
 
 # ROS client lib
 import rclpy
-from rclpy.node import Node
 from rclpy.service import Service
-from rclpy import Future
-from rclpy.subscription import Subscription
 from sensor_msgs.msg import Image
 
 # pytest libs
@@ -29,9 +26,10 @@ from launch.actions import ExecuteProcess
 
 # VimbaX_Camera msgs
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
-from test_helper import check_error, call_service_with_timeout
+from test_helper import check_error
 
 from typing import List
+from conftest import TestNode
 
 
 import logging
@@ -99,11 +97,11 @@ def init_and_shutdown_ros():
     rclpy.shutdown()
 
 
-class PixelFormatTestNode(Node):
+class PixelFormatTestNode(TestNode):
     """Custom ROS2 Node to make testing easier."""
 
     def __init__(self, name: str, test_node_name: str, timeout_sec: float = 10.0):
-        super().__init__(name)
+        super().__init__(name, test_node_name)
         self.__rcl_timeout_sec = float(timeout_sec)
         self.__enum_info_get_srv: Service = self.create_client(
             srv_type=FeatureEnumInfoGet, srv_name=f"/{test_node_name}/features/enum_info_get"
@@ -117,13 +115,8 @@ class PixelFormatTestNode(Node):
         self.__stream_stop_srv: Service = self.create_client(
             srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_stop"
         )
-        self.__image_future: Future = Future()
-        self.__image_sub: Subscription = self.create_subscription(
-            Image,
-            f"/{test_node_name}/image_raw",
-            lambda msg: self.__image_future.set_result(msg),
-            0,
-        )
+
+        self.subscribe_image_raw()
 
         # Magic timeout value
         assert self.__enum_info_get_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
@@ -131,20 +124,17 @@ class PixelFormatTestNode(Node):
         assert self.__stream_start_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
         assert self.__stream_stop_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
 
-    def __call_service_sync(self, srv: Service, request):
-        return call_service_with_timeout(self, srv, request, self.__rcl_timeout_sec)
-
     def stop_stream(self) -> StreamStartStop.Response:
-        return self.__call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
+        return self.call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
 
     def start_stream(self) -> StreamStartStop.Response:
-        return self.__call_service_sync(self.__stream_start_srv, StreamStartStop.Request())
+        return self.call_service_sync(self.__stream_start_srv, StreamStartStop.Request())
 
     def get_supported_pixel_formats(self) -> List[str]:
         """Receives the list of available pixel formats from the camera."""
         req: FeatureEnumInfoGet.Request = FeatureEnumInfoGet.Request()
         req.feature_name = "PixelFormat"
-        res: FeatureEnumInfoGet.Response = self.__call_service_sync(self.__enum_info_get_srv, req)
+        res: FeatureEnumInfoGet.Response = self.call_service_sync(self.__enum_info_get_srv, req)
         check_error(res.error)
 
         return res.available_values
@@ -154,16 +144,11 @@ class PixelFormatTestNode(Node):
         req: FeatureEnumSet.Request = FeatureEnumSet.Request()
         req.feature_name = "PixelFormat"
         req.value = format
-        return self.__call_service_sync(self.__enum_set_srv, req)
+        return self.call_service_sync(self.__enum_set_srv, req)
 
     def get_latest_image(self) -> Image:
-        """Spins the default context until an Image is received from the Camera."""
-        # Clear the future to receive a new Image
-        self.__image_future = rclpy.Future()
-        rclpy.spin_until_future_complete(
-            node=self, future=self.__image_future, timeout_sec=self.__rcl_timeout_sec
-        )
-        return self.__image_future.result()
+        self.clear_queue()
+        return self.wait_for_frame(timeout=self.__rcl_timeout_sec)
 
 
 @launch_pytest.fixture(scope='class')
