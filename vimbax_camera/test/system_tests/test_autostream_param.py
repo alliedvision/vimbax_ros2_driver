@@ -107,7 +107,10 @@ class StreamAutostreamTestNode(TestNode):
 
     def get_latest_image(self) -> Image:
         self.clear_queue()
-        return self.wait_for_frame(self.__rcl_timeout_sec)
+        try:
+            return self.wait_for_frame(self.__rcl_timeout_sec)
+        except:
+            return None
 
 
 @pytest.fixture(autouse=True)
@@ -119,8 +122,8 @@ def init_and_shutdown_ros():
 
 # Verify that node.is_streaming works as intended
 @pytest.mark.launch(fixture=camera_node_without_autostream)
-def test_streaming_status_attribute(launch_context, camera_test_node_name):
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+def test_streaming_status_attribute(launch_context, camera_test_node_name, node_test_id):
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     node.subscribe_image_raw()
 
@@ -143,10 +146,10 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name):
 
 # Verify node starts automatically streaming when autostream is enabled
 @pytest.mark.launch(fixture=camera_node_with_autostream)
-def test_autostream_enabled(launch_context, camera_test_node_name):
+def test_autostream_enabled(launch_context, camera_test_node_name, node_test_id):
 
     # Detecting the graph change can take quite a lot of time therefore timeout needs to be large
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     assert not node.is_streaming()
 
@@ -169,10 +172,10 @@ def test_autostream_enabled(launch_context, camera_test_node_name):
 
 # Verify node keeps streaming when one of multiple subs unsubscribes
 @pytest.mark.launch(fixture=camera_node_with_autostream)
-def test_autostream_enabled_multiple_subscribers(launch_context, camera_test_node_name):
+def test_autostream_enabled_multiple_subscribers(launch_context, camera_test_node_name, node_test_id):
 
     # Detecting the graph change can take quite a lot of time therefore timeout needs to be large
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     assert not node.is_streaming()
 
@@ -218,9 +221,9 @@ def test_autostream_enabled_multiple_subscribers(launch_context, camera_test_nod
 
 # Verify node starts streaming when unsubscribing and subscribing multiple times
 @pytest.mark.launch(fixture=camera_node_with_autostream)
-def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_name):
+def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     for i in range(10):
         node.subscribe_image_raw()
@@ -241,9 +244,9 @@ def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_na
 
 # Verify that the node starts streaming after the StreamStart service is called
 @pytest.mark.launch(fixture=camera_node_without_autostream)
-def test_autostream_disabled(launch_context, camera_test_node_name):
+def test_autostream_disabled(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name, timeout_sec=5.0)
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
 
     assert not node.is_streaming()
 
@@ -268,9 +271,9 @@ def test_autostream_disabled(launch_context, camera_test_node_name):
 
 # Verify that streaming works when subscribing and unsubscibing
 @pytest.mark.launch(fixture=camera_node_without_autostream)
-def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_name):
+def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     for _ in range(10):
         node.subscribe_image_raw()
@@ -295,9 +298,9 @@ def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_n
 
 # Verify that streaming continues when unsubscribing and resubscibing
 @pytest.mark.launch(fixture=camera_node_without_autostream)
-def test_autostream_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
+def test_autostream_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     check_error(node.start_stream().error)
 
