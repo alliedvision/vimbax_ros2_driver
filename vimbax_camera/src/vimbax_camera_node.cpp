@@ -37,7 +37,7 @@ using helper::vmb_error_to_string;
 VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
 {
   if (!initialize(options)) {
-    throw std::runtime_error("VimbaXCameraNode initialization failed");
+    rclcpp::shutdown();
   }
 }
 
