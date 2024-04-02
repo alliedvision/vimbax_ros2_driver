@@ -24,7 +24,6 @@ from vimbax_camera_msgs.msg import EventData
 from vimbax_camera_events.event_subscriber import EventSubscriber
 
 from conftest import vimbax_camera_node, TestNode
-from test_helper import call_service_with_timeout
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
@@ -39,7 +38,7 @@ def test_genicam_events(test_node: TestNode, launch_context):
     assert command_run_service.wait_for_service(10)
 
     enum_info_request = FeatureEnumInfoGet.Request(feature_name="EventSelector")
-    enum_info_response = call_service_with_timeout(test_node, enum_info_service, enum_info_request)
+    enum_info_response = test_node.call_service_sync(enum_info_service, enum_info_request)
     if "Test" not in enum_info_response.available_values:
         pytest.skip("Test event not supported")
 
@@ -51,9 +50,10 @@ def test_genicam_events(test_node: TestNode, launch_context):
         on_event_event.set()
 
     subscriber.subscribe_event("Test", on_event)
-    run_result = call_service_with_timeout(
-        test_node, command_run_service, FeatureCommandRun.Request(feature_name="TestEventGenerate")
+    run_result = test_node.call_service_sync(
+        command_run_service, FeatureCommandRun.Request(feature_name="TestEventGenerate")
     )
 
+    assert run_result is not None, "The service call timed out"
     assert run_result.error.code == 0
     assert on_event_event.wait(1)

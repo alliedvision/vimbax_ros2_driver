@@ -32,6 +32,7 @@ import queue
 import time
 import random
 import string
+import threading
 
 from sensor_msgs.msg import Image
 
@@ -47,7 +48,7 @@ class TestNode(rclpy.node.Node):
         self.image_queue = queue.Queue()
         self._camera_node_name = camera_node_name
 
-        self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self, ))
+        self.ros_spin_thread = Thread(target=lambda node: rclpy.spin(node), args=(self,))
         self.ros_spin_thread.start()
 
     def subscribe_image_raw(self):
@@ -57,7 +58,7 @@ class TestNode(rclpy.node.Node):
 
         self.image_subscribtion = self.create_subscription(
             Image, f"{self._camera_node_name}/image_raw", callback, 10
-            )
+        )
 
     def clear_queue(self):
         while not self.image_queue.empty():
@@ -72,7 +73,19 @@ class TestNode(rclpy.node.Node):
         return self.image_queue.get(block=True, timeout=timeout)
 
     def call_service_sync(self, service, request):
-        return service.call(request)
+        event = threading.Event()
+
+        def unblock(future):
+            nonlocal event
+            event.set()
+
+        future = service.call_async(request)
+        future.add_done_callback(unblock)
+
+        if not future.done():
+            event.wait(10.0)
+
+        return future.result()
 
     def camera_node_name(self):
         return self._camera_node_name
@@ -80,7 +93,7 @@ class TestNode(rclpy.node.Node):
 
 @pytest.fixture
 def node_test_id():
-    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
 
 @pytest.fixture
@@ -90,27 +103,24 @@ def camera_test_node_name(node_test_id):
 
 @launch_pytest.fixture
 def vimbax_camera_node(camera_test_node_name):
-    return launch.LaunchDescription([
-        ExecuteProcess(
-            cmd=[
-                "ros2",
-                "node",
-                "list",
-                "--all"
-            ],
-            shell=True,
-            output='both',
-        ),
-        Node(
-            package='vimbax_camera',
-            namespace=camera_test_node_name,
-            executable='vimbax_camera_node',
-            name=camera_test_node_name
-        ),
-        # Tell launch when to start the test
-        # If no ReadyToTest action is added, one will be appended automatically.
-        launch_pytest.actions.ReadyToTest()
-    ])
+    return launch.LaunchDescription(
+        [
+            ExecuteProcess(
+                cmd=["ros2", "node", "list", "--all"],
+                shell=True,
+                output="both",
+            ),
+            Node(
+                package="vimbax_camera",
+                namespace=camera_test_node_name,
+                executable="vimbax_camera_node",
+                name=camera_test_node_name,
+            ),
+            # Tell launch when to start the test
+            # If no ReadyToTest action is added, one will be appended automatically.
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
 
 
 @pytest.fixture
@@ -126,14 +136,11 @@ def test_node(node_test_id, camera_test_node_name):
     enum_set_client.wait_for_service(10)
     command_run_client.wait_for_service(10)
 
-    enum_set_client.call(FeatureEnumSet.Request(
-        feature_name="UserSetSelector",
-        value="UserSetDefault"
-    ))
+    enum_set_client.call(
+        FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault")
+    )
 
-    command_run_client.call(FeatureCommandRun.Request(
-        feature_name="UserSetLoad"
-    ))
+    command_run_client.call(FeatureCommandRun.Request(feature_name="UserSetLoad"))
 
     yield test_node
 
