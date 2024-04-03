@@ -116,4 +116,5 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
     assert test_node.image_queue.empty()
 
     status = test_node.call_service_sync(status_service, Status.Request())
+    assert status is not None, "GetStatus service call did not complete!"
     assert not status.streaming
