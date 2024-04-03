@@ -17,7 +17,6 @@ import pytest
 
 import rclpy
 import rclpy.node
-import rclpy.executors
 
 import launch_pytest
 import launch
@@ -47,13 +46,14 @@ class TestNode(rclpy.node.Node):
         self.image_queue = queue.Queue()
         self._camera_node_name = camera_node_name
         self.__shutdown_future = rclpy.Future()
+        self.__executor = rclpy.executors.SingleThreadedExecutor()
 
         # According to https://github.com/ros2/rclpy/issues/255 destroy_subscription
         # is threadsave now but we still get the same error without the try except
         def spin_thread():
             try:
                 while rclpy.ok() and not self.__shutdown_future.done():
-                    rclpy.spin_once(self, timeout_sec=0.1)
+                    rclpy.spin_once(self, timeout_sec=0.1, executor=self.__executor)
             except KeyboardInterrupt:
                 pass
 
@@ -81,7 +81,7 @@ class TestNode(rclpy.node.Node):
         def destroy_subscription() -> bool:
             return self.destroy_subscription(self.image_subscribtion)
 
-        fut: rclpy.Future = rclpy.get_global_executor().create_task(destroy_subscription)
+        fut: rclpy.Future = self.__executor.create_task(destroy_subscription)
         done_ev = threading.Event()
 
         def unblock(future):
