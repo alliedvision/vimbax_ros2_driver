@@ -56,6 +56,8 @@ class TestNode(rclpy.node.Node):
                     rclpy.spin_once(self, timeout_sec=0.1, executor=self.__executor)
             except KeyboardInterrupt:
                 pass
+            except rclpy.executors.ExternalShutdownException:
+                pass
 
         self.ros_spin_thread = Thread(target=spin_thread)
         self.ros_spin_thread.start()

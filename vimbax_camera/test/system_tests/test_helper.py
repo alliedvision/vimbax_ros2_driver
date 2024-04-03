@@ -20,7 +20,6 @@ from vimbax_camera_msgs.msg import Error
 from vimbax_camera_msgs.msg import FeatureInfo
 
 from vimbax_camera_msgs.srv import FeatureAccessModeGet
-import rclpy
 
 
 class FeatureDataType(Enum):
@@ -35,10 +34,7 @@ class FeatureDataType(Enum):
     NONE = 8
 
 
-sfnc_namespaces = [
-    "Standard",
-    "Custom"
-]
+sfnc_namespaces = ["Standard", "Custom"]
 
 features_ignore_map = {
     FeatureDataType.INT.value: [],
@@ -78,23 +74,20 @@ def check_feature_info(feature_info: FeatureInfo):
     assert feature_info.data_type > 0 and feature_info.data_type < 9
 
 
-def filter_features(features: List[FeatureInfo], acces_mode_service, type: FeatureDataType,
-                    readable: bool = True, writeable: bool = True):
+def filter_features(
+    features: List[FeatureInfo],
+    acces_mode_service,
+    type: FeatureDataType,
+    readable: bool = True,
+    writeable: bool = True,
+):
     def check(feature: FeatureInfo):
         return (
             feature.data_type == type.value
             and feature.name not in features_ignore_map[feature.data_type]
             and ensure_access_mode(
-                acces_mode_service, feature.name, readable=readable, writeable=writeable)
+                acces_mode_service, feature.name, readable=readable, writeable=writeable
+            )
         )
 
     return [feat for feat in features if check(feat)]
-
-
-def call_service_with_timeout(node, service, req, timeout_sec=10.0):
-    future = service.call_async(req)
-    rclpy.spin_until_future_complete(node=node, future=future, timeout_sec=timeout_sec)
-    assert future.done(), f"Service call did not complete in {timeout_sec}s"
-    if future.exception() is not None:
-        raise future.exception()
-    return future.result()
