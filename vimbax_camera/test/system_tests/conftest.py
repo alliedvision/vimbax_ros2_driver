@@ -113,6 +113,8 @@ class TestNode(rclpy.node.Node):
         if not future.done():
             event.wait(10.0)
 
+        assert future.done(), f"{type(service.srv_type).__name__} call did not complete!"
+
         return future.result()
 
     def camera_node_name(self):
