@@ -59,7 +59,7 @@ install(TARGETS asynchronous_grab_performance
         RUNTIME DESTINATION bin
 )
 
-install(TARGETS asynchronous_grab_cpp DESTINATION lib/${PROJECT_NAME})
+install(TARGETS asynchronous_grab_cpp event_viewer_cpp DESTINATION lib/${PROJECT_NAME})
 
 install(DIRECTORY
   launch

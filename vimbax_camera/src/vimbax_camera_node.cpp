@@ -127,7 +127,7 @@ bool VimbaXCameraNode::initialize_events()
   feature_invalidation_event_publisher_ =
     std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
     node_, "feature_invalidation",
-    [this](const std::string & name) -> int32_t
+    [this](const std::string & name) -> vimbax_camera_msgs::msg::Error
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
@@ -138,13 +138,14 @@ bool VimbaXCameraNode::initialize_events()
           });
 
         if (!res) {
-          return res.error().code;
+          return res.error().to_error_msg();
         }
       } else {
-        return VmbErrorNotFound;
+        return vimbax_camera_msgs::msg::Error{}
+        .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
-      return 0;
+      return {};
     },
     [this](const std::string & name) -> void {
       camera_->feature_invalidation_unregister(name);
@@ -156,7 +157,7 @@ bool VimbaXCameraNode::initialize_events()
 
   event_event_publisher_ =
     std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
-    node_, "events", [this](const std::string & name) -> int32_t
+    node_, "events", [this](const std::string & name) -> vimbax_camera_msgs::msg::Error
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
@@ -165,13 +166,13 @@ bool VimbaXCameraNode::initialize_events()
         auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
         if (!sel_res) {
-          return sel_res.error().code;
+          return sel_res.error().to_error_msg();
         }
 
         auto const on_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "On");
 
         if (!on_res) {
-          return on_res.error().code;
+          return on_res.error().to_error_msg();
         }
 
         auto const res = camera_->feature_invalidation_register(
@@ -195,13 +196,14 @@ bool VimbaXCameraNode::initialize_events()
           });
 
         if (!res) {
-          return res.error().code;
+          return res.error().to_error_msg();
         }
       } else {
-        return VmbErrorNotFound;
+        return vimbax_camera_msgs::msg::Error{}
+        .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
-      return 0;
+      return {};
     },
     [this](const std::string & name) -> void {
       std::shared_lock lock(camera_mutex_);
