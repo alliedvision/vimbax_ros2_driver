@@ -102,7 +102,7 @@ class TestNode(rclpy.node.Node):
     def wait_for_frame(self, timeout: float) -> Image:
         return self.image_queue.get(block=True, timeout=timeout)
 
-    def call_service_sync(self, service, request, timeout_sec = 10.0):
+    def call_service_sync(self, service, request, timeout_sec=10.0):
         event = threading.Event()
 
         def unblock(future):
@@ -176,8 +176,7 @@ def test_node(node_test_id, camera_test_node_name):
 
     # High timeout: Real cameras need long time to load userset
     test_node.call_service_sync(
-        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad"),
-        timeout_sec=60.0
+        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad"), timeout_sec=60.0
     )
 
     yield test_node
