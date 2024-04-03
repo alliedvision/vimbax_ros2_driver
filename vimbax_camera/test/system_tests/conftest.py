@@ -102,7 +102,7 @@ class TestNode(rclpy.node.Node):
     def wait_for_frame(self, timeout: float) -> Image:
         return self.image_queue.get(block=True, timeout=timeout)
 
-    def call_service_sync(self, service, request):
+    def call_service_sync(self, service, request, timeout_sec = 10.0):
         event = threading.Event()
 
         def unblock(future):
@@ -113,7 +113,7 @@ class TestNode(rclpy.node.Node):
         future.add_done_callback(unblock)
 
         if not future.done():
-            event.wait(10.0)
+            event.wait(timeout_sec)
 
         assert future.done(), f"{type(service.srv_type).__name__} call did not complete!"
 
@@ -157,7 +157,8 @@ def vimbax_camera_node(camera_test_node_name):
 
 @pytest.fixture
 def test_node(node_test_id, camera_test_node_name):
-    rclpy.init()
+    if not rclpy.ok():
+        rclpy.init()
     test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
     enum_set_client = test_node.create_client(
         FeatureEnumSet, f"{camera_test_node_name}/features/enum_set"
@@ -173,8 +174,10 @@ def test_node(node_test_id, camera_test_node_name):
         FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
     )
 
+    # High timeout: Real cameras need long time to load userset
     test_node.call_service_sync(
-        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
+        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad"),
+        timeout_sec=60.0
     )
 
     yield test_node
