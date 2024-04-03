@@ -150,33 +150,18 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
     get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
     camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
 
-  VmbUint32_t feature_list_size{};
-
-  api_->FeaturesList(camera_handle_, nullptr, 0, &feature_list_size, 0);
-
-  std::vector<VmbFeatureInfo_t> feature_list{};
-  feature_list.resize(feature_list_size);
-
-  api_->FeaturesList(
-    camera_handle_, feature_list.data(), feature_list.size(),
-    &feature_list_size, sizeof(VmbFeatureInfo_t));
-
-  for (auto const & info : feature_list) {
-    feature_info_map_.emplace(info.name, info);
-    feature_category_map_.emplace(info.category, info.name);
-  }
-
-  if (has_feature(SFNCFeatures::DeviceTimestampFrequency)) {
+  if (has_feature(SFNCFeatures::DeviceTimestampFrequency, Module::LocalDevice)) {
+    auto const handle = get_module_handle(Module::LocalDevice);
     auto const timestamp_frequency =
-      feature_int_get(SFNCFeatures::DeviceTimestampFrequency, camera_info_.localDeviceHandle);
+      feature_int_get(SFNCFeatures::DeviceTimestampFrequency, handle);
 
     if (timestamp_frequency) {
       timestamp_frequency_ = *timestamp_frequency;
     }
   }
 
-  if (has_feature(SFNCFeatures::GVSPAdjustPacketSize)) {
-    feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, camera_info_.streamHandles[0]);
+  if (has_feature(SFNCFeatures::GVSPAdjustPacketSize, Module::Stream)) {
+    feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, get_module_handle(Module::Stream));
   }
 }
 
@@ -192,6 +177,51 @@ VimbaXCamera::~VimbaXCamera()
   }
 }
 
+void VimbaXCamera::initialize_feature_map(Module module)
+{
+  auto const handle = get_module_handle(module);
+  VmbUint32_t feature_list_size{};
+
+  api_->FeaturesList(handle, nullptr, 0, &feature_list_size, 0);
+
+  std::vector<VmbFeatureInfo_t> feature_list{};
+  feature_list.resize(feature_list_size);
+
+  api_->FeaturesList(
+    handle, feature_list.data(), feature_list.size(),
+    &feature_list_size, sizeof(VmbFeatureInfo_t));
+
+  for (auto const & info : feature_list) {
+    feature_info_map_[std::size_t(module)].emplace(info.name, info);
+    feature_category_map_[std::size_t(module)].emplace(info.category, info.name);
+  }
+}
+
+constexpr VmbHandle_t VimbaXCamera::get_module_handle(Module module) const
+{
+  switch (module) {
+    case Module::System:
+      return camera_info_.transportLayerHandle;
+    case Module::Interface:
+      return camera_info_.interfaceHandle;
+    case Module::LocalDevice:
+      return camera_info_.localDeviceHandle;
+    case Module::RemoteDevice:
+      return camera_handle_;
+    case Module::Stream:
+      return camera_info_.streamHandles[0];
+    default:
+      break;
+  }
+
+  return nullptr;
+}
+
+VmbFeatureInfo VimbaXCamera::get_feature_info(const std::string & name, Module module) const
+{
+  return feature_info_map_[std::size_t(module)].at(name);
+}
+
 bool VimbaXCamera::is_alive() const
 {
   VmbCameraInfo camera_info{};
@@ -201,9 +231,9 @@ bool VimbaXCamera::is_alive() const
   return (err == VmbErrorNotFound) ? false : true;
 }
 
-bool VimbaXCamera::has_feature(const std::string_view & name) const
+bool VimbaXCamera::has_feature(const std::string_view & name, Module module) const
 {
-  if (auto search = feature_info_map_.find(name.data()); search != feature_info_map_.end()) {
+  if (feature_info_map_[std::size_t(module)].count(name.data())) {
     return true;
   }
 
@@ -1292,12 +1322,13 @@ VimbaXCamera::get_event_meta_data(const std::string_view & name)
 {
   auto const category_path = "/EventControl/EventsData/Event" + std::string{name} + "Data";
 
-  auto const & [start, end] = feature_category_map_.equal_range(category_path);
+  auto const & [start, end] = 
+    feature_category_map_[std::size_t(Module::RemoteDevice)].equal_range(category_path);
 
   EventMetaDataList meta_data_list{};
 
   for (auto it = start; it != end; it++) {
-    auto const info = feature_info_map_.at(it->second);
+    auto const info = get_feature_info(it->second);
     switch (info.featureDataType) {
       case VmbFeatureDataInt:
         {

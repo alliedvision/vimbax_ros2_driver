@@ -81,6 +81,16 @@ public:
   };
 
 
+  enum class Module : std::size_t
+  {
+    System,
+    Interface,
+    LocalDevice,
+    RemoteDevice,
+    Stream,
+    ModuleMax
+  };
+
   struct Info
   {
     std::string display_name;
@@ -118,7 +128,7 @@ public:
   result<void> stop_streaming();
 
   bool is_alive() const;
-  bool has_feature(const std::string_view & name) const;
+  bool has_feature(const std::string_view & name, Module module = Module::RemoteDevice) const;
 
   // Feature access
   result<std::vector<std::string>> features_list_get(void) const;
@@ -210,6 +220,14 @@ private:
 
   static void on_feature_invalidation(VmbHandle_t, const char * name, void * context);
 
+  void initialize_feature_map(Module module);
+
+  constexpr VmbHandle_t get_module_handle(Module module) const;
+
+  VmbFeatureInfo get_feature_info(
+    const std::string & name,
+    Module module = Module::RemoteDevice) const;
+
   result<void> feature_command_run(
     const std::string_view & name, VmbHandle_t handle,
     const std::optional<std::chrono::milliseconds> & timeout = std::nullopt) const;
@@ -235,8 +253,10 @@ private:
 
   std::mutex invalidation_callbacks_mutex_{};
 
-  std::unordered_map<std::string, VmbFeatureInfo> feature_info_map_;
-  std::unordered_multimap<std::string, std::string> feature_category_map_;
+  std::array<std::unordered_map<std::string, VmbFeatureInfo>,
+    std::size_t(Module::ModuleMax)> feature_info_map_;
+  std::array<std::unordered_multimap<std::string, std::string>,
+    std::size_t(Module::ModuleMax)> feature_category_map_;
 };
 
 }  // namespace vimbax_camera
