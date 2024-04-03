@@ -29,7 +29,6 @@ from launch_ros.actions import Node
 from threading import Thread
 
 import queue
-import time
 import random
 import string
 import threading
@@ -52,11 +51,11 @@ class TestNode(rclpy.node.Node):
         # According to https://github.com/ros2/rclpy/issues/255 destroy_subscription
         # is threadsave now but we still get the same error without the try except
         def spin_thread():
-            while rclpy.ok() and not self.__shutdown_future.done():
-                try:
+            try:
+                while rclpy.ok() and not self.__shutdown_future.done():
                     rclpy.spin_once(self, timeout_sec=0.1)
-                except Exception:
-                    pass
+            except KeyboardInterrupt:
+                pass
 
         self.ros_spin_thread = Thread(target=spin_thread)
         self.ros_spin_thread.start()
@@ -79,8 +78,23 @@ class TestNode(rclpy.node.Node):
             self.image_queue.get()
 
     def unsubscribe_image_raw(self):
-        assert self.destroy_subscription(self.image_subscribtion)
-        time.sleep(0.1)
+        def destroy_subscription() -> bool:
+            return self.destroy_subscription(self.image_subscribtion)
+
+        fut: rclpy.Future = rclpy.get_global_executor().create_task(destroy_subscription)
+        done_ev = threading.Event()
+
+        def unblock(future):
+            nonlocal done_ev
+            done_ev.set()
+
+        fut.add_done_callback(unblock)
+
+        if not fut.done():
+            done_ev.wait(10.0)
+
+        assert fut.result()
+
         self.clear_queue()
 
     def wait_for_frame(self, timeout: float) -> Image:
@@ -152,12 +166,11 @@ def test_node(node_test_id, camera_test_node_name):
 
     test_node.call_service_sync(
         enum_set_client,
-        FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault")
+        FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
     )
 
     test_node.call_service_sync(
-        command_run_client,
-        FeatureCommandRun.Request(feature_name="UserSetLoad")
+        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
     )
 
     yield test_node

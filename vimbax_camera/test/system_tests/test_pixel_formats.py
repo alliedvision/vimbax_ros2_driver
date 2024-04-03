@@ -152,7 +152,7 @@ def pixel_test_node(launch_context):
     rclpy.init()
 
     test_node: PixelFormatTestNode = PixelFormatTestNode(
-        "pytest_client_node", "test_pixel_formats", timeout_sec=5.0
+        "pytest_client_node", "test_pixel_formats", timeout_sec=10.0
     )
 
     enum_set_client = test_node.create_client(
