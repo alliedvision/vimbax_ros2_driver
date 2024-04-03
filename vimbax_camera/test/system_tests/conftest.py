@@ -49,12 +49,14 @@ class TestNode(rclpy.node.Node):
         self._camera_node_name = camera_node_name
         self.__shutdown_future = rclpy.Future()
 
+        # According to https://github.com/ros2/rclpy/issues/255 destroy_subscription
+        # is threadsave now but we still get the same error without the try except
         def spin_thread():
-            try:
-                while rclpy.ok() and not self.__shutdown_future.done():
+            while rclpy.ok() and not self.__shutdown_future.done():
+                try:
                     rclpy.spin_once(self, timeout_sec=0.1)
-            except KeyboardInterrupt:
-                pass
+                except Exception:
+                    pass
 
         self.ros_spin_thread = Thread(target=spin_thread)
         self.ros_spin_thread.start()
