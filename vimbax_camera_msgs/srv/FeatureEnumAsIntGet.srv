@@ -1,4 +1,5 @@
 string feature_name
+FeatureModule feature_module
 string option
 ---
 int64 value

@@ -128,66 +128,98 @@ public:
   result<void> stop_streaming();
 
   bool is_alive() const;
-  bool has_feature(const std::string_view & name, Module module = Module::RemoteDevice) const;
+  bool has_feature(const std::string_view & name, const Module module = Module::RemoteDevice) const;
 
   // Feature access
-  result<std::vector<std::string>> features_list_get(void) const;
+  result<std::vector<std::string>> features_list_get(
+    const Module module = Module::RemoteDevice) const;
 
   result<bool> feature_command_is_done(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_command_run(
     const std::string_view & name,
-    const std::optional<std::chrono::milliseconds> & timeout = std::nullopt) const;
+    const std::optional<std::chrono::milliseconds> & timeout = std::nullopt,
+    const Module module = Module::RemoteDevice) const;
 
   result<int64_t> feature_int_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_int_set(
-    const std::string_view & name, const int64_t value) const;
+    const std::string_view & name,
+    const int64_t value,
+    const Module module = Module::RemoteDevice) const;
   result<std::array<int64_t, 3>> feature_int_info_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
 
   result<_Float64> feature_float_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_float_set(
-    const std::string_view & name, const _Float64 value) const;
+    const std::string_view & name,
+    const _Float64 value,
+    const Module module = Module::RemoteDevice) const;
   result<feature_float_info> feature_float_info_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
 
   result<std::string> feature_string_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_string_set(
-    const std::string_view & name, const std::string_view value) const;
+    const std::string_view & name,
+    const std::string_view value,
+    const Module module = Module::RemoteDevice) const;
   result<uint32_t> feature_string_info_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
 
   result<bool> feature_bool_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_bool_set(
-    const std::string_view & name, const bool value) const;
+    const std::string_view & name,
+    const bool value,
+    const Module module = Module::RemoteDevice) const;
 
   result<std::string> feature_enum_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_enum_set(
-    const std::string_view & name, const std::string_view & value) const;
+    const std::string_view & name,
+    const std::string_view & value,
+    const Module module = Module::RemoteDevice) const;
   result<std::array<std::vector<std::string>, 2>> feature_enum_info_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<int64_t> feature_enum_as_int_get(
-    const std::string_view & name, const std::string_view & option) const;
+    const std::string_view & name,
+    const std::string_view & option,
+    const Module module = Module::RemoteDevice) const;
   result<std::string> feature_enum_as_string_get(
-    const std::string_view & name, const int64_t value) const;
+    const std::string_view & name,
+    const int64_t value,
+    const Module module = Module::RemoteDevice) const;
 
   result<std::vector<unsigned char>> feature_raw_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
   result<void> feature_raw_set(
-    const std::string_view & name, const std::vector<uint8_t> buffer) const;
+    const std::string_view & name,
+    const std::vector<uint8_t> buffer,
+    const Module module = Module::RemoteDevice) const;
   result<uint32_t> feature_raw_info_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
 
   result<std::array<bool, 2>> feature_access_mode_get(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    const Module module = Module::RemoteDevice) const;
 
   result<std::vector<feature_info>> feature_info_query_list(
-    const std::vector<std::string> & names) const;
+    const std::vector<std::string> & names,
+    const Module module = Module::RemoteDevice) const;
 
 
   result<VmbPixelFormatType> get_pixel_format() const;
@@ -195,7 +227,8 @@ public:
   result<VmbCameraInfo> query_camera_info() const;
 
   result<VmbFeatureInfo> feature_info_query(
-    const std::string_view & name) const;
+    const std::string_view & name,
+    Module module = Module::RemoteDevice) const;
 
   result<void> settings_load(const std::string_view & fileName);
 
