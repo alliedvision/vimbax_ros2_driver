@@ -51,7 +51,7 @@ def main():
     service_type = vimbax_camera_msgs.srv.FeatureInfoQuery
 
     namespace = args.node_namespace.strip("/")
-    topic: str = f"/feature_info_query"
+    topic: str = "/feature_info_query"
     if len(namespace) != 0:
         topic = f"/{namespace}/{topic.strip('/')}"
 

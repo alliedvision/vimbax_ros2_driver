@@ -51,10 +51,12 @@ def main():
         global frames_recv
 
         if args.info:
-            print(f"Frame id {msg.header.frame_id} Size {msg.width}x{msg.height} "
-                  + f"Format {msg.encoding}")
+            print(
+                f"Frame id {msg.header.frame_id} Size {msg.width}x{msg.height} "
+                + f"Format {msg.encoding}"
+            )
         else:
-            print(".", end='', flush=True)
+            print(".", end="", flush=True)
 
         frames_recv += 1
         if args.count > 0 and frames_recv >= args.count:
@@ -64,11 +66,11 @@ def main():
     topic: str = "/image_raw"
     if len(namespace) != 0:
         topic = f"/{namespace}/image_raw"
-        
+
     node.create_subscription(Image, topic, on_frame, 10)
 
     rclpy.spin_until_future_complete(node, stop_future)
-    
+
     if not args.info:
         print()
     print(f"Received frames {frames_recv}")

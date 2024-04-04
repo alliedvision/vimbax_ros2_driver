@@ -32,7 +32,7 @@ def main():
     service_type = vimbax_camera_msgs.srv.Status
 
     namespace = args.node_namespace.strip("/")
-    topic: str = f"/status"
+    topic: str = "/status"
     if len(namespace) != 0:
         topic = f"/{namespace}/{topic.strip('/')}"
 

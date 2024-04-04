@@ -48,7 +48,7 @@ def main():
         def event_callback(event):
             print(f"Got event {event_name}")
             print_event_data(event)
-        
+
         print(f"Subscribing to Event '{event_name}' using topic '{topic}'")
         event_subscribtions.append(event_subscriber.subscribe_event(event_name, event_callback))
         print(f"Subscribed to Event '{event_name}'")
