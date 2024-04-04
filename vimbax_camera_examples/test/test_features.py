@@ -61,7 +61,7 @@ def test_feature_get(launch_context, camera_test_node_name, feature_get_node):
     expected: str = f"PixelFormat: {res.value}"
 
     assert_clean_shutdown(launch_context, action)
-    
+
     lines: List = action.get_stdout().strip().splitlines()
     assert expected == lines[-1]
 
