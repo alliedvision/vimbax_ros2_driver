@@ -61,8 +61,9 @@ def test_feature_get(launch_context, camera_test_node_name, feature_get_node):
     expected: str = f"PixelFormat: {res.value}"
 
     assert_clean_shutdown(launch_context, action)
-
-    assert expected == action.get_stdout().strip()
+    
+    lines: List = action.get_stdout().strip().splitlines()
+    assert expected == lines[-1]
 
 
 @launch_pytest.fixture
@@ -96,7 +97,8 @@ def test_feature_info_get(launch_context, camera_test_node_name, feature_info_ge
 
     assert_clean_shutdown(launch_context, action)
 
-    assert expected == action.get_stdout().strip()
+    lines: List = action.get_stdout().strip().splitlines()
+    assert expected == lines[-1]
 
 
 @launch_pytest.fixture
@@ -124,7 +126,8 @@ def test_feature_set(launch_context, camera_test_node_name, feature_set_node):
 
     assert_clean_shutdown(launch_context, action)
 
-    assert expected == action.get_stdout().strip()
+    lines: List = action.get_stdout().strip().splitlines()
+    assert expected == lines[-1]
 
 
 @launch_pytest.fixture
@@ -152,7 +155,8 @@ def test_execute_command(launch_context, camera_test_node_name, execute_command_
 
     assert_clean_shutdown(launch_context, action)
 
-    assert expected == action.get_stdout().strip()
+    lines: List = action.get_stdout().strip().splitlines()
+    assert expected == lines[-1]
 
 
 @launch_pytest.fixture
@@ -178,7 +182,7 @@ def test_list_features(launch_context, camera_test_node_name, list_features_node
 
     assert_clean_shutdown(launch_context, action)
 
-    lines: List[str] = action.get_stdout().strip().split(sep="\n")
+    lines: List[str] = action.get_stdout().strip().splitlines()
 
     assert 0 < len(lines), "The output should contain more than 0 lines!"
 

@@ -48,7 +48,7 @@ def async_grab_node(camera_node_action, camera_test_node_name):
 
 
 @pytest.mark.launch(fixture=async_grab_node)
-def test_event_viewer(launch_context, camera_test_node_name, async_grab_node):
+def test_output(launch_context, camera_test_node_name, async_grab_node):
 
     action: Node = async_grab_node.describe_sub_entities()[0]
 
