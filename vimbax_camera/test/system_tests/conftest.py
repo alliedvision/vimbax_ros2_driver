@@ -128,22 +128,22 @@ class TestNode(rclpy.node.Node):
         return self._camera_node_name
 
     def load_default_userset(self):
-        enum_set_client = test_node.create_client(
+        enum_set_client = self.create_client(
             FeatureEnumSet, f"{self._camera_node_name}/features/enum_set"
         )
-        command_run_client = test_node.create_client(
+        command_run_client = self.create_client(
             FeatureCommandRun, f"{self._camera_node_name}/features/command_run"
         )
         enum_set_client.wait_for_service(self._rcl_timeout_sec)
         command_run_client.wait_for_service(self._rcl_timeout_sec)
 
-        test_node.call_service_sync(
+        self.call_service_sync(
             enum_set_client,
             FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
         )
 
         # High timeout: Real cameras need long time to load userset
-        test_node.call_service_sync(
+        self.call_service_sync(
             command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
         )
 
