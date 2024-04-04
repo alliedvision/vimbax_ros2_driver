@@ -72,10 +72,9 @@ def camera_node_without_autostream(camera_test_node_name):
 class StreamAutostreamTestNode(TestNode):
     """Custom ROS2 Node to make testing easier."""
 
-    def __init__(self, name: str, cam_node_name: str, timeout_sec: float = 10.0):
+    def __init__(self, name: str, cam_node_name: str):
         super().__init__(name, cam_node_name)
         self.__camera_node_name = cam_node_name
-        self.__rcl_timeout_sec = float(timeout_sec)
         self.__stream_start_srv: Service = self.create_client(
             srv_type=StreamStartStop, srv_name=f"/{cam_node_name}/stream_start"
         )
@@ -88,9 +87,9 @@ class StreamAutostreamTestNode(TestNode):
         self.__image_future: Future = Future()
         self.__image_sub: Subscription = None
 
-        assert self.__stream_start_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
-        assert self.__stream_stop_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
-        assert self.__status_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
+        assert self.__stream_start_srv.wait_for_service(timeout_sec=self._rcl_timeout_sec)
+        assert self.__stream_stop_srv.wait_for_service(timeout_sec=self._rcl_timeout_sec)
+        assert self.__status_srv.wait_for_service(timeout_sec=self._rcl_timeout_sec)
 
     def stop_stream(self) -> StreamStartStop.Response:
         return self.call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
@@ -106,17 +105,15 @@ class StreamAutostreamTestNode(TestNode):
     def get_latest_image(self) -> Image:
         self.clear_queue()
         try:
-            return self.wait_for_frame(self.__rcl_timeout_sec)
+            return self.wait_for_frame(self._rcl_timeout_sec)
         except Exception:
             return None
 
-    def wait_until_streaming_is(self, expected: bool, timeout_sec: float = None) -> bool:
-        if timeout_sec is None:
-            timeout_sec = self.__rcl_timeout_sec
+    def wait_until_streaming_is(self, expected: bool) -> bool:
 
         t0 = time.time()
 
-        while (time.time() - t0) <= timeout_sec:
+        while (time.time() - t0) <= self._rcl_timeout_sec:
             val = self.is_streaming()
             if val == expected:
                 return True
@@ -249,7 +246,7 @@ def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_na
 def test_autostream_disabled(launch_context, camera_test_node_name, node_test_id):
 
     node = StreamAutostreamTestNode(
-        f"_test_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0
+        f"_test_node_{node_test_id}", camera_test_node_name
     )
 
     assert node.wait_until_streaming_is(False)

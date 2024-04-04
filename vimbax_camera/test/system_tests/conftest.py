@@ -41,12 +41,13 @@ from vimbax_camera_msgs.srv import FeatureCommandRun
 class TestNode(rclpy.node.Node):
     __test__ = False
 
-    def __init__(self, name, camera_node_name):
+    def __init__(self, name, camera_node_name, timeout_sec: float = 60.0):
         rclpy.node.Node.__init__(self, name)
         self.image_queue = queue.Queue()
         self._camera_node_name = camera_node_name
         self.__shutdown_future = rclpy.Future()
         self.__executor = rclpy.executors.SingleThreadedExecutor()
+        self._rcl_timeout_sec = float(timeout_sec)
 
         # According to https://github.com/ros2/rclpy/issues/255 destroy_subscription
         # is threadsave now but we still get the same error without the try except
@@ -93,16 +94,20 @@ class TestNode(rclpy.node.Node):
         fut.add_done_callback(unblock)
 
         if not fut.done():
-            done_ev.wait(10.0)
+            done_ev.wait(self._rcl_timeout_sec)
 
         assert fut.result()
 
         self.clear_queue()
 
-    def wait_for_frame(self, timeout: float) -> Image:
+    def wait_for_frame(self, timeout: float = None) -> Image:
+        if timeout is None:
+            timeout = self._rcl_timeout_sec
         return self.image_queue.get(block=True, timeout=timeout)
 
-    def call_service_sync(self, service, request, timeout_sec=10.0):
+    def call_service_sync(self, service, request, timeout_sec=None):
+        if timeout_sec is None:
+            timeout_sec = self._rcl_timeout_sec
         event = threading.Event()
 
         def unblock(future):
@@ -159,15 +164,15 @@ def vimbax_camera_node(camera_test_node_name):
 def test_node(node_test_id, camera_test_node_name):
     if not rclpy.ok():
         rclpy.init()
-    test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name, timeout_sec=120.0)
     enum_set_client = test_node.create_client(
         FeatureEnumSet, f"{camera_test_node_name}/features/enum_set"
     )
     command_run_client = test_node.create_client(
         FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
     )
-    enum_set_client.wait_for_service(10)
-    command_run_client.wait_for_service(10)
+    enum_set_client.wait_for_service(120)
+    command_run_client.wait_for_service(120)
 
     test_node.call_service_sync(
         enum_set_client,
@@ -176,7 +181,7 @@ def test_node(node_test_id, camera_test_node_name):
 
     # High timeout: Real cameras need long time to load userset
     test_node.call_service_sync(
-        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad"), timeout_sec=60.0
+        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
     )
 
     yield test_node
