@@ -21,7 +21,7 @@ from .helper import single_service_call
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
 
     (args, rosargs) = parser.parse_known_args()
 
@@ -46,13 +46,18 @@ def main():
             print(f"   flag_volatile: {entry.flags.flag_volatile}")
             print(f"   flag_modify_write: {entry.flags.flag_modify_write}")
 
-    node = Node("_feature_info_query")
+    node = Node("vimbax_feature_info_query_example")
 
     service_type = vimbax_camera_msgs.srv.FeatureInfoQuery
 
+    namespace = args.node_namespace.strip("/")
+    topic: str = f"/feature_info_query"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/{topic.strip('/')}"
+
     request = service_type.Request()
     response = single_service_call(
-        node, service_type, f"{args.node_name}/feature_info_query", request)
+        node, service_type, topic, request)
 
     if response.error.code == 0:
         print_info_data(response)

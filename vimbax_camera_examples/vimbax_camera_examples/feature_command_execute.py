@@ -21,21 +21,26 @@ from .helper import single_service_call
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
     parser.add_argument("feature_name")
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("_feature_command_execute")
+    node = Node("vimbax_feature_command_execute_example")
 
     feature_service_type = vimbax_camera_msgs.srv.FeatureCommandRun
+
+    namespace: str = args.node_namespace.strip("/")
+    topic = "/features/command_run"
+    if len(namespace) > 0:
+        topic = f"/{namespace}/features/command_run"
 
     request = feature_service_type.Request()
     request.feature_name = args.feature_name
     response = single_service_call(node, feature_service_type,
-                                   f"{args.node_name}/features/command_run", request)
+                                   topic, request)
 
     if response.error.code == 0:
         print(f"Successfully executed command {args.feature_name}")

@@ -19,7 +19,8 @@ import vimbax_camera_msgs.srv as srv
 
 def single_service_call(node: Node, type, name, request):
     client = node.create_client(type, name)
-
+    
+    print(f"Waiting for service {name}")
     if not client.wait_for_service(120.0):
         print("Service got not ready in time")
         exit(1)

@@ -29,9 +29,13 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    node = Node("_feature_command_execute")
+    node = Node("vimbax_feature_command_execute_example")
 
-    event_subscriber = EventSubscriber(EventData, node, f"{args.node_namespace}/events")
+    namespace: str = args.node_namespace.strip("/")
+    topic = "/events"
+    if len(namespace) > 0:
+        topic = f"/{namespace}/events"
+    event_subscriber = EventSubscriber(EventData, node, topic)
 
     def print_event_data(event):
         for entry in event.entries:
@@ -44,8 +48,10 @@ def main():
         def event_callback(event):
             print(f"Got event {event_name}")
             print_event_data(event)
-
+        
+        print(f"Subscribing to Event '{event_name}' using topic '{topic}'")
         event_subscribtions.append(event_subscriber.subscribe_event(event_name, event_callback))
+        print(f"Subscribed to Event '{event_name}'")
 
     try:
         rclpy.spin(node)

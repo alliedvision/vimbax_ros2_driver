@@ -20,7 +20,7 @@ from .helper import feature_type_dict, single_service_call
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
     parser.add_argument("feature_type", choices=feature_type_dict.keys())
     parser.add_argument("feature_name")
 
@@ -28,15 +28,20 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    node = Node("_feature_get")
+    node = Node("vimbax_feature_get_example")
 
     feature_type = feature_type_dict[args.feature_type]
     feature_service_type = feature_type.get_service_type
 
+    namespace = args.node_namespace.strip("/")
+    topic: str = f"/{feature_type.service_base_path}_get"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/{topic.strip('/')}"
+
     request = feature_service_type.Request()
     request.feature_name = args.feature_name
     response = single_service_call(node, feature_service_type,
-                                   f"{args.node_name}/{feature_type.service_base_path}_get",
+                                   topic,
                                    request)
 
     if response.error.code == 0:

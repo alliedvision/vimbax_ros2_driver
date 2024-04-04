@@ -20,7 +20,7 @@ from .helper import single_service_call, feature_type_dict, print_feature_info
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
     parser.add_argument("feature_type", choices=['Int', 'Float', 'String', 'Raw', 'Bool', 'Enum'])
     parser.add_argument("feature_name")
 
@@ -28,7 +28,7 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    node = Node("_feature_get")
+    node = Node("vimbax_feature_info_get_example")
 
     feature_type = feature_type_dict[args.feature_type]
     feature_service_type = feature_type.info_service_type
@@ -37,11 +37,16 @@ def main():
         print(f"Feature type {args.feature_type} does not support info query")
         exit(1)
 
+    namespace = args.node_namespace.strip("/")
+    topic: str = f"/{feature_type.service_base_path}_info_get"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/{feature_type.service_base_path}_info_get"
+
     request = feature_service_type.Request()
     request.feature_name = args.feature_name
     response = single_service_call(
         node, feature_service_type,
-        f"{args.node_name}/{feature_type.service_base_path}_info_get", request)
+        topic, request)
 
     if response.error.code == 0:
         print_feature_info(response)

@@ -21,18 +21,23 @@ from .helper import single_service_call
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("_status_get")
+    node = Node("vimbax_status_get_example")
 
     service_type = vimbax_camera_msgs.srv.Status
 
+    namespace = args.node_namespace.strip("/")
+    topic: str = f"/status"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/{topic.strip('/')}"
+
     request = service_type.Request()
-    response = single_service_call(node, service_type, f"{args.node_name}/status", request)
+    response = single_service_call(node, service_type, topic, request)
 
     if response.error.code == 0:
         print(f"Received status {response}")

@@ -45,7 +45,7 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    node = Node("_asynchronous_grab")
+    node = Node("vimbax_asynchronous_grab_example")
 
     def on_frame(msg: Image):
         global frames_recv
@@ -60,8 +60,15 @@ def main():
         if args.count > 0 and frames_recv >= args.count:
             stop_future.set_result(None)
 
-    node.create_subscription(Image, f"{args.node_namespace}/image_raw", on_frame, 10)
+    namespace = args.node_namespace.strip("/")
+    topic: str = "/image_raw"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/image_raw"
+        
+    node.create_subscription(Image, topic, on_frame, 10)
 
     rclpy.spin_until_future_complete(node, stop_future)
-
-    print(f"\nReceived frames {frames_recv}")
+    
+    if not args.info:
+        print()
+    print(f"Received frames {frames_recv}")
