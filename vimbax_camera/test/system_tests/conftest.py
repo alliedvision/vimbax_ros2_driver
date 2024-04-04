@@ -41,7 +41,7 @@ from vimbax_camera_msgs.srv import FeatureCommandRun
 class TestNode(rclpy.node.Node):
     __test__ = False
 
-    def __init__(self, name, camera_node_name, timeout_sec: float = 60.0):
+    def __init__(self, name, camera_node_name, timeout_sec: float = 120.0):
         rclpy.node.Node.__init__(self, name)
         self.image_queue = queue.Queue()
         self._camera_node_name = camera_node_name
@@ -127,6 +127,26 @@ class TestNode(rclpy.node.Node):
     def camera_node_name(self):
         return self._camera_node_name
 
+    def load_default_userset(self):
+        enum_set_client = test_node.create_client(
+            FeatureEnumSet, f"{self._camera_node_name}/features/enum_set"
+        )
+        command_run_client = test_node.create_client(
+            FeatureCommandRun, f"{self._camera_node_name}/features/command_run"
+        )
+        enum_set_client.wait_for_service(self._rcl_timeout_sec)
+        command_run_client.wait_for_service(self._rcl_timeout_sec)
+
+        test_node.call_service_sync(
+            enum_set_client,
+            FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
+        )
+
+        # High timeout: Real cameras need long time to load userset
+        test_node.call_service_sync(
+            command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
+        )
+
 
 @pytest.fixture
 def node_test_id():
@@ -164,25 +184,9 @@ def vimbax_camera_node(camera_test_node_name):
 def test_node(node_test_id, camera_test_node_name):
     if not rclpy.ok():
         rclpy.init()
-    test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name, timeout_sec=120.0)
-    enum_set_client = test_node.create_client(
-        FeatureEnumSet, f"{camera_test_node_name}/features/enum_set"
-    )
-    command_run_client = test_node.create_client(
-        FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
-    )
-    enum_set_client.wait_for_service(120)
-    command_run_client.wait_for_service(120)
+    test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
-    test_node.call_service_sync(
-        enum_set_client,
-        FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
-    )
-
-    # High timeout: Real cameras need long time to load userset
-    test_node.call_service_sync(
-        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
-    )
+    test_node.load_default_userset()
 
     yield test_node
 

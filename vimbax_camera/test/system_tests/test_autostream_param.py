@@ -102,10 +102,12 @@ class StreamAutostreamTestNode(TestNode):
         check_error(res.error)
         return res.streaming
 
-    def get_latest_image(self) -> Image:
+    def get_latest_image(self, timeout_sec: float = None) -> Image:
+        if timeout_sec is None:
+            timeout_sec = self._rcl_timeout_sec
         self.clear_queue()
         try:
-            return self.wait_for_frame(self._rcl_timeout_sec)
+            return self.wait_for_frame(timeout_sec)
         except Exception:
             return None
 
@@ -135,7 +137,7 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name, node_
     node.subscribe_image_raw()
 
     assert node.wait_until_streaming_is(False)
-    img = node.get_latest_image()
+    img = node.get_latest_image(30.0)
     assert img is None
 
     check_error(node.start_stream().error)
@@ -147,7 +149,7 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name, node_
     check_error(node.stop_stream().error)
 
     assert node.wait_until_streaming_is(False)
-    img = node.get_latest_image()
+    img = node.get_latest_image(30.0)
     assert img is None
 
 
