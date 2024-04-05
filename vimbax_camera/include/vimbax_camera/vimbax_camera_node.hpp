@@ -55,6 +55,7 @@
 #include <vimbax_camera_msgs/srv/settings_load_save.hpp>
 #include <vimbax_camera_msgs/srv/status.hpp>
 #include <vimbax_camera_msgs/srv/stream_start_stop.hpp>
+#include <vimbax_camera_msgs/srv/connection_status.hpp>
 
 #include <vimbax_camera_msgs/msg/event_data.hpp>
 
@@ -186,6 +187,8 @@ private:
     stream_start_service_;
   rclcpp::Service<vimbax_camera_msgs::srv::StreamStartStop>::SharedPtr
     stream_stop_service_;
+  rclcpp::Service<vimbax_camera_msgs::srv::ConnectionStatus>::SharedPtr
+    connection_status_service_;
 
   vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>::SharedPtr
     feature_invalidation_event_publisher_;

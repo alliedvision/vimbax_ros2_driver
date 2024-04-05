@@ -49,6 +49,7 @@ set(vimbax_camera_SRVS
         srv/StreamStartStop.srv
         srv/SubscribeEvent.srv
         srv/UnsubscribeEvent.srv
+        srv/ConnectionStatus.srv
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

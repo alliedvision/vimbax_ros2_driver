@@ -66,6 +66,8 @@ The following examples are available:
 - list_features: How to list all available features.
 - settings_load_save: Load or save the camera settings to an xml file.
 - status_get: How to use the status service to get the current camera status.
+- camera_connected: Reads if the camera is currently connected or not. 
+- connection_observer: Periodically calls the connected service and prints a message if the connections status has changed.
 
 ## Build Instructions
 1. Setup the ROS2 environment
@@ -743,6 +745,22 @@ Stop the streaming of the camera.
 | Name | Type | Description |
 |------|------|-------------|
 | error | [Error](#vimbax_camera_msgserror) | Result of the operation |
+
+### /\<camera node ns>/connected
+#### Description
+
+Read wether the camera is connected or not.
+
+#### Request
+
+| Name | Type | Description |
+|------|------|-------------|
+
+#### Response
+
+| Name | Type | Description |
+|------|------|-------------|
+| connected | bool | True when the camera is connected otherwise false. |
 
 ## Troubleshooting
 

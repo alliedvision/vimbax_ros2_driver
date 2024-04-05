@@ -1244,6 +1244,15 @@ bool VimbaXCameraNode::initialize_status_services()
 
   CHK_SVC(status_service_);
 
+  connection_status_service_ = node_->create_service<vimbax_camera_msgs::srv::ConnectionStatus>(
+    "connected", [this](
+      const vimbax_camera_msgs::srv::ConnectionStatus::Request::ConstSharedPtr,
+      const vimbax_camera_msgs::srv::ConnectionStatus::Response::SharedPtr response)
+    {
+      std::shared_lock lock(camera_mutex_);
+      response->set__connected(camera_ != nullptr);
+    }, rmw_qos_profile_services_default, status_callback_group_);
+
   return true;
 }
 
