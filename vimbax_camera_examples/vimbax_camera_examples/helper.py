@@ -75,6 +75,7 @@ def print_feature_info(info):
     else:
         print(f"Unknown feature info type {type(info)}")
 
+
 def get_module_from_string(module_str):
     if module_str == "remote_device":
         return msg.FeatureModule(id=msg.FeatureModule.MODULE_REMOTE_DEVICE)
