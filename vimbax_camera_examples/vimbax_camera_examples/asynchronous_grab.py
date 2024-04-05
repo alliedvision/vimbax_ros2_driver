@@ -14,6 +14,7 @@
 
 import rclpy
 from rclpy.node import Node
+from rclpy.qos_event import SubscriptionEventCallbacks
 import rclpy.executors
 import signal
 
@@ -24,6 +25,7 @@ from asyncio import Future
 from sensor_msgs.msg import Image
 
 frames_recv = 0
+lost_frames = 0
 
 
 def main():
@@ -60,8 +62,16 @@ def main():
         if args.count > 0 and frames_recv >= args.count:
             stop_future.set_result(None)
 
-    node.create_subscription(Image, f"{args.node_namespace}/image_raw", on_frame, 10)
+    def on_message_lost(message_lost_status):
+        global lost_frames
+        print(f"Dropped {message_lost_status.total_count_change} frames")
+        lost_frames = lost_frames + message_lost_status.total_count_change
+
+    event_callbacks = SubscriptionEventCallbacks(message_lost=on_message_lost)
+    node.create_subscription(Image, f"{args.node_namespace}/image_raw", on_frame, 10,
+                             event_callbacks=event_callbacks)
 
     rclpy.spin_until_future_complete(node, stop_future)
 
     print(f"\nReceived frames {frames_recv}")
+    print(f"Dropped {lost_frames}/{lost_frames + frames_recv} frames")
