@@ -1141,7 +1141,7 @@ result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
   }
 
   auto const current_format =
-  feature_enum_as_int_get(SFNCFeatures::PixelFormat, *current_format_str);
+    feature_enum_as_int_get(SFNCFeatures::PixelFormat, *current_format_str);
 
   if (!current_format) {
     return current_format.error();
