@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 import argparse
 
-from vimbax_camera_events.event_subscriber import EventSubscriber
+from vimbax_camera_events.event_subscriber import EventSubscriber, EventSubscribeException
 from vimbax_camera_msgs.msg import EventData
 
 
@@ -37,20 +37,36 @@ def main():
         for entry in event.entries:
             print(f"  {entry.name}: {entry.value}")
 
-    event_subscribtions = []
+    event_subscriptions = []
+    pending_subscriptions = set()
 
     for event_name in args.events:
 
-        def event_callback(event):
-            print(f"Got event {event_name}")
-            print_event_data(event)
+        def event_callback(name, data):
+            print(f"Got event {name}")
+            print_event_data(data)
 
-        event_subscribtions.append(event_subscriber.subscribe_event(event_name, event_callback))
+        def on_subscribed(future):
+            pending_subscriptions.remove(future)
+            try:
+                event_subscriptions.append(future.result())
+            except EventSubscribeException as ex:
+                print(f"Subscribing to event {ex.name} failed with "
+                      f"{ex.error.code} ({ex.error.text})")
+                # Stop executor if no subscription is pending or active
+                if len(pending_subscriptions) == 0 and len(event_subscriptions) == 0:
+                    rclpy.shutdown()
+
+        future = event_subscriber.subscribe_event(event_name, event_callback)
+
+        future.add_done_callback(on_subscribed)
+
+        pending_subscriptions.add(future)
 
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
         pass
 
-    for event_subscribtion in event_subscribtions:
-        event_subscribtion.destroy()
+    for event_subscription in event_subscriptions:
+        event_subscription.destroy()

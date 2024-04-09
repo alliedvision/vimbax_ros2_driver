@@ -37,7 +37,7 @@ public:
     return std::shared_ptr<EventSubscriber<T>>(new EventSubscriber<T>(args ...));
   }
 
-  std::shared_ptr<EventSubscribtion<T>> subscribe_event(
+  std::shared_future<std::shared_ptr<EventSubscription<T>>> subscribe_event(
     const std::string & event, std::function<void(const T &)> callback)
   {
     return EventSubscriberBase::subscribe_event(event, callback);
