@@ -13,15 +13,32 @@
 # limitations under the License.
 
 import rclpy
+import rclpy.client
 from rclpy.node import Node
 import vimbax_camera_msgs.srv as srv
 import vimbax_camera_msgs.msg as msg
 
 
+def wait_for_service(client: rclpy.client.Client):
+    if not client.wait_for_service(5.0):
+        print("Waiting for service...", end='', flush=True)
+        for i in range(30):
+            if client.wait_for_service(5.0):
+                print("")
+                return True
+            else:
+                print(f"{(i+1) * 5}...", end='', flush=True)
+
+        print("Timeout!")
+        return False
+    else:
+        return True
+
+
 def single_service_call(node: Node, type, name, request):
     client = node.create_client(type, name)
 
-    if not client.wait_for_service(120.0):
+    if not wait_for_service(client):
         print("Service got not ready in time")
         exit(1)
 

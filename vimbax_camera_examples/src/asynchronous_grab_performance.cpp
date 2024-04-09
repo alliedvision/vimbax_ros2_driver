@@ -29,6 +29,13 @@ public:
   explicit AsynchronousGrabPerformance(const rclcpp::NodeOptions & options)
   : rclcpp::Node("_asynchronous_grab_performance", options)
   {
+    auto subscription_options = rclcpp::SubscriptionOptions();
+    subscription_options.event_callbacks.message_lost_callback =
+      [this](rclcpp::QOSMessageLostInfo & info) {
+        std::cout << info.total_count_change << " missing frames detected!!!" << std::endl;
+        frames_missing += info.total_count_change;
+      };
+
     subscription = image_transport::create_subscription(
       this, "/image",
       [this](sensor_msgs::msg::Image::ConstSharedPtr imgmsg) {
@@ -40,47 +47,23 @@ public:
 
         auto const mfps = 1000000000 / diff;
 
-        if (diffs.size() > 0) {
-          if (diffs.size() > 100) {
-            diffs.pop_front();
-          }
-
-          uint64_t sum = 0;
-
-          for (auto const d : diffs) {
-            sum += d;
-          }
-
-          auto const avg = sum / diffs.size();
-
-          if (diff > avg) {
-            std::cout << "Missing frames detected!!!" << std::endl;
-            frames_missing++;
-          } else {
-            diffs.push_back(diff);
-          }
-
-        } else {
-          diffs.push_back(diff);
-        }
-
         std::cout << "Got frame diff " << diff << " mfps: " << mfps << std::endl;
 
         last_timestamp = timestamp;
-        frame_count++;
-      }, "raw");
+        frame_complete++;
+      }, "raw", rmw_qos_profile_default, subscription_options);
   }
 
   ~AsynchronousGrabPerformance()
   {
-    std::cout << "Missed " << frames_missing << "/" << frame_count << " frames" << std::endl;
+    std::cout << "Missed " << frames_missing << "/" << frame_complete << " frames" << std::endl;
   }
 
 private:
   image_transport::Subscriber subscription;
   int64_t last_frame_id{-1};
   int64_t frames_missing{0};
-  int64_t frame_count{0};
+  int64_t frame_complete{0};
   std::chrono::nanoseconds last_timestamp{0};
   std::deque<uint64_t> diffs{};
 };
