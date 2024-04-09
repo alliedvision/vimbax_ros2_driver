@@ -1484,6 +1484,8 @@ bool VimbaXCameraNode::initialize_status_services()
       response->set__connected(camera_ != nullptr);
     }, rmw_qos_profile_services_default, status_callback_group_);
 
+  CHK_SVC(connection_status_service_);
+
   return true;
 }
 
