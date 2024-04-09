@@ -24,7 +24,7 @@
 #define ATTRIBUTE_TARGET(tgt)
 #endif
 
-#include <vmbc_interface/VmbCommonTypes.h>
+#include <VmbC/VmbCommonTypes.h>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 

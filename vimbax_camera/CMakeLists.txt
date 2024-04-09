@@ -47,9 +47,6 @@ rclcpp_components_register_node(${PROJECT_NAME}
     EXECUTOR MultiThreadedExecutor
 )
 
-
-include_directories(${VMB_DIR}/api/include)
-
 install(TARGETS ${PROJECT_NAME}
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib

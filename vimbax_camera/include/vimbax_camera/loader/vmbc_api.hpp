@@ -15,7 +15,7 @@
 #ifndef VIMBAX_CAMERA__LOADER__VMBC_API_HPP_
 #define VIMBAX_CAMERA__LOADER__VMBC_API_HPP_
 
-#include <vmbc_interface/VmbC.h>
+#include <VmbC/VmbC.h>
 
 #include <functional>
 #include <memory>

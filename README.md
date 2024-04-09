@@ -79,6 +79,7 @@ The following examples are available:
     ```shell
     rosdep init
     rosdep update
+    sudo apt-get update
     ```
 
 3. Create a workspace
