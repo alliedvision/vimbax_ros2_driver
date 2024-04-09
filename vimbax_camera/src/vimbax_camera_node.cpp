@@ -125,7 +125,9 @@ VimbaXCameraNode::~VimbaXCameraNode()
 {
   stop_threads_.store(true, std::memory_order::memory_order_relaxed);
 
-  deinitialize_camera_observer();
+  if (api_) {
+    deinitialize_camera_observer();
+  }
 
   if (graph_notify_thread_) {
     graph_notify_thread_->join();
@@ -164,7 +166,7 @@ bool VimbaXCameraNode::initialize_events()
         .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
-      return {};
+      return vimbax_camera_msgs::msg::Error{};
     },
     [this](const std::string & name) -> void {
       camera_->feature_invalidation_unregister(name);
@@ -222,7 +224,7 @@ bool VimbaXCameraNode::initialize_events()
         .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
-      return {};
+      return vimbax_camera_msgs::msg::Error{};
     },
     [this](const std::string & name) -> void {
       std::shared_lock lock(camera_mutex_);
@@ -1481,6 +1483,8 @@ bool VimbaXCameraNode::initialize_status_services()
       std::shared_lock lock(camera_mutex_);
       response->set__connected(camera_ != nullptr);
     }, rmw_qos_profile_services_default, status_callback_group_);
+
+  CHK_SVC(connection_status_service_);
 
   return true;
 }

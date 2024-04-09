@@ -71,7 +71,7 @@ public:
     void transform();
     uint64_t timestamp_to_ns(uint64_t timestamp);
 
-    Frame(std::shared_ptr<VimbaXCamera> camera, AllocationMode allocationMode);
+    Frame(std::shared_ptr<VimbaXCamera> camera, AllocationMode allocation_mode);
 
     std::function<void(std::shared_ptr<Frame>)> callback_;
     std::weak_ptr<VimbaXCamera> camera_;
@@ -122,9 +122,9 @@ public:
   VimbaXCamera & operator=(const VimbaXCamera &) = delete;
 
   result<void> start_streaming(
-    int bufferCount,
-    std::function<void(std::shared_ptr<Frame>)> onFrame,
-    bool startAcquisition = true);
+    int buffer_count,
+    std::function<void(std::shared_ptr<Frame>)> on_frame,
+    bool start_acquisition = true);
   result<void> stop_streaming();
 
   bool is_alive() const;
@@ -230,9 +230,9 @@ public:
     const std::string_view & name,
     Module module = Module::RemoteDevice) const;
 
-  result<void> settings_load(const std::string_view & fileName);
+  result<void> settings_load(const std::string_view & file_name);
 
-  result<void> settings_save(const std::string_view & fileName);
+  result<void> settings_save(const std::string_view & file_name);
 
   result<Info> camera_info_get() const;
 
@@ -249,7 +249,7 @@ public:
   result<EventMetaDataList> get_event_meta_data(const std::string_view & name);
 
 private:
-  explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandle);
+  explicit VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t camera_handle);
 
   static void on_feature_invalidation(VmbHandle_t, const char * name, void * context);
 

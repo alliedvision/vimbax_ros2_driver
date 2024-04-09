@@ -116,7 +116,7 @@ protected:
         ptr->cameraName = "TestCamera";
         ptr->serialString = "1234";
         ptr->streamHandles = stream_handles_.data();
-        ptr->streamCount = stream_handles_.size();
+        ptr->streamCount = uint32_t(stream_handles_.size());
         return VmbErrorSuccess;
       });
 
@@ -210,7 +210,7 @@ TEST_F(VimbaXCameraTest, open_first_camera)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     },
     VmbCameraInfo{
@@ -223,7 +223,7 @@ TEST_F(VimbaXCameraTest, open_first_camera)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(uint32_t(stream_handles_.size())),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };
@@ -300,7 +300,7 @@ TEST_F(VimbaXCameraTest, open_second_camera)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead
     },
     VmbCameraInfo{
@@ -313,7 +313,7 @@ TEST_F(VimbaXCameraTest, open_second_camera)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };
@@ -389,7 +389,7 @@ TEST_F(VimbaXCameraTest, open_camera_no_access)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead
     },
     VmbCameraInfo{
@@ -402,7 +402,7 @@ TEST_F(VimbaXCameraTest, open_camera_no_access)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead
     }
   };
@@ -523,7 +523,7 @@ TEST_F(VimbaXCameraTest, open_by_id_success_fallback)
   .Times(AtLeast(1)).WillRepeatedly(
     [&](auto, VmbCameraInfo_t * ptr, auto) {
       ptr->streamHandles = stream_handles_.data();
-      ptr->streamCount = stream_handles_.size();
+      ptr->streamCount = uint32_t(stream_handles_.size());
       return VmbErrorSuccess;
     });
 
@@ -556,7 +556,7 @@ TEST_F(VimbaXCameraTest, open_by_id_success)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     },
     VmbCameraInfo{
@@ -569,7 +569,7 @@ TEST_F(VimbaXCameraTest, open_by_id_success)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };
@@ -639,7 +639,7 @@ TEST_F(VimbaXCameraTest, open_by_serial)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     },
     VmbCameraInfo{
@@ -652,7 +652,7 @@ TEST_F(VimbaXCameraTest, open_by_serial)
       nullptr,
       nullptr,
       stream_handles_.data(),
-      stream_handles_.size(),
+      uint32_t(stream_handles_.size()),
       VmbAccessModeRead | VmbAccessModeFull | VmbAccessModeExclusive
     }
   };

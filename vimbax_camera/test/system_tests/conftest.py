@@ -123,17 +123,16 @@ def test_node(node_test_id, camera_test_node_name):
     command_run_client = test_node.create_client(
         FeatureCommandRun, f"{camera_test_node_name}/features/command_run"
     )
-    enum_set_client.wait_for_service(10)
-    command_run_client.wait_for_service(10)
+    if enum_set_client.wait_for_service(10):
+        enum_set_client.call(FeatureEnumSet.Request(
+            feature_name="UserSetSelector",
+            value="UserSetDefault"
+        ))
 
-    enum_set_client.call(FeatureEnumSet.Request(
-        feature_name="UserSetSelector",
-        value="UserSetDefault"
-    ))
-
-    command_run_client.call(FeatureCommandRun.Request(
-        feature_name="UserSetLoad"
-    ))
+    if command_run_client.wait_for_service(10):
+        command_run_client.call(FeatureCommandRun.Request(
+            feature_name="UserSetLoad"
+        ))
 
     yield test_node
 

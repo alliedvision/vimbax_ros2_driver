@@ -53,7 +53,7 @@ static std::vector<std::string_view> split_string(const std::string_view & str, 
     return {};
   }
 
-  std::vector<std::string_view> resList{};
+  std::vector<std::string_view> parts{};
   std::size_t start = 0;
   std::size_t end;
 
@@ -62,62 +62,68 @@ static std::vector<std::string_view> split_string(const std::string_view & str, 
 
     auto const part = str.substr(start, end);
     if (!part.empty()) {
-      resList.push_back(part);
+      parts.push_back(part);
     }
     start = end + 1;
   } while (end != std::string::npos);
 
-  return resList;
+  return parts;
 }
 
 static std::unique_ptr<LoadedLibrary> load_vmbc_library(
-  std::shared_ptr<LibraryLoader> libraryLoader)
+  std::shared_ptr<LibraryLoader> library_loader)
 {
-  auto const libName = libraryLoader->build_library_name("VmbC");
+  auto const lib_name = library_loader->build_library_name("VmbC");
 
-  auto const vimbaXHome = getenv_safe("VIMBA_X_HOME");
+  auto const vimbax_home = getenv_safe("VIMBA_X_HOME");
 
-  auto const vimbaXHomeParts = split_string(vimbaXHome, ':');
-  for (auto const & part : vimbaXHomeParts) {
-    fs::path vmbcPath = canonical((fs::path{part} / "api" / "lib")) / libName;
-    if (fs::exists(vmbcPath)) {
-      RCLCPP_DEBUG(get_logger(), "Loading library %s by VimbaX home", vmbcPath.c_str());
-      return libraryLoader->open(vmbcPath);
-    }
-  }
-
-  auto const tlSearchPath = getenv_safe("GENICAM_GENTL64_PATH");
-
-  auto const tlSearchPathParts = split_string(tlSearchPath, ':');
-  for (auto const & part : tlSearchPathParts) {
-    auto libDir = fs::path{part} / ".." / "api" / "lib";
-    if (!fs::exists(libDir)) {
+  auto const vimbax_home_parts = split_string(vimbax_home, ':');
+  for (auto const & part : vimbax_home_parts) {
+    fs::path const part_path{part};
+    if (!fs::exists(part_path)) {
+      RCLCPP_WARN(get_logger(), "VIMBA_X_HOME variable pointing to not existing directory");
       continue;
     }
 
-    fs::path vmbcPath = fs::canonical(libDir) / libName;
-    if (fs::exists(vmbcPath)) {
-      RCLCPP_DEBUG(get_logger(), "Loading library %s by TL search path", vmbcPath.c_str());
-      return libraryLoader->open(vmbcPath);
+    fs::path const vmbc_path = canonical(part_path / "api" / "lib") / lib_name;
+    if (fs::exists(vmbc_path)) {
+      RCLCPP_DEBUG(get_logger(), "Loading library %s by VimbaX home", vmbc_path.c_str());
+      return library_loader->open(vmbc_path);
     }
   }
 
-  RCLCPP_DEBUG(get_logger(), "Loading library %s", libName.c_str());
-  return libraryLoader->open(libName);
+  auto const gentl_search_path = getenv_safe("GENICAM_GENTL64_PATH");
+
+  auto const gentl_search_path_parts = split_string(gentl_search_path, ':');
+  for (auto const & part : gentl_search_path_parts) {
+    auto const lib_dir = fs::path{part} / ".." / "api" / "lib";
+    if (!fs::exists(lib_dir)) {
+      continue;
+    }
+
+    fs::path const vmbc_path = fs::canonical(lib_dir) / lib_name;
+    if (fs::exists(vmbc_path)) {
+      RCLCPP_DEBUG(get_logger(), "Loading library %s by TL search path", vmbc_path.c_str());
+      return library_loader->open(vmbc_path);
+    }
+  }
+
+  RCLCPP_DEBUG(get_logger(), "Loading library %s", lib_name.c_str());
+  return library_loader->open(lib_name);
 }
 
 std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(
-  const std::string & searchPath,
-  std::shared_ptr<LibraryLoader> libraryLoader)
+  const std::string & tl_search_path,
+  std::shared_ptr<LibraryLoader> library_loader)
 {
   if (instance_.expired()) {
-    if (!libraryLoader) {
+    if (!library_loader) {
       return {};
     }
 
     std::shared_ptr<VmbCAPI> instance{new VmbCAPI};
 
-    auto library = load_vmbc_library(libraryLoader);
+    auto library = load_vmbc_library(library_loader);
 
     if (!library) {
       RCLCPP_ERROR(get_logger(), "Failed to load VmbC library");
@@ -181,12 +187,12 @@ std::shared_ptr<VmbCAPI> VmbCAPI::get_instance(
     LOAD_FUNC(instance, TransportLayersList);
     LOAD_FUNC(instance, VersionQuery);
 
-    instance->libraryHandle_ = std::move(library);
+    instance->library_handle_ = std::move(library);
 
-    auto const searchPathPtr = searchPath.empty() ? nullptr : searchPath.c_str();
-    auto const startupRes = instance->Startup(searchPathPtr);
-    if (startupRes != VmbErrorSuccess) {
-      RCLCPP_ERROR(get_logger(), "VmbStartup failed with %d", startupRes);
+    auto const tl_search_path_ptr = tl_search_path.empty() ? nullptr : tl_search_path.c_str();
+    auto const startup_res = instance->Startup(tl_search_path_ptr);
+    if (startup_res != VmbErrorSuccess) {
+      RCLCPP_ERROR(get_logger(), "VmbStartup failed with %d", startup_res);
       return {};
     }
 
