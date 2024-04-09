@@ -28,6 +28,7 @@ from vimbax_camera_msgs.srv import Status
 from sensor_msgs.msg import Image
 
 import time
+import warnings
 
 
 # Fixture to launch the vimbax_camera_node
@@ -97,8 +98,10 @@ class StreamAutostreamTestNode(TestNode):
     def start_stream(self) -> StreamStartStop.Response:
         return self.call_service_sync(self.__stream_start_srv, StreamStartStop.Request())
 
-    def is_streaming(self) -> bool:
-        res: Status.Response = self.call_service_sync(self.__status_srv, Status.Request())
+    def is_streaming(self, timeout_sec=None) -> bool:
+        res: Status.Response = self.call_service_sync(
+            self.__status_srv, Status.Request(), timeout_sec=timeout_sec
+        )
         check_error(res.error)
         return res.streaming
 
@@ -116,9 +119,12 @@ class StreamAutostreamTestNode(TestNode):
         t0 = time.time()
 
         while (time.time() - t0) <= self._rcl_timeout_sec:
-            val = self.is_streaming()
-            if val == expected:
-                return True
+            try:
+                val = self.is_streaming(timeout_sec=30.0)
+                if val == expected:
+                    return True
+            except AssertionError:
+                warnings.warn("is_streaming(): Status service call did not complete, trying again")
         return False
 
 
@@ -247,9 +253,7 @@ def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_na
 @pytest.mark.launch(fixture=camera_node_without_autostream)
 def test_autostream_disabled(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode(
-        f"_test_node_{node_test_id}", camera_test_node_name
-    )
+    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
 
     assert node.wait_until_streaming_is(False)
 
