@@ -36,7 +36,7 @@ EventPublisherBase::EventPublisherBase(
       // New subscribtion
       if (it == subscribtion_detail_map_.end()) {
         auto const res = on_event_subscribed(request->name);
-        if (res != 0) {
+        if (res.code != 0) {
           response->error = res;
           return;
         }

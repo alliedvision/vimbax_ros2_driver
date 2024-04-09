@@ -13,15 +13,32 @@
 # limitations under the License.
 
 import rclpy
+import rclpy.client
 from rclpy.node import Node
 import vimbax_camera_msgs.srv as srv
+import vimbax_camera_msgs.msg as msg
+
+
+def wait_for_service(client: rclpy.client.Client):
+    if not client.wait_for_service(5.0):
+        print("Waiting for service...", end='', flush=True)
+        for i in range(30):
+            if client.wait_for_service(5.0):
+                print("")
+                return True
+            else:
+                print(f"{(i+1) * 5}...", end='', flush=True)
+
+        print("Timeout!")
+        return False
+    else:
+        return True
 
 
 def single_service_call(node: Node, type, name, request):
     client = node.create_client(type, name)
 
-    print(f"Waiting for service {name}")
-    if not client.wait_for_service(120.0):
+    if not wait_for_service(client):
         print("Service got not ready in time")
         exit(1)
 
@@ -90,3 +107,16 @@ def print_feature_info(info):
         print(f"all: {info.possible_values} available: {info.available_values}")
     else:
         print(f"Unknown feature info type {type(info)}")
+
+
+def get_module_from_string(module_str):
+    if module_str == "remote_device":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_REMOTE_DEVICE)
+    elif module_str == "system":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_SYSTEM)
+    elif module_str == "interface":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_INTERFACE)
+    elif module_str == "local_device":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_LOCAL_DEVICE)
+    elif module_str == "stream":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_STREAM)

@@ -1,4 +1,5 @@
 string feature_name
+FeatureModule feature_module
 ---
 byte[] buffer
 uint32 buffer_size

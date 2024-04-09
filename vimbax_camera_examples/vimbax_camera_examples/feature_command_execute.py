@@ -16,13 +16,20 @@ import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
 import argparse
-from .helper import single_service_call
+from .helper import single_service_call, get_module_from_string
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("node_namespace")
     parser.add_argument("feature_name")
+    parser.add_argument("-m", "--module", choices=[
+        "remote_device",
+        "system",
+        "interface",
+        "local_device",
+        "stream"
+    ], default="remote_device", dest="module")
 
     (args, rosargs) = parser.parse_known_args()
 
@@ -39,6 +46,7 @@ def main():
 
     request = feature_service_type.Request()
     request.feature_name = args.feature_name
+    request.feature_module = get_module_from_string(args.module)
     response = single_service_call(node, feature_service_type,
                                    topic, request)
 

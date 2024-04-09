@@ -1,3 +1,4 @@
+FeatureModule feature_module
 ---
 string[] feature_list
 Error error

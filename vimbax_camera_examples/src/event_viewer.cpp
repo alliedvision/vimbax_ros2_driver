@@ -25,8 +25,8 @@ int main(int argc, char * argv[])
 {
   auto const args = rclcpp::init_and_remove_ros_arguments(argc, argv);
 
-  if (args.size() < 2) {
-    std::cerr << "Usage: " + args[0] + " <event name>" << std::endl;
+  if (args.size() < 3) {
+    std::cerr << "Usage: " + args[0] + " <node namespace> <event name>" << std::endl;
     return 1;
   }
 
@@ -35,20 +35,31 @@ int main(int argc, char * argv[])
   auto event_subscriber =
     vimbax_camera_events::EventSubscriber<vimbax_camera_msgs::msg::EventData>::make_shared(
     node,
-    "/vimbax_camera_test/events"
+    "/" + args[1] + "/events"
     );
 
 
-  auto event_subscibtion = event_subscriber->subscribe_event(
-    args[1], [&](auto event_data) {
+  auto event_subscription = event_subscriber->subscribe_event(
+    args[2], [&](auto event_data) {
       RCLCPP_INFO(node->get_logger(), "Got event meta data:");
       for (auto const & entry : event_data.entries) {
         RCLCPP_INFO(node->get_logger(), "%s: %s", entry.name.c_str(), entry.value.c_str());
       }
     });
 
+  std::thread spin_thread([node] {
+      rclcpp::spin(node);
+    });
 
-  rclcpp::spin(node);
+  try {
+    auto subscription = event_subscription.get();
+  } catch (std::exception & ex) {
+    RCLCPP_FATAL(node->get_logger(), ex.what());
+    rclcpp::shutdown();
+  }
+
+
+  spin_thread.join();
 
   return 0;
 }

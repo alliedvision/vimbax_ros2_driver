@@ -14,16 +14,24 @@
 
 from rclpy.node import Node
 
+from rclpy.task import Future
+
 from vimbax_camera_msgs.srv import SubscribeEvent, UnsubscribeEvent
 
 
-class EventSubscribtion:
+class EventSubscribeException(Exception):
+    def __init__(self, name, error):
+        self.name = name
+        self.error = error
+
+
+class EventSubscription:
     def __init__(self, event_subscriber, evt_name: str):
         self.event_subscriber = event_subscriber
         self.evt_name = evt_name
 
     def destroy(self):
-        self.event_subscriber.destroy_subscribtion(self)
+        self.event_subscriber.destroy_subscription(self)
 
 
 class EventSubscriber:
@@ -39,26 +47,36 @@ class EventSubscriber:
             UnsubscribeEvent,
             f"{self._base_topic}/_event_unsubscribe"
         )
-        self._ros_subscribtions = {}
+        self._ros_subscriptions = {}
 
-    def subscribe_event(self, event: str, callback) -> EventSubscribtion:
+    def subscribe_event(self, name: str, callback) -> Future:
         request = SubscribeEvent.Request()
-        request.name = event
+        request.name = name
+
+        subscription_future = Future()
+
+        def on_event(data):
+            callback(name, data)
 
         def on_subscribed(response):
-            subscribtion = self._node.create_subscription(
-                self._evt_type, f"{self._base_topic}/event_{event}", callback, 10)
-            self._ros_subscribtions[event] = subscribtion
+            error = response.result().error
+            if error.code != 0:
+                subscription_future.set_exception(EventSubscribeException(name, error))
+            else:
+                subscription = self._node.create_subscription(
+                    self._evt_type, f"{self._base_topic}/event_{name}", on_event, 10)
+                self._ros_subscriptions[name] = subscription
+                subscription_future.set_result(EventSubscription(self, name))
 
         self._event_subscribe_client.wait_for_service()
         self._event_subscribe_client.call_async(request).add_done_callback(on_subscribed)
 
-        return EventSubscribtion(self, event)
+        return subscription_future
 
-    def destroy_subscribtion(self, event_subscribtion: EventSubscribtion):
-        evt_name = event_subscribtion.evt_name
-        self._ros_subscribtions[evt_name].destroy()
-        del self._ros_subscribtions[evt_name]
+    def destroy_subscription(self, event_subscription: EventSubscription):
+        evt_name = event_subscription.evt_name
+        self._ros_subscriptions[evt_name].destroy()
+        del self._ros_subscriptions[evt_name]
         request = UnsubscribeEvent.Request()
         request.name = evt_name
         self._event_unsubscribe_client.call_async(request)
