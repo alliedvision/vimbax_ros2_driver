@@ -72,8 +72,8 @@ class VmbCAPI
 {
 public:
   static std::shared_ptr<VmbCAPI> get_instance(
-    const std::string & searchPath = {},
-    std::shared_ptr<LibraryLoader> libraryLoader = LibraryLoader::get_default());
+    const std::string & search_path = {},
+    std::shared_ptr<LibraryLoader> library_loader = LibraryLoader::get_default());
 
   ~VmbCAPI();
 
@@ -141,7 +141,7 @@ private:
   FunctionPtr<decltype(VmbStartup)> Startup;
   FunctionPtr<decltype(VmbShutdown)> Shutdown;
 
-  std::unique_ptr<LoadedLibrary> libraryHandle_;
+  std::unique_ptr<LoadedLibrary> library_handle_;
 
   static std::weak_ptr<VmbCAPI> instance_;
 };
