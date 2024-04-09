@@ -54,6 +54,7 @@ def test_output(launch_context, camera_test_node_name, async_grab_node):
 
     assert_clean_shutdown(launch_context, action)
 
-    expected = ".\nReceived frames 1\nDropped 0/1 frames"
-
-    assert expected == action.get_stdout().strip(), "The output should match the expected!"
+    expected = [".", "Received frames 1"]
+    # We dont know how many frames will be lost so ignore that output line
+    lines = action.get_stdout().strip().splitlines()[-3:-1]
+    assert expected == lines, "The output should match the expected!"
