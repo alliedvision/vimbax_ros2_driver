@@ -1,4 +1,5 @@
 string feature_name
+FeatureModule feature_module
 ---
 int64 max_length
 Error error

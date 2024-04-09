@@ -111,6 +111,14 @@ private:
   bool initialize_graph_notify();
   bool initialize_callback_groups();
   bool initialize_feature_services();
+  bool initialize_int_feature_services();
+  bool initialize_float_feature_services();
+  bool initialize_bool_feature_services();
+  bool initialize_command_feature_services();
+  bool initialize_enum_feature_services();
+  bool initialize_string_feature_services();
+  bool initialize_raw_feature_services();
+  bool initialize_generic_feature_services();
   bool initialize_settings_services();
   bool initialize_status_services();
   bool initialize_stream_services();

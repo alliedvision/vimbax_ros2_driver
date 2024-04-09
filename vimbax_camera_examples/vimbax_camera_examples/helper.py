@@ -15,6 +15,7 @@
 import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv as srv
+import vimbax_camera_msgs.msg as msg
 
 
 def single_service_call(node: Node, type, name, request):
@@ -73,3 +74,16 @@ def print_feature_info(info):
         print(f"all: {info.possible_values} available: {info.available_values}")
     else:
         print(f"Unknown feature info type {type(info)}")
+
+
+def get_module_from_string(module_str):
+    if module_str == "remote_device":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_REMOTE_DEVICE)
+    elif module_str == "system":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_SYSTEM)
+    elif module_str == "interface":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_INTERFACE)
+    elif module_str == "local_device":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_LOCAL_DEVICE)
+    elif module_str == "stream":
+        return msg.FeatureModule(id=msg.FeatureModule.MODULE_STREAM)

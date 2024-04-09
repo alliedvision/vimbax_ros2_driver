@@ -150,33 +150,25 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t cameraHandl
     get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
     camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
 
-  VmbUint32_t feature_list_size{};
+  initialize_feature_map(Module::System);
+  initialize_feature_map(Module::Interface);
+  initialize_feature_map(Module::LocalDevice);
+  initialize_feature_map(Module::RemoteDevice);
+  initialize_feature_map(Module::Stream);
 
-  api_->FeaturesList(camera_handle_, nullptr, 0, &feature_list_size, 0);
 
-  std::vector<VmbFeatureInfo_t> feature_list{};
-  feature_list.resize(feature_list_size);
-
-  api_->FeaturesList(
-    camera_handle_, feature_list.data(), feature_list.size(),
-    &feature_list_size, sizeof(VmbFeatureInfo_t));
-
-  for (auto const & info : feature_list) {
-    feature_info_map_.emplace(info.name, info);
-    feature_category_map_.emplace(info.category, info.name);
-  }
-
-  if (has_feature(SFNCFeatures::DeviceTimestampFrequency)) {
+  if (has_feature(SFNCFeatures::DeviceTimestampFrequency, Module::LocalDevice)) {
+    auto const handle = get_module_handle(Module::LocalDevice);
     auto const timestamp_frequency =
-      feature_int_get(SFNCFeatures::DeviceTimestampFrequency, camera_info_.localDeviceHandle);
+      feature_int_get(SFNCFeatures::DeviceTimestampFrequency, handle);
 
     if (timestamp_frequency) {
       timestamp_frequency_ = *timestamp_frequency;
     }
   }
 
-  if (has_feature(SFNCFeatures::GVSPAdjustPacketSize)) {
-    feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, camera_info_.streamHandles[0]);
+  if (has_feature(SFNCFeatures::GVSPAdjustPacketSize, Module::Stream)) {
+    feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, get_module_handle(Module::Stream));
   }
 }
 
@@ -192,6 +184,51 @@ VimbaXCamera::~VimbaXCamera()
   }
 }
 
+void VimbaXCamera::initialize_feature_map(Module module)
+{
+  auto const handle = get_module_handle(module);
+  VmbUint32_t feature_list_size{};
+
+  api_->FeaturesList(handle, nullptr, 0, &feature_list_size, 0);
+
+  std::vector<VmbFeatureInfo_t> feature_list{};
+  feature_list.resize(feature_list_size);
+
+  api_->FeaturesList(
+    handle, feature_list.data(), feature_list.size(),
+    &feature_list_size, sizeof(VmbFeatureInfo_t));
+
+  for (auto const & info : feature_list) {
+    feature_info_map_[std::size_t(module)].emplace(info.name, info);
+    feature_category_map_[std::size_t(module)].emplace(info.category, info.name);
+  }
+}
+
+constexpr VmbHandle_t VimbaXCamera::get_module_handle(Module module) const
+{
+  switch (module) {
+    case Module::System:
+      return camera_info_.transportLayerHandle;
+    case Module::Interface:
+      return camera_info_.interfaceHandle;
+    case Module::LocalDevice:
+      return camera_info_.localDeviceHandle;
+    case Module::RemoteDevice:
+      return camera_handle_;
+    case Module::Stream:
+      return camera_info_.streamHandles[0];
+    default:
+      break;
+  }
+
+  return nullptr;
+}
+
+VmbFeatureInfo VimbaXCamera::get_feature_info(const std::string & name, Module module) const
+{
+  return feature_info_map_[std::size_t(module)].at(name);
+}
+
 bool VimbaXCamera::is_alive() const
 {
   VmbCameraInfo camera_info{};
@@ -201,9 +238,9 @@ bool VimbaXCamera::is_alive() const
   return (err == VmbErrorNotFound) ? false : true;
 }
 
-bool VimbaXCamera::has_feature(const std::string_view & name) const
+bool VimbaXCamera::has_feature(const std::string_view & name, Module module) const
 {
-  if (auto search = feature_info_map_.find(name.data()); search != feature_info_map_.end()) {
+  if (feature_info_map_[std::size_t(module)].count(name.data())) {
     return true;
   }
 
@@ -356,52 +393,34 @@ result<VmbCameraInfo> VimbaXCamera::query_camera_info() const
   return cameraInfo;
 }
 
-result<std::vector<std::string>> VimbaXCamera::features_list_get(void) const
+result<std::vector<std::string>> VimbaXCamera::features_list_get(Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s", __FUNCTION__);
 
-  std::vector<std::string> feature_list;
-  uint32_t feature_count{};
-  auto err =
-    api_->FeaturesList(camera_handle_, nullptr, 0, &feature_count, sizeof(VmbFeatureInfo_t));
+  std::vector<std::string> feature_list{};
 
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-      vmb_error_to_string(err).data());
-    return error{err};
-  }
+  auto const & feature_map = feature_info_map_[std::size_t(module)];
 
-  VmbFeatureInfo_t * features =
-    static_cast<VmbFeatureInfo_t *>(malloc(feature_count * sizeof(VmbFeatureInfo_t)));
-
-  err = api_->FeaturesList(
-    camera_handle_, features, feature_count, &feature_count, sizeof(VmbFeatureInfo_t));
-
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-      vmb_error_to_string(err).data());
-    return error{err};
-  }
-
-  for (uint32_t count = 0; count < feature_count; count++) {
-    feature_list.push_back(std::string(features[count].name));
-  }
-
-  free(features);
-  features = nullptr;
+  std::transform(
+    feature_map.begin(), feature_map.end(), std::back_insert_iterator(feature_list),
+    [](auto feature_info) {
+      return feature_info.first;
+    });
 
   return feature_list;
 }
 
-result<bool> VimbaXCamera::feature_command_is_done(const std::string_view & name) const
+result<bool> VimbaXCamera::feature_command_is_done(
+  const std::string_view & name,
+  Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s(%s)", __FUNCTION__, name.data());
 
+  auto const handle = get_module_handle(module);
+
   bool value{};
   auto const err =
-    api_->FeatureCommandIsDone(camera_handle_, name.data(), reinterpret_cast<bool *>(&value));
+    api_->FeatureCommandIsDone(handle, name.data(), reinterpret_cast<bool *>(&value));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -415,9 +434,10 @@ result<bool> VimbaXCamera::feature_command_is_done(const std::string_view & name
 
 result<void> VimbaXCamera::feature_command_run(
   const std::string_view & name,
-  const std::optional<std::chrono::milliseconds> & timeout) const
+  const std::optional<std::chrono::milliseconds> & timeout,
+  const Module module) const
 {
-  return feature_command_run(name, camera_handle_, timeout);
+  return feature_command_run(name, get_module_handle(module), timeout);
 }
 
 result<void> VimbaXCamera::feature_command_run(
@@ -461,14 +481,16 @@ result<void> VimbaXCamera::feature_command_run(
   return {};
 }
 
-result<int64_t> VimbaXCamera::feature_int_get(const std::string_view & name) const
+result<int64_t> VimbaXCamera::feature_int_get(
+  const std::string_view & name,
+  const Module module) const
 {
-  return feature_int_get(name, camera_handle_);
+  return feature_int_get(name, get_module_handle(module));
 }
 
 result<int64_t> VimbaXCamera::feature_int_get(
   const std::string_view & name,
-  VmbHandle_t handle) const
+  const VmbHandle_t handle) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
@@ -486,12 +508,17 @@ result<int64_t> VimbaXCamera::feature_int_get(
   return value;
 }
 
-result<void> VimbaXCamera::feature_int_set(const std::string_view & name, const int64_t value) const
+result<void> VimbaXCamera::feature_int_set(
+  const std::string_view & name,
+  const int64_t value,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', %ld)", __FUNCTION__, name.data(), value);
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureIntSet(camera_handle_, name.data(), value);
+    api_->FeatureIntSet(handle, name.data(), value);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -504,15 +531,19 @@ result<void> VimbaXCamera::feature_int_set(const std::string_view & name, const 
 }
 
 result<std::array<int64_t, 3>>
-VimbaXCamera::feature_int_info_get(const std::string_view & name) const
+VimbaXCamera::feature_int_info_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
   std::array<int64_t, 3> value;
 
+  auto const handle = get_module_handle(module);
+
   auto err =
     api_->FeatureIntRangeQuery(
-    camera_handle_,
+    handle,
     name.data(),
     reinterpret_cast<VmbInt64_t *>(&value[0]),
     reinterpret_cast<VmbInt64_t *>(&value[1]));
@@ -526,7 +557,7 @@ VimbaXCamera::feature_int_info_get(const std::string_view & name) const
 
   err =
     api_->FeatureIntIncrementQuery(
-    camera_handle_,
+    handle,
     name.data(),
     reinterpret_cast<VmbInt64_t *>(&value[2]));
 
@@ -540,9 +571,11 @@ VimbaXCamera::feature_int_info_get(const std::string_view & name) const
   return value;
 }
 
-result<_Float64> VimbaXCamera::feature_float_get(const std::string_view & name) const
+result<_Float64> VimbaXCamera::feature_float_get(
+  const std::string_view & name,
+  const Module module) const
 {
-  return feature_float_get(name, camera_handle_);
+  return feature_float_get(name, get_module_handle(module));
 }
 
 result<_Float64> VimbaXCamera::feature_float_get(
@@ -565,12 +598,17 @@ result<_Float64> VimbaXCamera::feature_float_get(
 }
 
 result<void>
-VimbaXCamera::feature_float_set(const std::string_view & name, const _Float64 value) const
+VimbaXCamera::feature_float_set(
+  const std::string_view & name,
+  const _Float64 value,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', %lf)", __FUNCTION__, name.data(), value);
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureFloatSet(camera_handle_, name.data(), value);
+    api_->FeatureFloatSet(handle, name.data(), value);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -582,15 +620,19 @@ VimbaXCamera::feature_float_set(const std::string_view & name, const _Float64 va
   return {};
 }
 
-result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::string_view & name) const
+result<feature_float_info> VimbaXCamera::feature_float_info_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  auto const handle = get_module_handle(module);
 
   feature_float_info info{};
 
   auto err =
     api_->FeatureFloatRangeQuery(
-    camera_handle_,
+    handle,
     name.data(),
     reinterpret_cast<double *>(&info.min),
     reinterpret_cast<double *>(&info.max));
@@ -604,7 +646,7 @@ result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::strin
 
   err =
     api_->FeatureFloatIncrementQuery(
-    camera_handle_,
+    handle,
     name.data(),
     &info.inc_available,
     reinterpret_cast<double *>(&info.inc));
@@ -619,9 +661,11 @@ result<feature_float_info> VimbaXCamera::feature_float_info_get(const std::strin
   return info;
 }
 
-result<std::string> VimbaXCamera::feature_string_get(const std::string_view & name) const
+result<std::string> VimbaXCamera::feature_string_get(
+  const std::string_view & name,
+  const Module module) const
 {
-  return feature_string_get(name, camera_handle_);
+  return feature_string_get(name, get_module_handle(module));
 }
 
 result<std::string> VimbaXCamera::feature_string_get(
@@ -663,11 +707,17 @@ result<std::string> VimbaXCamera::feature_string_get(
 }
 
 result<void>
-VimbaXCamera::feature_string_set(const std::string_view & name, const std::string_view value) const
+VimbaXCamera::feature_string_set(
+  const std::string_view & name,
+  const std::string_view value,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', '%s')", __FUNCTION__, name.data(), value.data());
+
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureStringSet(camera_handle_, name.data(), value.data());
+    api_->FeatureStringSet(handle, name.data(), value.data());
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -679,15 +729,19 @@ VimbaXCamera::feature_string_set(const std::string_view & name, const std::strin
   return {};
 }
 
-result<uint32_t> VimbaXCamera::feature_string_info_get(const std::string_view & name) const
+result<uint32_t> VimbaXCamera::feature_string_info_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  auto const handle = get_module_handle(module);
 
   uint32_t value{};
 
   auto err =
     api_->FeatureStringMaxlengthQuery(
-    camera_handle_,
+    handle,
     name.data(),
     reinterpret_cast<VmbUint32_t *>(&value));
 
@@ -701,13 +755,17 @@ result<uint32_t> VimbaXCamera::feature_string_info_get(const std::string_view & 
   return value;
 }
 
-result<bool> VimbaXCamera::feature_bool_get(const std::string_view & name) const
+result<bool> VimbaXCamera::feature_bool_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
+  auto const handle = get_module_handle(module);
+
   bool value{};
   auto const err =
-    api_->FeatureBoolGet(camera_handle_, name.data(), reinterpret_cast<bool *>(&value));
+    api_->FeatureBoolGet(handle, name.data(), reinterpret_cast<bool *>(&value));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -719,12 +777,17 @@ result<bool> VimbaXCamera::feature_bool_get(const std::string_view & name) const
   return value;
 }
 
-result<void> VimbaXCamera::feature_bool_set(const std::string_view & name, const bool value) const
+result<void> VimbaXCamera::feature_bool_set(
+  const std::string_view & name,
+  const bool value,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', %d)", __FUNCTION__, name.data(), value);
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureBoolSet(camera_handle_, name.data(), value);
+    api_->FeatureBoolSet(handle, name.data(), value);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -736,9 +799,11 @@ result<void> VimbaXCamera::feature_bool_set(const std::string_view & name, const
   return {};
 }
 
-result<std::string> VimbaXCamera::feature_enum_get(const std::string_view & name) const
+result<std::string> VimbaXCamera::feature_enum_get(
+  const std::string_view & name,
+  const Module module) const
 {
-  return feature_enum_get(name, camera_handle_);
+  return feature_enum_get(name, get_module_handle(module));
 }
 
 result<std::string> VimbaXCamera::feature_enum_get(
@@ -761,12 +826,17 @@ result<std::string> VimbaXCamera::feature_enum_get(
 }
 
 result<void>
-VimbaXCamera::feature_enum_set(const std::string_view & name, const std::string_view & value) const
+VimbaXCamera::feature_enum_set(
+  const std::string_view & name,
+  const std::string_view & value,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', '%s')", __FUNCTION__, name.data(), value.data());
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureEnumSet(camera_handle_, name.data(), value.data());
+    api_->FeatureEnumSet(handle, name.data(), value.data());
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -779,16 +849,20 @@ VimbaXCamera::feature_enum_set(const std::string_view & name, const std::string_
 }
 
 result<std::array<std::vector<std::string>, 2>>
-VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
+VimbaXCamera::feature_enum_info_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  auto const handle = get_module_handle(module);
 
   uint32_t numFound{};
   bool available{false};
   std::array<std::vector<std::string>, 2> values;  // 0: possibleValues, 1: availableValues
 
   auto err =
-    api_->FeatureEnumRangeQuery(camera_handle_, name.data(), nullptr, 0, &numFound);
+    api_->FeatureEnumRangeQuery(handle, name.data(), nullptr, 0, &numFound);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -800,7 +874,7 @@ VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
   std::vector<const char *> enumEntries(numFound);
 
   err =
-    api_->FeatureEnumRangeQuery(camera_handle_, name.data(), &enumEntries[0], numFound, &numFound);
+    api_->FeatureEnumRangeQuery(handle, name.data(), &enumEntries[0], numFound, &numFound);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -813,7 +887,7 @@ VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
     values[0].push_back(std::string(entry));
 
     err =
-      api_->FeatureEnumIsAvailable(camera_handle_, name.data(), entry, &available);
+      api_->FeatureEnumIsAvailable(handle, name.data(), entry, &available);
 
     if (err == VmbErrorSuccess && available) {
       values[1].push_back(std::string(entry));
@@ -825,14 +899,19 @@ VimbaXCamera::feature_enum_info_get(const std::string_view & name) const
 
 result<int64_t> VimbaXCamera::feature_enum_as_int_get(
   const std::string_view & name,
-  const std::string_view & option) const
+  const std::string_view & option,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', '%s')", __FUNCTION__, name.data(), option.data());
+
+  auto const handle = get_module_handle(module);
 
   int64_t value{-1};
 
   auto const err = api_->FeatureEnumAsInt(
-    camera_handle_, name.data(), option.data(),
+    handle,
+    name.data(),
+    option.data(),
     reinterpret_cast<VmbInt64_t *>(&value));
 
   if (err != VmbErrorSuccess) {
@@ -848,15 +927,22 @@ result<int64_t> VimbaXCamera::feature_enum_as_int_get(
 }
 
 result<std::string>
-VimbaXCamera::feature_enum_as_string_get(const std::string_view & name, const int64_t value) const
+VimbaXCamera::feature_enum_as_string_get(
+  const std::string_view & name,
+  const int64_t value,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', %ld)", __FUNCTION__, name.data(), value);
+
+  auto const handle = get_module_handle(module);
 
   std::string option;
   const char * stringValue;
 
   auto const err = api_->FeatureEnumAsString(
-    camera_handle_, name.data(), value,
+    handle,
+    name.data(),
+    value,
     reinterpret_cast<const char **>(&stringValue));
 
   if (err != VmbErrorSuccess) {
@@ -873,15 +959,19 @@ VimbaXCamera::feature_enum_as_string_get(const std::string_view & name, const in
 }
 
 result<std::vector<unsigned char>>
-VimbaXCamera::feature_raw_get(const std::string_view & name) const
+VimbaXCamera::feature_raw_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  auto const handle = get_module_handle(module);
 
   uint32_t length{};
   uint32_t size_filled{};
 
   auto err =
-    api_->FeatureRawLengthQuery(camera_handle_, name.data(), &length);
+    api_->FeatureRawLengthQuery(handle, name.data(), &length);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -893,7 +983,7 @@ VimbaXCamera::feature_raw_get(const std::string_view & name) const
   std::vector<unsigned char> buffer(length);
   err =
     api_->FeatureRawGet(
-    camera_handle_,
+    handle,
     name.data(),
     reinterpret_cast<char *>(&buffer[0]),
     length,
@@ -911,14 +1001,17 @@ VimbaXCamera::feature_raw_get(const std::string_view & name) const
 
 result<void> VimbaXCamera::feature_raw_set(
   const std::string_view & name,
-  const std::vector<uint8_t> buffer) const
+  const std::vector<uint8_t> buffer,
+  const Module module) const
 {
   RCLCPP_DEBUG(
     get_logger(), "%s('%s', buffer.size()=%ld)", __FUNCTION__, name.data(), buffer.size());
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
     api_->FeatureRawSet(
-    camera_handle_,
+    handle,
     name.data(),
     reinterpret_cast<const char *>(buffer.data()),
     static_cast<uint32_t>(buffer.size()));
@@ -933,14 +1026,18 @@ result<void> VimbaXCamera::feature_raw_set(
   return {};
 }
 
-result<uint32_t> VimbaXCamera::feature_raw_info_get(const std::string_view & name) const
+result<uint32_t> VimbaXCamera::feature_raw_info_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  auto const handle = get_module_handle(module);
 
   uint32_t value{};
 
   auto err =
-    api_->FeatureRawLengthQuery(camera_handle_, name.data(), &value);
+    api_->FeatureRawLengthQuery(handle, name.data(), &value);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -953,14 +1050,18 @@ result<uint32_t> VimbaXCamera::feature_raw_info_get(const std::string_view & nam
 }
 
 result<std::array<bool, 2>>
-VimbaXCamera::feature_access_mode_get(const std::string_view & name) const
+VimbaXCamera::feature_access_mode_get(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
   std::array<bool, 2> value;
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureAccessQuery(camera_handle_, name.data(), &value[0], &value[1]);
+    api_->FeatureAccessQuery(handle, name.data(), &value[0], &value[1]);
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -973,9 +1074,14 @@ VimbaXCamera::feature_access_mode_get(const std::string_view & name) const
 }
 
 result<std::vector<feature_info>>
-VimbaXCamera::feature_info_query_list(const std::vector<std::string> & names) const
+VimbaXCamera::feature_info_query_list(
+  const std::vector<std::string> & names,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s", __FUNCTION__);
+
+  auto const handle = get_module_handle(module);
+
   std::vector<feature_info> infos;
 
   for (auto name : names) {
@@ -983,7 +1089,7 @@ VimbaXCamera::feature_info_query_list(const std::vector<std::string> & names) co
     feature_info info{};
 
     auto const err =
-      api_->FeatureInfoQuery(camera_handle_, name.data(), &featureInfo, sizeof(featureInfo));
+      api_->FeatureInfoQuery(handle, name.data(), &featureInfo, sizeof(featureInfo));
 
     if (err != VmbErrorSuccess) {
       RCLCPP_ERROR(
@@ -1041,13 +1147,17 @@ result<VmbPixelFormatType> VimbaXCamera::get_pixel_format() const
   return static_cast<VmbPixelFormatType>(*currentFormat);
 }
 
-result<VmbFeatureInfo> VimbaXCamera::feature_info_query(const std::string_view & name) const
+result<VmbFeatureInfo> VimbaXCamera::feature_info_query(
+  const std::string_view & name,
+  const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s", __FUNCTION__);
   VmbFeatureInfo featureInfo{};
 
+  auto const handle = get_module_handle(module);
+
   auto const err =
-    api_->FeatureInfoQuery(camera_handle_, name.data(), &featureInfo, sizeof(featureInfo));
+    api_->FeatureInfoQuery(handle, name.data(), &featureInfo, sizeof(featureInfo));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -1292,12 +1402,13 @@ VimbaXCamera::get_event_meta_data(const std::string_view & name)
 {
   auto const category_path = "/EventControl/EventsData/Event" + std::string{name} + "Data";
 
-  auto const & [start, end] = feature_category_map_.equal_range(category_path);
+  auto const & [start, end] =
+    feature_category_map_[std::size_t(Module::RemoteDevice)].equal_range(category_path);
 
   EventMetaDataList meta_data_list{};
 
   for (auto it = start; it != end; it++) {
-    auto const info = feature_info_map_.at(it->second);
+    auto const info = get_feature_info(it->second);
     switch (info.featureDataType) {
       case VmbFeatureDataInt:
         {
