@@ -17,6 +17,7 @@ from rclpy.node import Node
 from rclpy.qos_event import SubscriptionEventCallbacks
 import rclpy.executors
 import signal
+from .helper import build_topic_path
 
 import argparse
 
@@ -64,10 +65,8 @@ def main():
         if args.count > 0 and frames_recv >= args.count:
             stop_future.set_result(None)
 
-    namespace = args.node_namespace.strip("/")
-    topic: str = "/image_raw"
-    if len(namespace) != 0:
-        topic = f"/{namespace}/image_raw"
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, 'image_raw')
 
     def on_message_lost(message_lost_status):
         global lost_frames

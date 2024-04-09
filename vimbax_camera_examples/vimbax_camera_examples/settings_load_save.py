@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
 import argparse
-from .helper import single_service_call
+from .helper import single_service_call, build_topic_path
 
 
 def main():
@@ -33,10 +33,8 @@ def main():
 
     service_type = vimbax_camera_msgs.srv.SettingsLoadSave
 
-    namespace = args.node_namespace.strip("/")
-    topic: str = f"/settings/{args.operation}"
-    if len(namespace) != 0:
-        topic = f"/{namespace}/{topic.strip('/')}"
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, f'/settings/{args.operation}')
 
     request = service_type.Request()
     request.filename = args.filename

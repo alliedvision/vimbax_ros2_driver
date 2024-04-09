@@ -16,6 +16,7 @@ import rclpy
 from rclpy.node import Node
 import cv2
 import cv_bridge
+from .helper import build_topic_path
 
 from asyncio import Future
 
@@ -37,7 +38,7 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
+    parser.add_argument("node_namespace")
 
     (args, rosargs) = parser.parse_known_args()
 
@@ -48,11 +49,12 @@ def main():
     bridge = cv_bridge.CvBridge()
 
     def on_frame(msg: Image):
-        mat = bridge.imgmsg_to_cv2(msg, 'rgb8')
+        mat = bridge.imgmsg_to_cv2(msg, "rgb8")
         cv2.imshow("frame", mat)
         if cv2.waitKey(1) == 0x1B:
             stop_future.set_result(None)
 
-    node.create_subscription(Image, f"{args.node_name}/image_raw", on_frame, 10)
+    topic = build_topic_path(args.node_namespace, "image_raw")
+    node.create_subscription(Image, topic, on_frame, 10)
 
     rclpy.spin_until_future_complete(node, stop_future)

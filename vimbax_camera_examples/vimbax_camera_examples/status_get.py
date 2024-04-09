@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
 import argparse
-from .helper import single_service_call
+from .helper import single_service_call, build_topic_path
 
 
 def main():
@@ -31,10 +31,8 @@ def main():
 
     service_type = vimbax_camera_msgs.srv.Status
 
-    namespace = args.node_namespace.strip("/")
-    topic: str = "/status"
-    if len(namespace) != 0:
-        topic = f"/{namespace}/{topic.strip('/')}"
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, "/status")
 
     request = service_type.Request()
     response = single_service_call(node, service_type, topic, request)

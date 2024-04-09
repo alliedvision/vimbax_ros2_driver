@@ -15,6 +15,7 @@
 import rclpy
 from rclpy.node import Node
 import argparse
+from .helper import build_topic_path
 
 from vimbax_camera_events.event_subscriber import EventSubscriber, EventSubscribeException
 from vimbax_camera_msgs.msg import EventData
@@ -31,10 +32,9 @@ def main():
 
     node = Node("vimbax_feature_command_execute_example")
 
-    namespace: str = args.node_namespace.strip("/")
-    topic = "/events"
-    if len(namespace) > 0:
-        topic = f"/{namespace}/events"
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, '/events')
+
     event_subscriber = EventSubscriber(EventData, node, topic)
 
     def print_event_data(event):

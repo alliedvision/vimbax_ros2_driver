@@ -120,3 +120,12 @@ def get_module_from_string(module_str):
         return msg.FeatureModule(id=msg.FeatureModule.MODULE_LOCAL_DEVICE)
     elif module_str == "stream":
         return msg.FeatureModule(id=msg.FeatureModule.MODULE_STREAM)
+
+
+def build_topic_path(namespace: str, topic: str):
+    """Build topic path and handle root namespace."""
+    namespace = namespace.strip("/")
+    topic: str = f"/{topic.strip('/')}"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/{topic.strip('/')}"
+    return topic

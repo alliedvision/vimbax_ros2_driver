@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
 import argparse
-from .helper import single_service_call, get_module_from_string
+from .helper import single_service_call, get_module_from_string, build_topic_path
 
 
 def main():
@@ -39,10 +39,8 @@ def main():
 
     feature_service_type = vimbax_camera_msgs.srv.FeatureCommandRun
 
-    namespace: str = args.node_namespace.strip("/")
-    topic = "/features/command_run"
-    if len(namespace) > 0:
-        topic = f"/{namespace}/features/command_run"
+    # Build topic path from namespace and topic name
+    topic = build_topic_path(args.node_namespace, '/features/command_run')
 
     request = feature_service_type.Request()
     request.feature_name = args.feature_name

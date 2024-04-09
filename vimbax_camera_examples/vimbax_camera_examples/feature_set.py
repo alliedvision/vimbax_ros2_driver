@@ -16,7 +16,12 @@ import rclpy
 from rclpy.node import Node
 
 import argparse
-from .helper import single_service_call, feature_type_dict, get_module_from_string
+from .helper import (
+    single_service_call,
+    feature_type_dict,
+    get_module_from_string,
+    build_topic_path,
+)
 
 
 def main():
@@ -25,13 +30,13 @@ def main():
     parser.add_argument("feature_type", choices=feature_type_dict.keys())
     parser.add_argument("feature_name")
     parser.add_argument("feature_value")
-    parser.add_argument("-m", "--module", choices=[
-        "remote_device",
-        "system",
-        "interface",
-        "local_device",
-        "stream"
-    ], default="remote_device", dest="module")
+    parser.add_argument(
+        "-m",
+        "--module",
+        choices=["remote_device", "system", "interface", "local_device", "stream"],
+        default="remote_device",
+        dest="module",
+    )
 
     (args, rosargs) = parser.parse_known_args()
 
@@ -41,18 +46,14 @@ def main():
 
     feature_type = feature_type_dict[args.feature_type]
 
-    namespace = args.node_namespace.strip("/")
-    topic: str = f"/{feature_type.service_base_path}_set"
-    if len(namespace) != 0:
-        topic = f"/{namespace}/{feature_type.service_base_path}_set"
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, f"/{feature_type.service_base_path}_set")
 
     request = feature_type.set_service_type.Request()
     request.feature_name = args.feature_name
     request.value = feature_type_dict[args.feature_type].value_type(args.feature_value)
     request.feature_module = get_module_from_string(args.module)
-    response = single_service_call(node, feature_type.set_service_type,
-                                   topic,
-                                   request)
+    response = single_service_call(node, feature_type.set_service_type, topic, request)
 
     if response.error.code == 0:
         print(f"Changed feature {args.feature_name} to {args.feature_value}")

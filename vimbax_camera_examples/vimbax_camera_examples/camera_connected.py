@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
 import argparse
-from .helper import single_service_call
+from .helper import single_service_call, build_topic_path
 
 
 def main():
@@ -29,10 +29,8 @@ def main():
 
     node = Node("_connected_get")
 
-    namespace = args.node_namespace.strip("/")
-    topic: str = "/connected"
-    if len(namespace) != 0:
-        topic = f"/{namespace}/connected"
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, '/connected')
 
     service_type = vimbax_camera_msgs.srv.ConnectionStatus
 
