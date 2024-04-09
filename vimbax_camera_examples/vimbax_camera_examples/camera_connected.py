@@ -29,10 +29,15 @@ def main():
 
     node = Node("_connected_get")
 
+    namespace = args.node_namespace.strip("/")
+    topic: str = "/connected"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/connected"
+
     service_type = vimbax_camera_msgs.srv.ConnectionStatus
 
     request = service_type.Request()
-    response = single_service_call(node, service_type, f"{args.node_namespace}/connected", request)
+    response = single_service_call(node, service_type, topic, request)
 
     if response.connected:
         print("Camera is connected!")

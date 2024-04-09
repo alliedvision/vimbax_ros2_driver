@@ -32,7 +32,12 @@ def main():
 
     service_type = vimbax_camera_msgs.srv.ConnectionStatus
 
-    client = node.create_client(service_type, f"{args.node_namespace}/connected")
+    namespace = args.node_namespace.strip("/")
+    topic: str = "/connected"
+    if len(namespace) != 0:
+        topic = f"/{namespace}/connected"
+
+    client = node.create_client(service_type, topic)
 
     if not client.wait_for_service(120.0):
         print("Service got not ready in time")
