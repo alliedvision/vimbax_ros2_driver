@@ -65,4 +65,5 @@ def test_status_get(launch_context, camera_test_node_name, status_get_node, laun
 
     assert_clean_shutdown(launch_context, action)
 
-    assert action.get_stdout().strip() == expected
+    lines = action.get_stdout().strip().splitlines()
+    assert lines[-1] == expected

@@ -16,26 +16,36 @@ import rclpy
 from rclpy.node import Node
 import argparse
 import vimbax_camera_msgs.srv
-from .helper import single_service_call, get_module_from_string
+from .helper import single_service_call, get_module_from_string, build_topic_path
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_name")
-    parser.add_argument("-m", "--module", choices=[
-        "remote_device",
-        "system",
-        "interface",
-        "local_device",
-        "stream"
-    ], default="remote_device", dest="module")
+    parser.add_argument("node_namespace")
+    parser.add_argument(
+        "-m",
+        "--module",
+        choices=["remote_device", "system", "interface", "local_device", "stream"],
+        default="remote_device",
+        dest="module",
+    )
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    type_names = ["Unknown", "Int", "Float", "Enum", "String", "Bool", "Command",
-                  "Raw", "None", "?"]
+    type_names = [
+        "Unknown",
+        "Int",
+        "Float",
+        "Enum",
+        "String",
+        "Bool",
+        "Command",
+        "Raw",
+        "None",
+        "?",
+    ]
 
     def print_info_data(info):
         for entry in info.feature_info:
@@ -53,14 +63,16 @@ def main():
             print(f"   flag_volatile: {entry.flags.flag_volatile}")
             print(f"   flag_modify_write: {entry.flags.flag_modify_write}")
 
-    node = Node("_feature_info_query")
+    node = Node("vimbax_feature_info_query_example")
 
     service_type = vimbax_camera_msgs.srv.FeatureInfoQuery
 
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, "/feature_info_query")
+
     request = service_type.Request()
     request.feature_module = get_module_from_string(args.module)
-    response = single_service_call(
-        node, service_type, f"{args.node_name}/feature_info_query", request)
+    response = single_service_call(node, service_type, topic, request)
 
     if response.error.code == 0:
         print_info_data(response)
