@@ -18,6 +18,7 @@ from typing import List
 
 from vimbax_camera_msgs.msg import Error
 from vimbax_camera_msgs.msg import FeatureInfo
+from vimbax_camera_msgs.msg import FeatureModule
 
 from vimbax_camera_msgs.srv import FeatureAccessModeGet
 
@@ -34,10 +35,7 @@ class FeatureDataType(Enum):
     NONE = 8
 
 
-sfnc_namespaces = [
-    "Standard",
-    "Custom"
-]
+sfnc_namespaces = ["Standard", "Custom"]
 
 features_ignore_map = {
     FeatureDataType.INT.value: [],
@@ -54,8 +52,16 @@ def check_error(error: Error):
     assert error.code == 0, f"Unexpected error {error.code} ({error.text})"
 
 
-def ensure_access_mode(service, name, readable: bool = True, writeable: bool = True) -> bool:
-    response = service.call(FeatureAccessModeGet.Request(feature_name=name))
+def ensure_access_mode(
+    service, name, readable: bool = True, writeable: bool = True, module: FeatureModule = None
+) -> bool:
+
+    if module is None:
+        response = service.call(FeatureAccessModeGet.Request(feature_name=name))
+    else:
+        response = service.call(
+            FeatureAccessModeGet.Request(feature_name=name, feature_module=module)
+        )
 
     check_error(response.error)
 
@@ -77,14 +83,20 @@ def check_feature_info(feature_info: FeatureInfo):
     assert feature_info.data_type > 0 and feature_info.data_type < 9
 
 
-def filter_features(features: List[FeatureInfo], acces_mode_service, type: FeatureDataType,
-                    readable: bool = True, writeable: bool = True):
+def filter_features(
+    features: List[FeatureInfo],
+    acces_mode_service,
+    type: FeatureDataType,
+    readable: bool = True,
+    writeable: bool = True,
+):
     def check(feature: FeatureInfo):
         return (
             feature.data_type == type.value
             and feature.name not in features_ignore_map[feature.data_type]
             and ensure_access_mode(
-                acces_mode_service, feature.name, readable=readable, writeable=writeable)
+                acces_mode_service, feature.name, readable=readable, writeable=writeable
+            )
         )
 
     return [feat for feat in features if check(feat)]
