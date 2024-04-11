@@ -20,6 +20,7 @@
 
 #include <vimbax_camera_msgs/msg/event_data.hpp>
 
+#include "example_helper.hpp"
 
 int main(int argc, char * argv[])
 {
@@ -32,10 +33,12 @@ int main(int argc, char * argv[])
 
   auto node = rclcpp::Node::make_shared("_event_viewer");
 
+  auto topic = build_topic_path(args[1], "/events");
+
   auto event_subscriber =
     vimbax_camera_events::EventSubscriber<vimbax_camera_msgs::msg::EventData>::make_shared(
     node,
-    "/" + args[1] + "/events"
+    topic
     );
 
 

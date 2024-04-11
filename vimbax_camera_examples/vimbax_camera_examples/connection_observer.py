@@ -50,18 +50,21 @@ def main():
 
     was_connected = response.connected
 
-    while rclpy.ok():
-        request = service_type.Request()
-        future = client.call_async(request)
-        rclpy.spin_until_future_complete(node, future)
+    try:
+        while rclpy.ok():
+            request = service_type.Request()
+            future = client.call_async(request)
+            rclpy.spin_until_future_complete(node, future)
 
-        response = future.result()
+            response = future.result()
 
-        if response.connected and not was_connected:
-            print("Camera connect!")
-        elif not response.connected and was_connected:
-            print("Camera disconnect!")
+            if response.connected and not was_connected:
+                print("Camera connect!")
+            elif not response.connected and was_connected:
+                print("Camera disconnect!")
 
-        was_connected = response.connected
+            was_connected = response.connected
 
-        sleep(0.5)
+            sleep(0.5)
+    except KeyboardInterrupt:
+        pass

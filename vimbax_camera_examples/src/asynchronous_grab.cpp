@@ -19,13 +19,15 @@
 
 #include <image_transport/image_transport.hpp>
 
+#include "example_helper.hpp"
+
 
 int main(int argc, char * argv[])
 {
   auto const args = rclcpp::init_and_remove_ros_arguments(argc, argv);
 
   if (args.size() < 2) {
-    std::cout << "Usage asynchronous_grab_cpp <vimbax camera node name>" << std::endl;
+    std::cout << "Usage asynchronous_grab_cpp <vimbax camera node namespace>" << std::endl;
     return 1;
   }
 
@@ -35,7 +37,7 @@ int main(int argc, char * argv[])
   int64_t frame_complete = 0;
   std::chrono::nanoseconds last_timestamp{0};
 
-  auto const topic_name = "/" + args[1] + "/image_raw";
+  auto const topic_name = build_topic_path(args[1], "/image_raw");
 
   auto subscription_options = rclcpp::SubscriptionOptions();
   subscription_options.event_callbacks.message_lost_callback =
