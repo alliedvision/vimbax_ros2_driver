@@ -54,7 +54,7 @@ def camera_node_without_autostream(camera_test_node_name):
     """Launch the vimbax_camera_node."""
     return launch.LaunchDescription(
         [
-            actions.Node( t
+            actions.Node(
                 package="vimbax_camera",
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
