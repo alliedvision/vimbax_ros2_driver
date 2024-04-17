@@ -27,6 +27,8 @@ from vimbax_camera_msgs.srv import StreamStartStop
 from vimbax_camera_msgs.srv import Status
 from sensor_msgs.msg import Image
 
+from conftest import TestNode
+
 import time
 
 
@@ -69,11 +71,11 @@ def camera_node_without_autostream(camera_test_node_name):
     )
 
 
-class StreamAutostreamTestNode(Node):
+class StreamAutostreamTestNode(TestNode):
     """Custom ROS2 Node to make testing easier."""
 
     def __init__(self, name: str, cam_node_name: str, timeout_sec: float = 10.0):
-        super().__init__(name)
+        super().__init__(name, cam_node_name)
         self.__camera_node_name = cam_node_name
         self.__rcl_timeout_sec = float(timeout_sec)
         self.__stream_start_srv: Service = self.create_client(
@@ -85,42 +87,19 @@ class StreamAutostreamTestNode(Node):
         self.__status_srv: Service = self.create_client(
             srv_type=Status, srv_name=f"/{cam_node_name}/status"
         )
-        self.__image_future: Future = Future()
-        self.__image_sub: Subscription = None
 
         assert self.__stream_start_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
         assert self.__stream_stop_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
         assert self.__status_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
 
     def __call_service_sync(self, srv: Service, request):
-        future = srv.call_async(request)
-        rclpy.spin_until_future_complete(
-            node=self, future=future, timeout_sec=self.__rcl_timeout_sec
-        )
-        return future.result()
+        return srv.call(request)
 
     def subscribe(self):
-
-        assert self.__image_sub is None, "Error: already subscribed to image topic"
-
-        self.__image_sub: Subscription = self.create_subscription(
-            Image,
-            f"/{self.__camera_node_name}/image_raw",
-            lambda msg: self.__image_future.set_result(msg),
-            0,
-        )
-
-        assert self.__image_sub is not None
+        self.subscribe_image_raw()
 
     def unsubscribe(self):
-
-        assert (
-            self.__image_sub is not None
-        ), "Error: you need to call subscribe before unsubscribing"
-
-        assert self.destroy_subscription(self.__image_sub)
-
-        self.__image_sub = None
+        self.unsubscribe_image_raw()
 
     def stop_stream(self) -> StreamStartStop.Response:
         return self.__call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
@@ -135,14 +114,7 @@ class StreamAutostreamTestNode(Node):
 
     def get_latest_image(self) -> Image:
         """Spins the default context until an Image is received from the Camera."""
-        assert self.__image_sub is not None, "You need to subscribe before waiting for images"
-
-        # Clear the future to receive a new Image
-        self.__image_future = rclpy.Future()
-        rclpy.spin_until_future_complete(
-            node=self, future=self.__image_future, timeout_sec=self.__rcl_timeout_sec
-        )
-        return self.__image_future.result()
+        return self.wait_for_frame(self.__rcl_timeout_sec)
 
 
 @pytest.fixture(autouse=True)
@@ -160,8 +132,7 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name):
     node.subscribe()
 
     assert not node.is_streaming()
-    img = node.get_latest_image()
-    assert img is None
+    assert node.image_queue.empty()
 
     check_error(node.start_stream().error)
 
@@ -170,10 +141,10 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name):
     assert img is not None
 
     check_error(node.stop_stream().error)
-
+    time.sleep(1)
+    node.clear_queue()
     assert not node.is_streaming()
-    img = node.get_latest_image()
-    assert img is None
+    assert node.image_queue.empty()
 
 
 # Verify node starts automatically streaming when autostream is enabled
@@ -328,35 +299,33 @@ def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_n
         node.unsubscribe()
 
 
-# TODO: Check if this is the intended behaviour or not
-# Verify that streaming continues when unsubscribing and resubscibing
-# @pytest.mark.launch(fixture=camera_node_without_autostream)
-# def test_autostream_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
-#
-#     node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
-#
-#     check_error(node.start_stream().error)
-#
-#     assert node.is_streaming()
-#
-#     node.subscribe()
-#
-#     assert node.is_streaming()
-#
-#     node.unsubscribe()
-#
-#     time.sleep(1.0)
-#
-#     for i in range(10):
-#
-#         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
-#
-#         node.subscribe()
-#
-#         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
-#
-#         node.unsubscribe()
-#
-#         time.sleep(1.0)
-#
-#         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
+@pytest.mark.launch(fixture=camera_node_without_autostream)
+def test_autostream_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
+
+     node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+
+     check_error(node.start_stream().error)
+
+     assert node.is_streaming()
+
+     node.subscribe()
+
+     assert node.is_streaming()
+
+     node.unsubscribe()
+
+     time.sleep(1.0)
+
+     for i in range(10):
+
+         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
+
+         node.subscribe()
+
+         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
+
+         node.unsubscribe()
+
+         time.sleep(1.0)
+
+         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
