@@ -18,6 +18,7 @@ from typing import List
 
 from vimbax_camera_msgs.msg import Error
 from vimbax_camera_msgs.msg import FeatureInfo
+from vimbax_camera_msgs.msg import FeatureModule
 
 from vimbax_camera_msgs.srv import FeatureAccessModeGet
 
@@ -51,8 +52,16 @@ def check_error(error: Error):
     assert error.code == 0, f"Unexpected error {error.code} ({error.text})"
 
 
-def ensure_access_mode(service, name, readable: bool = True, writeable: bool = True) -> bool:
-    response = service.call(FeatureAccessModeGet.Request(feature_name=name))
+def ensure_access_mode(
+    service, name, readable: bool = True, writeable: bool = True, module: FeatureModule = None
+) -> bool:
+
+    if module is None:
+        response = service.call(FeatureAccessModeGet.Request(feature_name=name))
+    else:
+        response = service.call(
+            FeatureAccessModeGet.Request(feature_name=name, feature_module=module)
+        )
 
     check_error(response.error)
 

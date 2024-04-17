@@ -66,6 +66,8 @@ The following examples are available:
 - list_features: How to list all available features.
 - settings_load_save: Load or save the camera settings to an xml file.
 - status_get: How to use the status service to get the current camera status.
+- camera_connected: Reads if the camera is currently connected or not. 
+- connection_observer: Periodically calls the connected service and prints a message if the connections status has changed.
 
 ## Build Instructions
 1. Setup the ROS2 environment
@@ -77,6 +79,7 @@ The following examples are available:
     ```shell
     rosdep init
     rosdep update
+    sudo apt-get update
     ```
 
 3. Create a workspace
@@ -196,6 +199,19 @@ Only if [automatic stream](#automatic-stream) is enabled.
 | flags | [FeatureFlags](#vimbax_camera_msgsfeatureflags) | Access flags for this feature |
 | polling_time | uint32 | Predefined polling time for volatile features |
 
+### vimbax_camera_msgs/FeatureModule
+| Name | Type | Description |
+|------|------|-------------|
+| id | uint8 | Id of the GenTL module which should be accessed. See table below for valid module ids. |
+
+| Id | Constant | Module |
+|----|----------|--------|
+| 0 | MODULE_REMOTE_DEVICE | Remote Device / Camera |
+| 1 | MODULE_SYSTEM | System / Transport Layer |
+| 2 | MODULE_INTERFACE | Interface |
+| 3 | MODULE_LOCAL_DEVICE | Local Device |
+| 4 | MODULE_STREAM | Stream 0 |
+
 ## Available services
 
 ### /\<camera node ns>/feature_info_query
@@ -210,6 +226,7 @@ is empty, then the information for all features will be returned.
 | Name | Type | Description |
 |------|------|-------------|
 |feature_names| string[] | Names of features to query
+|feature_module| [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -228,6 +245,7 @@ This service reads the current access mode of the feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the feature for getting the current access mode |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -247,6 +265,7 @@ Reads the current value of the bool feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -266,6 +285,7 @@ Set the value of the bool feature *feature_name* to *value*
 |------|------|-------------|
 | feature_name | string | Name of the feature |
 | value | bool | New feature value |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -283,6 +303,7 @@ Check if the command feature *feature_name* has finished.
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name fo the feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -301,6 +322,7 @@ Run the command feature *feature_name* and wait until it's done, so a call to is
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name fo the feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 
 #### Response
@@ -320,6 +342,7 @@ Get the corresponding integer value for enum option *option* of feature *feature
 |------|------|-------------|
 | feature_name | string | Name of the feature |
 | option | string | Enum option |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -339,6 +362,7 @@ Get the enum string representation for the enum integer value *value* of the fea
 |------|------|-------------|
 | feature_name | string | Name of the feature |
 | value | int64 | Integer value of the enum feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -357,6 +381,7 @@ Read the current option of the enum feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -375,6 +400,7 @@ Get the type specific feature info of the enum feature *feature_name*.
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -395,6 +421,7 @@ Sets the value of the enum feature *feature_name* to *value*
 |------|------|-------------|
 | feature_name | string | Name of the enum feature to change |
 | value | string | Enum option to set |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -412,6 +439,7 @@ Reads the current value of the float feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the float feature to read |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -430,6 +458,7 @@ Get the type specific feature information (limits) of the float feature *feature
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the float feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -452,6 +481,7 @@ Set the value of the float feature *feature_name* to *value*
 |------|------|-------------|
 | feature_name | string | Name of the float feature to change |
 | value | float64 | New value of the float feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -469,6 +499,7 @@ Read the current value of the int feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the int feature to read |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -487,6 +518,7 @@ Get the type specific feature information (limits) of the int feature *feature_n
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the int feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -508,6 +540,7 @@ Set the value of the int feature *feature_name* to *value*
 |------|------|-------------|
 | feature_name | string | Name of the int feature to change |
 | value | int64 | New value of the int feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -524,6 +557,7 @@ Get a list of all available feature names
 
 | Name | Type | Description |
 |------|------|-------------|
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -542,6 +576,7 @@ Get the data of the raw feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the raw feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -561,6 +596,7 @@ Get the type specific feature information of the raw feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the raw feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -580,6 +616,7 @@ Set the raw feature *feature_name* to the data in *buffer*
 |------|------|-------------|
 | feature_name | string | Name of the raw feature to change |
 | buffer | byte[] | New data of the raw feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -597,6 +634,7 @@ Get the current value of the string feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the string feature to read |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -615,6 +653,7 @@ Get the type specific feature info of the string feature *feature_name*
 | Name | Type | Description |
 |------|------|-------------|
 | feature_name | string | Name of the string feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -634,6 +673,7 @@ Set the string feature *feature_name* to *value*
 |------|------|-------------|
 | feature_name | string | Name of the string feature to change |
 | value | string | New value of the string feature |
+| feature_module | [FeatureModule](#vimbax_camera_msgsfeaturemodule) | GenTL module to access | 
 
 #### Response
 
@@ -743,6 +783,22 @@ Stop the streaming of the camera.
 | Name | Type | Description |
 |------|------|-------------|
 | error | [Error](#vimbax_camera_msgserror) | Result of the operation |
+
+### /\<camera node ns>/connected
+#### Description
+
+Read wether the camera is connected or not.
+
+#### Request
+
+| Name | Type | Description |
+|------|------|-------------|
+
+#### Response
+
+| Name | Type | Description |
+|------|------|-------------|
+| connected | bool | True when the camera is connected otherwise false. |
 
 ## Troubleshooting
 

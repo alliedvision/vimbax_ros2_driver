@@ -23,22 +23,22 @@ namespace vimbax_camera
 {
 using helper::get_logger;
 
-static std::shared_ptr<LibraryLoader> g_defaultLoader{};
+static std::shared_ptr<LibraryLoader> g_default_loader{};
 
 class LoadedLibraryUnix : public LoadedLibrary
 {
 public:
-  explicit LoadedLibraryUnix(void * dlHandle)
-  : dlHandle_{dlHandle} {}
+  explicit LoadedLibraryUnix(void * dl_handle)
+  : dl_handle_{dl_handle} {}
 
   ~LoadedLibraryUnix() override
   {
-    dlclose(dlHandle_);
+    dlclose(dl_handle_);
   }
 
   void * resolve_symbol(const std::string & name) override
   {
-    auto symbolPtr = dlsym(dlHandle_, name.c_str());
+    auto symbolPtr = dlsym(dl_handle_, name.c_str());
 
     if (symbolPtr != nullptr) {
       return symbolPtr;
@@ -50,7 +50,7 @@ public:
   }
 
 private:
-  void * dlHandle_;
+  void * dl_handle_;
 };
 
 class LibraryLoaderUnix : public LibraryLoader
@@ -77,11 +77,11 @@ public:
 
 std::shared_ptr<LibraryLoader> LibraryLoader::get_default()
 {
-  if (!g_defaultLoader) {
-    g_defaultLoader = std::make_shared<LibraryLoaderUnix>();
+  if (!g_default_loader) {
+    g_default_loader = std::make_shared<LibraryLoaderUnix>();
   }
 
-  return g_defaultLoader;
+  return g_default_loader;
 }
 
 }  // namespace vimbax_camera

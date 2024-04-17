@@ -19,25 +19,32 @@
 
 #include <image_transport/image_transport.hpp>
 
+#include "example_helper.hpp"
+
 
 int main(int argc, char * argv[])
 {
   auto const args = rclcpp::init_and_remove_ros_arguments(argc, argv);
 
   if (args.size() < 2) {
-    std::cout << "Usage asynchronous_grab_cpp <vimbax camera node name>" << std::endl;
+    std::cout << "Usage asynchronous_grab_cpp <vimbax camera node namespace>" << std::endl;
     return 1;
   }
 
   auto node = rclcpp::Node::make_shared("_asynchronous_grab_cpp");
 
   int64_t frames_missing = 0;
-  int64_t frame_count = 0;
+  int64_t frame_complete = 0;
   std::chrono::nanoseconds last_timestamp{0};
 
-  std::deque<uint64_t> diffs{};
+  auto const topic_name = build_topic_path(args[1], "/image_raw");
 
-  auto const topic_name = "/" + args[1] + "/image_raw";
+  auto subscription_options = rclcpp::SubscriptionOptions();
+  subscription_options.event_callbacks.message_lost_callback =
+    [&frames_missing](rclcpp::QOSMessageLostInfo & info) {
+      std::cout << info.total_count_change << " missing frames detected!!!" << std::endl;
+      frames_missing += info.total_count_change;
+    };
 
   auto subscription = image_transport::create_subscription(
     node.get(), topic_name,
@@ -50,37 +57,14 @@ int main(int argc, char * argv[])
 
       auto const mfps = 1000000000 / diff;
 
-      if (diffs.size() > 0) {
-        if (diffs.size() > 100) {
-          diffs.pop_front();
-        }
-
-        uint64_t sum = 0;
-
-        for (auto const d : diffs) {
-          sum += d;
-        }
-
-        auto const avg = sum / diffs.size();
-
-        if (diff > avg) {
-          std::cout << "Missing frames detected!!!" << std::endl;
-          frames_missing++;
-        } else {
-          diffs.push_back(diff);
-        }
-
-      } else {
-        diffs.push_back(diff);
-      }
-
       std::cout << "Got frame diff " << diff << " mfps: " << mfps << std::endl;
 
       last_timestamp = timestamp;
-      frame_count++;
-    }, "raw");
+      frame_complete++;
+    }, "raw", rmw_qos_profile_default, subscription_options);
 
   rclcpp::spin(node);
 
-  std::cout << "Missed " << frames_missing << "/" << frame_count << " frames" << std::endl;
+  std::cout << "Missed " << frames_missing << "/" << frame_complete + frames_missing << " frames"
+            << std::endl;
 }

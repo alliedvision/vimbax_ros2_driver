@@ -45,12 +45,13 @@ def async_grab_node(camera_node_action, camera_test_node_name):
 
 
 @pytest.mark.launch(fixture=async_grab_node)
-def test_asynchronous_grab(launch_context, camera_test_node_name, async_grab_node):
+def test_output(launch_context, camera_test_node_name, async_grab_node):
 
     action: Node = async_grab_node.describe_sub_entities()[0]
 
     assert_clean_shutdown(launch_context, action)
 
-    expected = ".\nReceived frames 1"
-
-    assert expected == action.get_stdout().strip(), "The output should match the expected!"
+    expected = [".", "Received frames 1"]
+    # We dont know how many frames will be lost so ignore that output line
+    lines = action.get_stdout().strip().splitlines()[-3:-1]
+    assert expected == lines, "The output should match the expected!"

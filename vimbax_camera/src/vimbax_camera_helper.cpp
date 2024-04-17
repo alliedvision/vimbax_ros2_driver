@@ -24,19 +24,19 @@
 #define ATTRIBUTE_TARGET(tgt)
 #endif
 
-#include <vmbc_interface/VmbCommonTypes.h>
+#include <VmbC/VmbCommonTypes.h>
 
 #include <vimbax_camera/vimbax_camera_helper.hpp>
 
 
 namespace vimbax_camera::helper
 {
-static rclcpp::Node::WeakPtr g_activeNode{};
+static rclcpp::Node::WeakPtr g_active_node{};
 
 rclcpp::Logger get_logger()
 {
-  if (!g_activeNode.expired()) {
-    return g_activeNode.lock()->get_logger();
+  if (!g_active_node.expired()) {
+    return g_active_node.lock()->get_logger();
   }
 
   return rclcpp::get_logger("vimbax_camera_fb");
@@ -45,7 +45,7 @@ rclcpp::Logger get_logger()
 rclcpp::Node::SharedPtr create_node(const std::string & name, const rclcpp::NodeOptions & options)
 {
   auto node = rclcpp::Node::make_shared(name, name, options);
-  g_activeNode = node;
+  g_active_node = node;
   return node;
 }
 

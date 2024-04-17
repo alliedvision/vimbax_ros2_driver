@@ -16,6 +16,7 @@ set(vimbax_camera_MSGS
         msg/EventDataEntry.msg
         msg/EventData.msg
         msg/Error.msg
+        msg/FeatureModule.msg
 )
 
 set(vimbax_camera_SRVS
@@ -49,6 +50,7 @@ set(vimbax_camera_SRVS
         srv/StreamStartStop.srv
         srv/SubscribeEvent.srv
         srv/UnsubscribeEvent.srv
+        srv/ConnectionStatus.srv
 )
 
 rosidl_generate_interfaces(${PROJECT_NAME}

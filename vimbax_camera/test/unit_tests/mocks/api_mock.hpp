@@ -15,7 +15,7 @@
 #ifndef UNIT_TESTS__MOCKS__API_MOCK_HPP_
 #define UNIT_TESTS__MOCKS__API_MOCK_HPP_
 
-#include <vmbc_interface/VmbCTypeDefinitions.h>
+#include <VmbC/VmbCTypeDefinitions.h>
 
 #include <gmock/gmock.h>
 

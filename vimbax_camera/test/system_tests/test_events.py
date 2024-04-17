@@ -45,11 +45,20 @@ def test_genicam_events(test_node: TestNode, launch_context):
     subscriber = EventSubscriber(EventData, test_node, f"{test_node.camera_node_name()}/events")
 
     on_event_event = Event()
+    on_subscription_ready = Event()
 
-    def on_event(data):
+    def on_event(name, data):
+        print("Got event")
         on_event_event.set()
 
-    subscriber.subscribe_event("Test", on_event)
+    def on_event_subscribed(future):
+        future.result()
+        on_subscription_ready.set()
+
+    subscriber.subscribe_event("Test", on_event).add_done_callback(on_event_subscribed)
+
+    assert on_subscription_ready.wait(5)
+
     run_result = test_node.call_service_sync(
         command_run_service, FeatureCommandRun.Request(feature_name="TestEventGenerate")
     )

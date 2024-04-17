@@ -22,15 +22,19 @@
 
 #include <rclcpp/rclcpp.hpp>
 
+#include <vimbax_camera_msgs/msg/error.hpp>
+
 #include <vimbax_camera_msgs/srv/subscribe_event.hpp>
 #include <vimbax_camera_msgs/srv/unsubscribe_event.hpp>
 
 namespace vimbax_camera_events
 {
+using vimbax_camera_msgs::msg::Error;
+
 class EventPublisherBase
 {
 public:
-  using OnEventSubscribed = std::function<int32_t(const std::string &)>;
+  using OnEventSubscribed = std::function<Error(const std::string &)>;
   using OnEventUnsubscribed = std::function<void (const std::string &)>;
 
   EventPublisherBase(

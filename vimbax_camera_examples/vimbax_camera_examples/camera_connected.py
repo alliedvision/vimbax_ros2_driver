@@ -14,29 +14,12 @@
 
 import rclpy
 from rclpy.node import Node
-import cv2
-import cv_bridge
-from .helper import build_topic_path
-
-from asyncio import Future
-
+import vimbax_camera_msgs.srv
 import argparse
-
-import signal
-
-from sensor_msgs.msg import Image
+from .helper import single_service_call, build_topic_path
 
 
 def main():
-    stop_future = Future()
-
-    def signal_handler(signum, frame):
-        if signum == signal.SIGINT:
-            stop_future.set_result(None)
-
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("node_namespace")
 
@@ -44,17 +27,17 @@ def main():
 
     rclpy.init(args=rosargs)
 
-    node = Node("_stream_opencv")
+    node = Node("_connected_get")
 
-    bridge = cv_bridge.CvBridge()
+    # Build topic path from namespace and topic name
+    topic: str = build_topic_path(args.node_namespace, '/connected')
 
-    def on_frame(msg: Image):
-        mat = bridge.imgmsg_to_cv2(msg, "rgb8")
-        cv2.imshow("frame", mat)
-        if cv2.waitKey(1) == 0x1B:
-            stop_future.set_result(None)
+    service_type = vimbax_camera_msgs.srv.ConnectionStatus
 
-    topic = build_topic_path(args.node_namespace, "image_raw")
-    node.create_subscription(Image, topic, on_frame, 10)
+    request = service_type.Request()
+    response = single_service_call(node, service_type, topic, request)
 
-    rclpy.spin_until_future_complete(node, stop_future)
+    if response.connected:
+        print("Camera is connected!")
+    else:
+        print("Camera is disconnected!")

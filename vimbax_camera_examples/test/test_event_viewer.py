@@ -69,7 +69,7 @@ def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node, 
 
     assert_clean_shutdown(launch_context, action)
 
-    lines: List[str] = action.get_stdout().strip().split(sep="\n")
+    lines: List[str] = action.get_stdout().strip().splitlines()
 
     # There has to be at least 1 line of output
     # The simtl camera does not produce extra event info -> only one output line

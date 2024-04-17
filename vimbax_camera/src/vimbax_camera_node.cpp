@@ -34,10 +34,29 @@ namespace vimbax_camera
 using helper::get_logger;
 using helper::vmb_error_to_string;
 
+constexpr std::optional<VimbaXCamera::Module> map_module(
+  const vimbax_camera_msgs::msg::FeatureModule & mod)
+{
+  switch (mod.id) {
+    case vimbax_camera_msgs::msg::FeatureModule::MODULE_REMOTE_DEVICE:
+      return VimbaXCamera::Module::RemoteDevice;
+    case vimbax_camera_msgs::msg::FeatureModule::MODULE_SYSTEM:
+      return VimbaXCamera::Module::System;
+    case vimbax_camera_msgs::msg::FeatureModule::MODULE_INTERFACE:
+      return VimbaXCamera::Module::Interface;
+    case vimbax_camera_msgs::msg::FeatureModule::MODULE_LOCAL_DEVICE:
+      return VimbaXCamera::Module::LocalDevice;
+    case vimbax_camera_msgs::msg::FeatureModule::MODULE_STREAM:
+      return VimbaXCamera::Module::Stream;
+    default:
+      return std::nullopt;
+  }
+}
+
 VimbaXCameraNode::VimbaXCameraNode(const rclcpp::NodeOptions & options)
 {
   if (!initialize(options)) {
-    throw std::runtime_error("VimbaXCameraNode initialization failed");
+    rclcpp::shutdown();
   }
 }
 
@@ -106,7 +125,9 @@ VimbaXCameraNode::~VimbaXCameraNode()
 {
   stop_threads_.store(true, std::memory_order::memory_order_relaxed);
 
-  deinitialize_camera_observer();
+  if (api_) {
+    deinitialize_camera_observer();
+  }
 
   if (graph_notify_thread_) {
     graph_notify_thread_->join();
@@ -127,7 +148,7 @@ bool VimbaXCameraNode::initialize_events()
   feature_invalidation_event_publisher_ =
     std::make_shared<vimbax_camera_events::EventPublisher<std_msgs::msg::Empty>>(
     node_, "feature_invalidation",
-    [this](const std::string & name) -> int32_t
+    [this](const std::string & name) -> vimbax_camera_msgs::msg::Error
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
@@ -138,13 +159,14 @@ bool VimbaXCameraNode::initialize_events()
           });
 
         if (!res) {
-          return res.error().code;
+          return res.error().to_error_msg();
         }
       } else {
-        return VmbErrorNotFound;
+        return vimbax_camera_msgs::msg::Error{}
+        .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
-      return 0;
+      return vimbax_camera_msgs::msg::Error{};
     },
     [this](const std::string & name) -> void {
       camera_->feature_invalidation_unregister(name);
@@ -156,7 +178,7 @@ bool VimbaXCameraNode::initialize_events()
 
   event_event_publisher_ =
     std::make_shared<vimbax_camera_events::EventPublisher<vimbax_camera_msgs::msg::EventData>>(
-    node_, "events", [this](const std::string & name) -> int32_t
+    node_, "events", [this](const std::string & name) -> vimbax_camera_msgs::msg::Error
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
@@ -165,13 +187,13 @@ bool VimbaXCameraNode::initialize_events()
         auto const sel_res = camera_->feature_enum_set(SFNCFeatures::EventSelector.data(), name);
 
         if (!sel_res) {
-          return sel_res.error().code;
+          return sel_res.error().to_error_msg();
         }
 
         auto const on_res = camera_->feature_enum_set(SFNCFeatures::EventNotification.data(), "On");
 
         if (!on_res) {
-          return on_res.error().code;
+          return on_res.error().to_error_msg();
         }
 
         auto const res = camera_->feature_invalidation_register(
@@ -195,13 +217,14 @@ bool VimbaXCameraNode::initialize_events()
           });
 
         if (!res) {
-          return res.error().code;
+          return res.error().to_error_msg();
         }
       } else {
-        return VmbErrorNotFound;
+        return vimbax_camera_msgs::msg::Error{}
+        .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
-      return 0;
+      return vimbax_camera_msgs::msg::Error{};
     },
     [this](const std::string & name) -> void {
       std::shared_lock lock(camera_mutex_);
@@ -607,6 +630,44 @@ bool VimbaXCameraNode::initialize_feature_services()
 {
   RCLCPP_INFO(get_logger(), "Initializing feature services ...");
 
+  if (!initialize_int_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_float_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_bool_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_command_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_enum_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_string_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_raw_feature_services()) {
+    return false;
+  }
+
+  if (!initialize_generic_feature_services()) {
+    return false;
+  }
+
+  return true;
+}
+
+
+bool VimbaXCameraNode::initialize_int_feature_services()
+{
   feature_int_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureIntGet>(
     "features/int_get", [this](
@@ -615,11 +676,16 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_int_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_int_get(request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->value = *result;
+          }
         } else {
-          response->value = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -636,9 +702,15 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_int_set(request->feature_name, request->value);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_int_set(
+            request->feature_name, request->value, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -655,13 +727,18 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_int_info_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_int_info_get(request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->min = (*result)[0];
+            response->max = (*result)[1];
+            response->inc = (*result)[2];
+          }
         } else {
-          response->min = (*result)[0];
-          response->max = (*result)[1];
-          response->inc = (*result)[2];
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -670,6 +747,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_int_info_get_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_float_feature_services()
+{
   feature_float_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureFloatGet>(
     "features/float_get", [this](
@@ -678,12 +760,17 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_float_get(request->feature_name);
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_float_get(request->feature_name, *feature_module);
 
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->value = *result;
+          }
         } else {
-          response->value = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -700,9 +787,15 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_float_set(request->feature_name, request->value);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_float_set(
+            request->feature_name, request->value, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -719,14 +812,20 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_float_info_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_float_info_get(
+            request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->min = (*result).min;
+            response->max = (*result).max;
+            response->inc = (*result).inc;
+            response->inc_available = (*result).inc_available;
+          }
         } else {
-          response->min = (*result).min;
-          response->max = (*result).max;
-          response->inc = (*result).inc;
-          response->inc_available = (*result).inc_available;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -735,6 +834,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_float_info_get_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_string_feature_services()
+{
   feature_string_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureStringGet>(
     "features/string_get", [this](
@@ -743,11 +847,16 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_string_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_string_get(request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->value = *result;
+          }
         } else {
-          response->value = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -764,9 +873,15 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_string_set(request->feature_name, request->value);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_string_set(
+            request->feature_name, request->value, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -783,11 +898,17 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_string_info_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_string_info_get(
+            request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->max_length = *result;
+          }
         } else {
-          response->max_length = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -796,6 +917,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_string_info_get_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_bool_feature_services()
+{
   feature_bool_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureBoolGet>(
     "features/bool_get", [this](
@@ -804,11 +930,16 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_bool_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_bool_get(request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->value = *result;
+          }
         } else {
-          response->value = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -825,9 +956,14 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_bool_set(request->feature_name, request->value);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_bool_set(request->feature_name, request->value);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -836,6 +972,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_bool_set_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_command_feature_services()
+{
   feature_command_is_done_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureCommandIsDone>(
     "features/command_is_done", [this](
@@ -844,11 +985,17 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_command_is_done(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_command_is_done(
+            request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->is_done = *result;
+          }
         } else {
-          response->is_done = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -868,11 +1015,17 @@ bool VimbaXCameraNode::initialize_feature_services()
       auto const timeout = node_->get_parameter(parameter_command_feature_timeout).as_int();
 
       if (is_available_) {
-        auto const result = camera_->feature_command_run(
-          request->feature_name,
-          timeout > 0 ? std::optional{std::chrono::milliseconds{timeout}} : std::nullopt);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_command_run(
+            request->feature_name,
+            timeout > 0 ? std::optional{std::chrono::milliseconds{timeout}} : std::nullopt,
+            *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -881,6 +1034,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_command_run_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_enum_feature_services()
+{
   feature_enum_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureEnumGet>(
     "features/enum_get", [this](
@@ -889,11 +1047,16 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_enum_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_enum_get(request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->value = *result;
+          }
         } else {
-          response->value = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -910,9 +1073,15 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_enum_set(request->feature_name, request->value);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_enum_set(
+            request->feature_name, request->value, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -929,12 +1098,19 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_enum_info_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_enum_info_get(
+            request->feature_name, *feature_module);
+
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->possible_values = (*result)[0];
+            response->available_values = (*result)[1];
+          }
         } else {
-          response->possible_values = (*result)[0];
-          response->available_values = (*result)[1];
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -951,12 +1127,17 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result =
-        camera_->feature_enum_as_int_get(request->feature_name, request->option);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result =
+          camera_->feature_enum_as_int_get(request->feature_name, request->option, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->value = *result;
+          }
         } else {
-          response->value = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -973,13 +1154,18 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result =
-        camera_->feature_enum_as_string_get(request->feature_name, request->value);
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_enum_as_string_get(
+            request->feature_name, request->value, *feature_module);
 
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->option = *result;
+          }
         } else {
-          response->option = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -988,6 +1174,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_enum_as_string_get_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_raw_feature_services()
+{
   feature_raw_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureRawGet>(
     "features/raw_get", [this](
@@ -996,13 +1187,18 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_raw_get(request->feature_name);
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_raw_get(request->feature_name, *feature_module);
 
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->buffer = *result;
+            response->buffer_size = (*result).size();
+          }
         } else {
-          response->buffer = *result;
-          response->buffer_size = (*result).size();
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -1019,10 +1215,16 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_raw_set(request->feature_name, request->buffer);
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_raw_set(
+            request->feature_name, request->buffer, *feature_module);
 
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          }
+        } else {
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -1039,11 +1241,16 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_raw_info_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_raw_info_get(request->feature_name, *feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->max_length = *result;
+          }
         } else {
-          response->max_length = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -1052,6 +1259,11 @@ bool VimbaXCameraNode::initialize_feature_services()
 
   CHK_SVC(feature_raw_info_get_service_);
 
+  return true;
+}
+
+bool VimbaXCameraNode::initialize_generic_feature_services()
+{
   feature_access_mode_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeatureAccessModeGet>(
     "features/access_mode_get", [this](
@@ -1060,12 +1272,19 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->feature_access_mode_get(request->feature_name);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->feature_access_mode_get(
+            request->feature_name, *feature_module);
+
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->is_readable = (*result)[0];
+            response->is_writeable = (*result)[1];
+          }
         } else {
-          response->is_readable = (*result)[0];
-          response->is_writeable = (*result)[1];
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -1082,45 +1301,52 @@ bool VimbaXCameraNode::initialize_feature_services()
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        std::vector<std::string> feature_names;
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          std::vector<std::string> feature_names;
 
-        // If our list is empty we want to query infos for all features
-        if (request->feature_names.size() == 0) {
-          auto const result = camera_->features_list_get();
+          // If our list is empty we want to query infos for all features
+          if (request->feature_names.size() == 0) {
+            auto const result = camera_->features_list_get(*feature_module);
+            if (!result) {
+              response->set__error(result.error().to_error_msg());
+              return;
+            } else {
+              feature_names = *result;
+            }
+          } else {
+            feature_names = request->feature_names;
+          }
+
+          auto const result = camera_->feature_info_query_list(feature_names, *feature_module);
           if (!result) {
             response->set__error(result.error().to_error_msg());
             return;
           } else {
-            feature_names = *result;
+            std::transform(
+              result->begin(), result->end(),
+              std::back_inserter(response->feature_info),
+              [](const feature_info & info) {
+                auto const flags = vimbax_camera_msgs::msg::FeatureFlags{}
+                .set__flag_none(info.flags.flag_none)
+                .set__flag_read(info.flags.flag_read)
+                .set__flag_write(info.flags.flag_write)
+                .set__flag_volatile(info.flags.flag_volatile)
+                .set__flag_modify_write(info.flags.flag_modify_write);
+
+                return vimbax_camera_msgs::msg::FeatureInfo{}
+                .set__name(info.name)
+                .set__category(info.category)
+                .set__display_name(info.display_name)
+                .set__sfnc_namespace(info.sfnc_namespace)
+                .set__unit(info.unit)
+                .set__data_type(info.data_type)
+                .set__flags(flags)
+                .set__polling_time(info.polling_time);
+              });
           }
         } else {
-          feature_names = request->feature_names;
-        }
-
-        auto const result = camera_->feature_info_query_list(feature_names);
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
-          return;
-        } else {
-          auto index{0};
-          response->feature_info.resize((*result).size());
-          for (auto data : (*result)) {
-            response->feature_info.at(index).name = data.name;
-            response->feature_info.at(index).category = data.category;
-            response->feature_info.at(index).display_name = data.display_name;
-            response->feature_info.at(index).sfnc_namespace = data.sfnc_namespace;
-            response->feature_info.at(index).unit = data.unit;
-
-            response->feature_info.at(index).data_type = data.data_type;
-            response->feature_info.at(index).flags.flag_none = data.flags.flag_none;
-            response->feature_info.at(index).flags.flag_read = data.flags.flag_read;
-            response->feature_info.at(index).flags.flag_write = data.flags.flag_write;
-            response->feature_info.at(index).flags.flag_volatile = data.flags.flag_volatile;
-            response->feature_info.at(index).flags.flag_modify_write = data.flags.flag_modify_write;
-            response->feature_info.at(index).polling_time = data.polling_time;
-
-            index++;
-          }
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -1132,16 +1358,21 @@ bool VimbaXCameraNode::initialize_feature_services()
   features_list_get_service_ =
     node_->create_service<vimbax_camera_msgs::srv::FeaturesListGet>(
     "features/list_get", [this](
-      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr,
+      const vimbax_camera_msgs::srv::FeaturesListGet::Request::ConstSharedPtr request,
       const vimbax_camera_msgs::srv::FeaturesListGet::Response::SharedPtr response)
     {
       std::shared_lock lock(camera_mutex_);
       if (is_available_) {
-        auto const result = camera_->features_list_get();
-        if (!result) {
-          response->set__error(result.error().to_error_msg());
+        auto const feature_module = map_module(request->feature_module);
+        if (feature_module) {
+          auto const result = camera_->features_list_get(*feature_module);
+          if (!result) {
+            response->set__error(result.error().to_error_msg());
+          } else {
+            response->feature_list = *result;
+          }
         } else {
-          response->feature_list = *result;
+          response->set__error(error{VmbErrorBadParameter}.to_error_msg());
         }
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
@@ -1243,6 +1474,17 @@ bool VimbaXCameraNode::initialize_status_services()
     }, rmw_qos_profile_services_default, status_callback_group_);
 
   CHK_SVC(status_service_);
+
+  connection_status_service_ = node_->create_service<vimbax_camera_msgs::srv::ConnectionStatus>(
+    "connected", [this](
+      const vimbax_camera_msgs::srv::ConnectionStatus::Request::ConstSharedPtr,
+      const vimbax_camera_msgs::srv::ConnectionStatus::Response::SharedPtr response)
+    {
+      std::shared_lock lock(camera_mutex_);
+      response->set__connected(camera_ != nullptr);
+    }, rmw_qos_profile_services_default, status_callback_group_);
+
+  CHK_SVC(connection_status_service_);
 
   return true;
 }
