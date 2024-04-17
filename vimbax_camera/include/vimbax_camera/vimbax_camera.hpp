@@ -102,9 +102,9 @@ public:
     kStopping,
   };
 
-  struct TriggerInfo 
+  struct TriggerInfo
   {
-    TriggerInfo(std::string selector, std::string mode, std::string source) 
+    TriggerInfo(std::string selector, std::string mode, std::string source)
     : selector(selector), mode(mode), source(source) {}
 
     std::string selector;

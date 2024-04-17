@@ -1359,17 +1359,15 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
   for (auto const & selector : (*trigger_selector_info)[1]) {
     if (feature_enum_set(SFNCFeatures::TriggerSelector, selector)) {
       auto const get_opt = [&](auto const & opt) -> std::string {
-        if (opt) {
-          return *opt;
-        }
+          if (opt) {
+            return *opt;
+          }
 
-        return "N/A";
-      };
+          return "N/A";
+        };
 
       auto const trigger_mode = feature_enum_get(SFNCFeatures::TriggerMode);
-
       auto const trigger_source = feature_enum_get(SFNCFeatures::TriggerSource);
-      
 
       info.trigger_info.emplace_back(selector, get_opt(trigger_mode), get_opt(trigger_source));
     }
