@@ -1350,22 +1350,31 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
     info.pixel_format = *pixel_format;
   }
 
+  auto const trigger_selector_info = feature_enum_info_get(SFNCFeatures::TriggerSelector);
 
-  auto const trigger_mode = feature_enum_get(SFNCFeatures::TriggerMode);
-  if (!trigger_mode) {
-    return trigger_mode.error();
-  } else {
-    info.trigger_mode = *trigger_mode;
+  if (!trigger_selector_info) {
+    return trigger_selector_info.error();
   }
 
-  auto const trigger_source = feature_enum_get(SFNCFeatures::TriggerSource);
-  if (!trigger_source) {
-    if (trigger_source.error().code != VmbErrorNotAvailable) {
-      return trigger_source.error();
+  for (auto const & selector : (*trigger_selector_info)[1]) {
+    if (feature_enum_set(SFNCFeatures::TriggerSelector, selector)) {
+      auto const get_opt = [&](auto const & opt) -> std::string {
+        if (opt) {
+          return *opt;
+        }
+
+        return "N/A";
+      };
+
+      auto const trigger_mode = feature_enum_get(SFNCFeatures::TriggerMode);
+
+      auto const trigger_source = feature_enum_get(SFNCFeatures::TriggerSource);
+      
+
+      info.trigger_info.emplace_back(selector, get_opt(trigger_mode), get_opt(trigger_source));
     }
-  } else {
-    info.trigger_source = *trigger_source;
   }
+
 
   if (has_feature(SFNCFeatures::GevDeviceIPAddress)) {
     auto const ip_address =

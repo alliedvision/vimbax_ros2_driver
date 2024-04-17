@@ -102,6 +102,16 @@ public:
     kStopping,
   };
 
+  struct TriggerInfo 
+  {
+    TriggerInfo(std::string selector, std::string mode, std::string source) 
+    : selector(selector), mode(mode), source(source) {}
+
+    std::string selector;
+    std::string mode;
+    std::string source;
+  };
+
   struct Info
   {
     std::string display_name;
@@ -119,8 +129,7 @@ public:
     uint32_t height;
     double frame_rate;
     std::string pixel_format;
-    std::string trigger_mode;
-    std::string trigger_source;
+    std::vector<TriggerInfo> trigger_info;
   };
 
   static std::shared_ptr<VimbaXCamera> open(
