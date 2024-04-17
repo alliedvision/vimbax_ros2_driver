@@ -14,10 +14,7 @@
 
 import pytest
 import rclpy
-from rclpy.node import Node
 from rclpy.service import Service
-from rclpy.subscription import Subscription
-from rclpy import Future
 import launch_pytest
 import launch
 from launch_ros import actions
@@ -57,7 +54,7 @@ def camera_node_without_autostream(camera_test_node_name):
     """Launch the vimbax_camera_node."""
     return launch.LaunchDescription(
         [
-            actions.Node(
+            actions.Node( t
                 package="vimbax_camera",
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
@@ -302,30 +299,29 @@ def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_n
 @pytest.mark.launch(fixture=camera_node_without_autostream)
 def test_autostream_disabled_continue_stream_after_unsub(launch_context, camera_test_node_name):
 
-     node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
+    node = StreamAutostreamTestNode("_test_node", camera_test_node_name)
 
-     check_error(node.start_stream().error)
+    check_error(node.start_stream().error)
 
-     assert node.is_streaming()
+    assert node.is_streaming()
 
-     node.subscribe()
+    node.subscribe()
 
-     assert node.is_streaming()
+    assert node.is_streaming()
 
-     node.unsubscribe()
+    node.unsubscribe()
 
-     time.sleep(1.0)
+    time.sleep(1.0)
+    for i in range(10):
 
-     for i in range(10):
+        assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
 
-         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
+        node.subscribe()
 
-         node.subscribe()
+        assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
 
-         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
+        node.unsubscribe()
 
-         node.unsubscribe()
+        time.sleep(1.0)
 
-         time.sleep(1.0)
-
-         assert node.is_streaming(), f"Node stopped streaming in iteration {i}"
+        assert node.is_streaming(), f"Node stopped streaming in iteration {i}"

@@ -14,10 +14,7 @@
 
 # ROS client lib
 import rclpy
-from rclpy.node import Node
 from rclpy.service import Service
-from rclpy import Future
-from rclpy.subscription import Subscription
 from sensor_msgs.msg import Image
 
 from time import sleep
