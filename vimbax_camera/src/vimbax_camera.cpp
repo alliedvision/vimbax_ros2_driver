@@ -252,7 +252,9 @@ result<void> VimbaXCamera::start_streaming(
   std::function<void(std::shared_ptr<Frame>)> on_frame,
   bool start_acquisition)
 {
-  if (!streaming_) {
+  auto expected_state = StreamState::kStopped;
+
+  if (stream_state_.compare_exchange_strong(expected_state, StreamState::kStarting)) {
     frames_.clear();
     frames_.resize(buffer_count);
 
@@ -294,6 +296,32 @@ result<void> VimbaXCamera::start_streaming(
       frame->set_callback(on_frame);
     }
 
+    frame_processing_enable_ = true;
+    frame_processing_thread_ = std::make_shared<std::thread>(
+      [this] {
+        while (frame_processing_enable_) {
+          auto const frame_opt = [&]() -> std::optional<std::shared_ptr<Frame>> {
+            std::unique_lock lock{frame_ready_queue_mutex_};
+            frame_ready_cv_.wait(
+              lock, [&]  {
+                return !frame_ready_queue_.empty() || !frame_processing_enable_;
+              });
+
+            if (!frame_ready_queue_.empty()) {
+              auto const ret = frame_ready_queue_.front();
+              frame_ready_queue_.pop();
+              return ret;
+            } else {
+              return std::nullopt;
+            }
+          }();
+
+          if (frame_opt) {
+            (*frame_opt)->on_frame_ready();
+          }
+        }
+      });
+
     auto const capture_start_error = api_->CaptureStart(camera_handle_);
     if (capture_start_error != VmbErrorSuccess) {
       RCLCPP_ERROR(
@@ -323,60 +351,81 @@ result<void> VimbaXCamera::start_streaming(
       }
     }
 
+    stream_state_.store(StreamState::kActive);
+
     RCLCPP_INFO(get_logger(), "Stream started");
 
-    streaming_ = true;
+    return {};
+  } else if (expected_state == StreamState::kActive) {
+    return {};
+  } else {
+    return error{VmbErrorInvalidCall};
   }
-
-  return {};
 }
 
 result<void> VimbaXCamera::stop_streaming()
 {
-  if (!streaming_) {
-    return {};
-  }
+  auto expected_state = StreamState::kActive;
 
-  if (is_alive()) {
-    auto const acquisition_stop_error = feature_command_run(SFNCFeatures::AcquisitionStop);
-    if (!acquisition_stop_error) {
-      RCLCPP_ERROR(
-        get_logger(), "Acquisition stop failed with error %d (%s)",
-        acquisition_stop_error.error().code,
-        (vmb_error_to_string(acquisition_stop_error.error().code)).data());
-      return acquisition_stop_error.error();
+  if (stream_state_.compare_exchange_strong(expected_state, StreamState::kStopping)) {
+    if (is_alive()) {
+      auto const acquisition_stop_error = feature_command_run(SFNCFeatures::AcquisitionStop);
+      if (!acquisition_stop_error) {
+        RCLCPP_ERROR(
+          get_logger(), "Acquisition stop failed with error %d (%s)",
+          acquisition_stop_error.error().code,
+          (vmb_error_to_string(acquisition_stop_error.error().code)).data());
+        return acquisition_stop_error.error();
+      }
     }
+
+    auto const capture_stop_error = api_->CaptureEnd(camera_handle_);
+    if (capture_stop_error != VmbErrorSuccess) {
+      RCLCPP_ERROR(
+        get_logger(), "Capture stop failed with error %d (%s)", capture_stop_error,
+        (vmb_error_to_string(capture_stop_error)).data());
+      return error{capture_stop_error};
+    }
+
+    auto const flush_error = api_->CaptureQueueFlush(camera_handle_);
+    if (flush_error != VmbErrorSuccess) {
+      RCLCPP_ERROR(
+        get_logger(), "Flush capture queue failed with error %d (%s)", flush_error,
+        (vmb_error_to_string(flush_error)).data());
+      return error{flush_error};
+    }
+
+    auto const revoke_error = api_->FrameRevokeAll(camera_handle_);
+    if (revoke_error != VmbErrorSuccess) {
+      RCLCPP_ERROR(
+        get_logger(), "Revoking frames failed with error %d (%s)", revoke_error,
+        (vmb_error_to_string(revoke_error)).data());
+      return error{revoke_error};
+    }
+
+    if (frame_processing_thread_) {
+      frame_processing_enable_ = false;
+      {
+        std::lock_guard guard{frame_ready_queue_mutex_};
+        while (!frame_ready_queue_.empty()) {
+          frame_ready_queue_.pop();
+        }
+      }
+      frame_ready_cv_.notify_all();
+      frame_processing_thread_->join();
+      frame_processing_thread_.reset();
+    }
+
+    frames_.clear();
+
+    stream_state_.store(StreamState::kStopped);
+
+    return {};
+  } else if (expected_state == StreamState::kStopped) {
+    return {};
+  } else {
+    return error{VmbErrorInvalidCall};
   }
-
-  auto const capture_stop_error = api_->CaptureEnd(camera_handle_);
-  if (capture_stop_error != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "Capture stop failed with error %d (%s)", capture_stop_error,
-      (vmb_error_to_string(capture_stop_error)).data());
-    return error{capture_stop_error};
-  }
-
-  auto const flush_error = api_->CaptureQueueFlush(camera_handle_);
-  if (flush_error != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "Flush capture queue failed with error %d (%s)", flush_error,
-      (vmb_error_to_string(flush_error)).data());
-    return error{flush_error};
-  }
-
-  auto const revoke_error = api_->FrameRevokeAll(camera_handle_);
-  if (revoke_error != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "Revoking frames failed with error %d (%s)", revoke_error,
-      (vmb_error_to_string(revoke_error)).data());
-    return error{revoke_error};
-  }
-
-  frames_.clear();
-
-  streaming_ = false;
-
-  return {};
 }
 
 result<VmbCameraInfo> VimbaXCamera::query_camera_info() const
@@ -1270,7 +1319,7 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
   }
   info.transport_layer_id = *transport_layer_id;
 
-  info.streaming = streaming_;
+  info.streaming = is_streaming();
 
   auto const width = feature_int_get(SFNCFeatures::Width);
   if (!width) {
@@ -1352,7 +1401,9 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
 
 bool VimbaXCamera::is_streaming() const
 {
-  return streaming_;
+  auto const current_state = stream_state_.load();
+
+  return current_state == StreamState::kActive || current_state == StreamState::kStarting;
 }
 
 void VimbaXCamera::on_feature_invalidation(VmbHandle_t, const char * name, void * context)
@@ -1571,7 +1622,14 @@ void VimbaXCamera::Frame::vmb_frame_callback(
   auto shared_frame = ptr->shared_from_this();
 
   if (frame->receiveStatus == VmbFrameStatusType::VmbFrameStatusComplete) {
-    shared_frame->on_frame_ready();
+    auto shared_camera = shared_frame->camera_.lock();
+    if (shared_camera) {
+      {
+        std::lock_guard guard{shared_camera->frame_ready_queue_mutex_};
+        shared_camera->frame_ready_queue_.push(shared_frame);
+      }
+      shared_camera->frame_ready_cv_.notify_one();
+    }
   } else {
     RCLCPP_WARN(get_logger(), "Frame with status %d received", frame->receiveStatus);
     shared_frame->queue();

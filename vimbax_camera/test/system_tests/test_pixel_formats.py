@@ -14,11 +14,10 @@
 
 # ROS client lib
 import rclpy
-from rclpy.node import Node
 from rclpy.service import Service
-from rclpy import Future
-from rclpy.subscription import Subscription
 from sensor_msgs.msg import Image
+
+from time import sleep
 
 # pytest libs
 import pytest
@@ -27,7 +26,7 @@ import pytest
 from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
 from test_helper import check_error
 
-from conftest import vimbax_camera_node
+from conftest import vimbax_camera_node, TestNode
 
 from typing import List
 
@@ -96,11 +95,11 @@ def init_and_shutdown_ros():
     rclpy.shutdown()
 
 
-class PixelFormatTestNode(Node):
+class PixelFormatTestNode(TestNode):
     """Custom ROS2 Node to make testing easier."""
 
     def __init__(self, name: str, test_node_name: str, timeout_sec: float = 10.0):
-        super().__init__(name)
+        super().__init__(name, test_node_name)
         self.__rcl_timeout_sec = float(timeout_sec)
         self.__enum_info_get_srv: Service = self.create_client(
             srv_type=FeatureEnumInfoGet, srv_name=f"/{test_node_name}/features/enum_info_get"
@@ -114,13 +113,6 @@ class PixelFormatTestNode(Node):
         self.__stream_stop_srv: Service = self.create_client(
             srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_stop"
         )
-        self.__image_future: Future = Future()
-        self.__image_sub: Subscription = self.create_subscription(
-            Image,
-            f"/{test_node_name}/image_raw",
-            lambda msg: self.__image_future.set_result(msg),
-            0,
-        )
 
         # Magic timeout value
         assert self.__enum_info_get_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
@@ -129,11 +121,7 @@ class PixelFormatTestNode(Node):
         assert self.__stream_stop_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
 
     def __call_service_sync(self, srv: Service, request):
-        future = srv.call_async(request)
-        rclpy.spin_until_future_complete(
-            node=self, future=future, timeout_sec=self.__rcl_timeout_sec
-        )
-        return future.result()
+        return srv.call(request)
 
     def stop_stream(self) -> StreamStartStop.Response:
         return self.__call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
@@ -159,12 +147,7 @@ class PixelFormatTestNode(Node):
 
     def get_latest_image(self) -> Image:
         """Spins the default context until an Image is received from the Camera."""
-        # Clear the future to receive a new Image
-        self.__image_future = rclpy.Future()
-        rclpy.spin_until_future_complete(
-            node=self, future=self.__image_future, timeout_sec=self.__rcl_timeout_sec
-        )
-        return self.__image_future.result()
+        return self.wait_for_frame(self.__rcl_timeout_sec)
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
@@ -172,9 +155,6 @@ def test_pixel_formats(launch_context, node_test_id, camera_test_node_name):
 
     node: PixelFormatTestNode = PixelFormatTestNode(
         f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
-
-    # The PixelFormat cannot be changed while the camera is streaming
-    check_error(node.stop_stream().error)
 
     # We can only test the formats required and supported by the attached camera
     available_formats = REQUIRED_PIXEL_FORMATS.intersection(
@@ -188,15 +168,17 @@ def test_pixel_formats(launch_context, node_test_id, camera_test_node_name):
         LOGGER.info(f"Testing format: {format}")
 
         check_error(node.set_pixel_format(format).error)
-        check_error(node.start_stream().error)
+        node.clear_queue()
+        node.subscribe_image_raw()
 
         image: Image = node.get_latest_image()
 
-        check_error(node.stop_stream().error)
+        node.unsubscribe_image_raw()
         # Assert the pixel format of the image matches the requested format
         assert image is not None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
         assert image.encoding == PFNC_TO_ROS[format]
+        sleep(1)
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)

@@ -20,6 +20,7 @@
 #include <functional>
 #include <optional>
 #include <vector>
+#include <queue>
 #include <utility>
 #include <unordered_map>
 
@@ -57,6 +58,8 @@ public:
     std::string get_image_encoding() const;
 
     int64_t get_frame_id() const;
+
+    void on_frame_ready();
     /* *INDENT-OFF* */
   private:
     /* *INDENT-ON* */
@@ -67,7 +70,7 @@ public:
     };
 
     static void vmb_frame_callback(const VmbHandle_t, const VmbHandle_t, VmbFrame_t * frame);
-    void on_frame_ready();
+
     void transform();
     uint64_t timestamp_to_ns(uint64_t timestamp);
 
@@ -89,6 +92,14 @@ public:
     RemoteDevice,
     Stream,
     ModuleMax
+  };
+
+  enum class StreamState
+  {
+    kStopped,
+    kStarting,
+    kActive,
+    kStopping,
   };
 
   struct Info
@@ -278,7 +289,7 @@ private:
   std::shared_ptr<VmbCAPI> api_;
   VmbHandle_t camera_handle_;
   std::vector<std::shared_ptr<Frame>> frames_;
-  bool streaming_{false};
+  std::atomic<StreamState> stream_state_{StreamState::kStopped};
   bool is_valid_pixel_format(VmbPixelFormatType pixel_format);
   VmbCameraInfo camera_info_;
   std::optional<uint64_t> timestamp_frequency_;
@@ -290,6 +301,12 @@ private:
     std::size_t(Module::ModuleMax)> feature_info_map_;
   std::array<std::unordered_multimap<std::string, std::string>,
     std::size_t(Module::ModuleMax)> feature_category_map_;
+
+  mutable std::mutex frame_ready_queue_mutex_;
+  std::condition_variable frame_ready_cv_;
+  std::queue<std::shared_ptr<Frame>> frame_ready_queue_;
+  std::shared_ptr<std::thread> frame_processing_thread_;
+  std::atomic_bool frame_processing_enable_{false};
 };
 
 }  // namespace vimbax_camera
