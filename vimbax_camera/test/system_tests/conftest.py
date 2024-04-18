@@ -70,6 +70,7 @@ class TestNode(rclpy.node.Node):
     def subscribe_image_raw(self):
 
         def callback(image):
+
             self.image_queue.put(image)
 
         self.image_subscribtion = self.create_subscription(

@@ -28,7 +28,8 @@ HARDWARE AND DOCUMENTATION.
 ## Installation
 Download the debian package from the release page and install it using the following command:
 ```
-sudo apt install ./ros-humble-vimbax-camera-driver.deb
+sudo apt install ros-humble-rmw-cyclonedds-cpp
+sudo apt install ./ros-humble-vimbax-camera-driver.deb 
 ```
 
 ## Getting started
@@ -36,6 +37,12 @@ sudo apt install ./ros-humble-vimbax-camera-driver.deb
 Setup the ROS 2 environment:
 ```shell
 source /opt/ros/humble/setup.bash
+```
+
+Change the the ROS 2 middleware to cyclonedds, because the default middleware is causing some issues. See [known issuse](#known-issues) for more details.:
+```shell
+source /opt/ros/humble/setup.bash
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
 
 To start the Vimba X ROS 2 node run:
@@ -810,6 +817,9 @@ parameter for opening a specific camera.
 ### Camera calibration
 If an error message regarding a missing camera calibration file appears it can be ignored.
 For more information see [ROS2 camera calibration documentation](https://docs.ros.org/en/rolling/p/camera_calibration/tutorial_mono.html).
+
+### Known issues
+- When using the default ros 2 middleware rmw_fastrtps_cpp the may get unresponsive sporadically if you very often subscribe and unsubscribe to the image_raw topic. This happens due to a deadlock in the middleware implementation. Therefore it is recommended to use rmw_cyclonedds_cpp as ros 2 middleware instead. 
 
 ### Debug Instructions (VS Code)
 * Install ROS extension (from Microsoft) within VS Code

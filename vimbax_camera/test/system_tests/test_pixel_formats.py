@@ -17,6 +17,8 @@ import rclpy
 from rclpy.service import Service
 from sensor_msgs.msg import Image
 
+from time import sleep
+
 # pytest libs
 import pytest
 import launch_pytest
@@ -226,6 +228,7 @@ class TestPixelFormat:
         assert image is not None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
         assert image.encoding == PFNC_TO_ROS[format]
+        sleep(1)
 
     def test_invalid_value(self, launch_context, pixel_test_node):
 

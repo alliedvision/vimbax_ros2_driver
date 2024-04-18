@@ -15,8 +15,6 @@
 import pytest
 import rclpy
 from rclpy.service import Service
-from rclpy.subscription import Subscription
-from rclpy import Future
 import launch_pytest
 import launch
 from launch_ros import actions
@@ -85,8 +83,6 @@ class StreamAutostreamTestNode(TestNode):
         self.__status_srv: Service = self.create_client(
             srv_type=Status, srv_name=f"/{cam_node_name}/status"
         )
-        self.__image_future: Future = Future()
-        self.__image_sub: Subscription = None
 
         assert self.__stream_start_srv.wait_for_service(timeout_sec=self._rcl_timeout_sec)
         assert self.__stream_stop_srv.wait_for_service(timeout_sec=self._rcl_timeout_sec)
