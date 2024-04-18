@@ -37,6 +37,7 @@ namespace vimbax_camera
 {
 
 using helper::get_logger;
+using helper::vmb_error_to_string;
 
 std::weak_ptr<VmbCAPI> VmbCAPI::instance_{};
 
@@ -210,6 +211,145 @@ VmbCAPI::~VmbCAPI()
   if (Shutdown) {
     Shutdown();
   }
+}
+
+result<std::vector<VmbInterfaceInfo>> VmbCAPI::interface_list_get() const
+{
+  uint32_t interface_list_length{};
+
+  auto const length_err = InterfacesList(
+    nullptr,
+    0,
+    &interface_list_length,
+    sizeof(VmbInterfaceInfo));
+
+  if (length_err != VmbErrorSuccess) {
+    return error{length_err};
+  }
+
+  std::vector<VmbInterfaceInfo> interface_list{};
+  interface_list.resize(interface_list_length);
+
+  auto const list_err = InterfacesList(
+    interface_list.data(),
+    interface_list.size(),
+    &interface_list_length,
+    sizeof(VmbInterfaceInfo));
+
+  if (list_err != VmbErrorSuccess) {
+    return error{list_err};
+  }
+
+  assert(interface_list.size() == interface_list.size());
+
+  return interface_list;
+}
+
+result<int64_t> VmbCAPI::feature_int_get(VmbHandle_t handle, const std::string_view & name) const
+{
+  RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  VmbInt64_t value{};
+
+  auto const err = FeatureIntGet(handle, name.data(), &value);
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      vmb_error_to_string(err).data());
+    return error{err};
+  }
+
+  return int64_t(value);
+}
+
+result<void> VmbCAPI::feature_int_set(
+  VmbHandle_t handle,
+  const std::string_view & name,
+  const int64_t value) const
+{
+  RCLCPP_DEBUG(get_logger(), "%s('%s', %ld)", __FUNCTION__, name.data(), value);
+
+  auto const err = FeatureIntSet(handle, name.data(), value);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      vmb_error_to_string(err).data());
+    return error{err};
+  }
+
+  return {};
+}
+
+
+result<std::string> VmbCAPI::feature_string_get(
+  VmbHandle_t handle,
+  const std::string_view & name) const
+{
+  RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  uint32_t size_filled{};
+  std::string value;
+
+  auto err = FeatureStringGet(handle, name.data(), nullptr, 0, &size_filled);
+
+  if (err != VmbErrorSuccess) {
+    RCLCPP_ERROR(
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+      vmb_error_to_string(err).data());
+    return error{err};
+  } else {
+    char * buf = static_cast<char *>(malloc(size_filled));
+
+    err = FeatureStringGet(handle, name.data(), buf, size_filled, &size_filled);
+
+    if (err == VmbErrorSuccess) {
+      value.assign(buf, size_filled);
+    }
+
+    free(buf);
+    buf = nullptr;
+
+    if (err != VmbErrorSuccess) {
+      RCLCPP_ERROR(
+        get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
+        vmb_error_to_string(err).data());
+      return error{err};
+    }
+  }
+
+  return value;
+}
+
+result<std::array<int64_t, 3>> VmbCAPI::feature_int_info_get(
+  VmbHandle_t handle,
+  const std::string_view & name) const
+{
+  RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
+
+  std::array<int64_t, 3> value;
+  auto err =
+    FeatureIntRangeQuery(
+    handle,
+    name.data(),
+    reinterpret_cast<VmbInt64_t *>(&value[0]),
+    reinterpret_cast<VmbInt64_t *>(&value[1]));
+
+  if (err != VmbErrorSuccess) {
+    return error{err};
+  }
+
+  err =
+    FeatureIntIncrementQuery(
+    handle,
+    name.data(),
+    reinterpret_cast<VmbInt64_t *>(&value[2]));
+
+  if (err != VmbErrorSuccess) {
+    return error{err};
+  }
+
+  return value;
 }
 
 }  // namespace vimbax_camera

@@ -21,8 +21,10 @@
 #include <memory>
 #include <string>
 #include <stdexcept>
+#include <vector>
 
 #include <vimbax_camera/loader/library_loader.hpp>
+#include <vimbax_camera/result.hpp>
 
 namespace vimbax_camera
 {
@@ -132,6 +134,25 @@ public:
 
   FunctionPtr<decltype(VmbTransportLayersList)> TransportLayersList;
   FunctionPtr<decltype(VmbVersionQuery)> VersionQuery;
+
+  result<std::vector<VmbInterfaceInfo>> interface_list_get() const;
+
+  result<int64_t> feature_int_get(
+    VmbHandle_t handle,
+    const std::string_view & name) const;
+
+  result<void> feature_int_set(
+    VmbHandle_t handle,
+    const std::string_view & name,
+    const int64_t value) const;
+
+  result<std::array<int64_t, 3>> feature_int_info_get(
+    VmbHandle_t handle,
+    const std::string_view & name) const;
+
+  result<std::string> feature_string_get(
+    VmbHandle_t handle,
+    const std::string_view & name) const;
 
 private:
   VmbCAPI() = default;

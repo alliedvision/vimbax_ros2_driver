@@ -14,6 +14,7 @@
 
 #include <optional>
 #include <filesystem>
+#include <regex>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -25,6 +26,126 @@ namespace vimbax_camera
 {
 using helper::get_logger;
 using helper::vmb_error_to_string;
+
+std::optional<uint32_t> decode_ip_addr(const std::string & ip_addr_str)
+{
+  const std::regex ip_addr_regex{"([0-9]{1,3}).([0-9]{1,3}).([0-9]{1,3}).([0-9]{1,3})"};
+  std::smatch match;
+  if (!std::regex_match(ip_addr_str, match, ip_addr_regex)) {
+    return {};
+  }
+
+  uint32_t ip_addr = uint32_t(std::stoi(match[1]) & 0xFF) << 24 |
+    uint32_t(std::stoi(match[2]) & 0xFF) << 16 |
+    uint32_t(std::stoi(match[3]) & 0xFF) << 8 |
+    uint32_t(std::stoi(match[4]) & 0xFF);
+
+  return ip_addr;
+}
+
+
+std::optional<uint64_t> decode_mac_addr(const std::string & mac_addr_str)
+{
+  // Matching formats: aa:bb:cc:dd:ee:ff, aa-bb-cc-dd-ee-ff, aabbccddeeff
+  const std::regex mac_addr_regex{
+    "([0-9a-zA-Z]{2})[:-]?([0-9a-zA-Z]{2})[:-]?([0-9a-zA-Z]{2})[:-]?"
+    "([0-9a-zA-Z]{2})[:-]?([0-9a-zA-Z]{2})[:-]?([0-9a-zA-Z]{2})"};
+  std::smatch match;
+  if (!std::regex_match(mac_addr_str, match, mac_addr_regex)) {
+    return {};
+  }
+
+  uint64_t mac_addr = uint64_t(std::stoi(match[1], 0, 16) & 0xFF) << 40 |
+    uint64_t(std::stoi(match[2], 0, 16) & 0xFF) << 32 |
+    uint64_t(std::stoi(match[3], 0, 16) & 0xFF) << 24 |
+    uint64_t(std::stoi(match[4], 0, 16) & 0xFF) << 16 |
+    uint64_t(std::stoi(match[5], 0, 16) & 0xFF) << 8 |
+    uint64_t(std::stoi(match[6], 0, 16) & 0xFF);
+
+  return mac_addr;
+}
+
+std::optional<std::string> get_camera_id_from_addr(
+  std::shared_ptr<VmbCAPI> api,
+  const std::string & addr)
+{
+  auto const check_addr = [&]() -> std::optional<std::function<bool(VmbHandle_t)>> {
+      auto const ip_addr = decode_ip_addr(addr);
+      if (ip_addr) {
+        RCLCPP_INFO(get_logger(), "Opening camera by ip address %s", addr.c_str());
+        return [ip_addr, api](VmbHandle_t handle) -> bool {
+                 auto const device_ip_addr = api->feature_int_get(handle, "GevDeviceIPAddress");
+                 if (!device_ip_addr) {
+                   return false;
+                 }
+
+                 RCLCPP_DEBUG(
+                   get_logger(),
+                   "Check ip address requested: %u device: %ld", *ip_addr, *device_ip_addr);
+
+                 return *ip_addr == *device_ip_addr;
+               };
+      }
+
+      auto const mac_addr = decode_mac_addr(addr);
+      if (mac_addr) {
+        RCLCPP_INFO(get_logger(), "Opening camera by mac address %s", addr.c_str());
+        return [mac_addr, api](VmbHandle_t handle) -> bool {
+                 auto const device_mac_addr = api->feature_int_get(handle, "GevDeviceMACAddress");
+                 if (!device_mac_addr) {
+                   return false;
+                 }
+
+                 RCLCPP_DEBUG(
+                   get_logger(),
+                   "Check mac address requested: %lu device: %ld", *mac_addr, *device_mac_addr);
+
+                 return *mac_addr == uint64_t(*device_mac_addr);
+               };
+      }
+
+      return {};
+    }();
+
+  if (!check_addr) {
+    return {};
+  }
+
+  auto const interface_list = api->interface_list_get();
+  if (!interface_list) {
+    return {};
+  }
+
+  for (auto const & interface : *interface_list) {
+    RCLCPP_DEBUG(
+      get_logger(), "Found interface %s type %d", interface.interfaceName, interface.interfaceType);
+
+    if (interface.interfaceType == VmbTransportLayerTypeGEV) {
+      auto const selector_info =
+        api->feature_int_info_get(interface.interfaceHandle, "DeviceSelector");
+      if (!selector_info) {
+        continue;
+      }
+
+      for (VmbInt64_t i = (*selector_info)[0]; i <= (*selector_info)[1]; i++) {
+        if (api->feature_int_set(interface.interfaceHandle, "DeviceSelector", i)) {
+          if ((*check_addr)(interface.interfaceHandle)) {
+            auto const device_id = api->feature_string_get(interface.interfaceHandle, "DeviceID");
+
+            if (!device_id) {
+              continue;
+            }
+
+            return *device_id;
+          }
+        }
+      }
+    }
+  }
+
+  return {};
+}
+
 
 std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
   std::shared_ptr<VmbCAPI> api,
@@ -122,6 +243,17 @@ std::shared_ptr<VimbaXCamera> VimbaXCamera::open(
       }
     }
 
+    RCLCPP_DEBUG(get_logger(), "Trying to open by ip/mac address");
+
+    auto const opt_id_by_addr = get_camera_id_from_addr(api, name);
+    if (opt_id_by_addr) {
+      auto const opt_handle = open_camera(*opt_id_by_addr);
+
+      if (opt_handle) {
+        return std::unique_ptr<VimbaXCamera>(new VimbaXCamera{api, *opt_handle});
+      }
+    }
+
     RCLCPP_DEBUG(get_logger(), "No matching camera found, falling back to VmbCameraOpen");
 
     auto const opt_handle = open_camera(name);
@@ -149,6 +281,8 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t camera_hand
   RCLCPP_INFO(
     get_logger(), "Opened camera info model name: %s, camera name: %s, serial: %s",
     camera_info_.modelName, camera_info_.cameraName, camera_info_.serialString);
+
+  RCLCPP_INFO(get_logger(), "Camera extended id %s", camera_info_.cameraIdExtended);
 
   initialize_feature_map(Module::System);
   initialize_feature_map(Module::Interface);
@@ -524,7 +658,7 @@ result<void> VimbaXCamera::feature_command_run(
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
 
     if (is_timed_out()) {
-      RCLCPP_ERROR(get_logger(), "Waiting for command done timed out!");
+      RCLCPP_ERROR(get_logger(), "Waiting for command %s done timed out!", name.data());
       return error{VmbErrorTimeout};
     }
   } while(!done);
@@ -541,22 +675,9 @@ result<int64_t> VimbaXCamera::feature_int_get(
 
 result<int64_t> VimbaXCamera::feature_int_get(
   const std::string_view & name,
-  const VmbHandle_t handle) const
+  VmbHandle_t handle) const
 {
-  RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
-
-  int64_t value{};
-  auto const err =
-    api_->FeatureIntGet(handle, name.data(), reinterpret_cast<VmbInt64_t *>(&value));
-
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "%s %s failed with error %d (%s)", __FUNCTION__, name.data(), err,
-      vmb_error_to_string(err).data());
-    return error{err};
-  }
-
-  return value;
+  return api_->feature_int_get(handle, name);
 }
 
 result<void> VimbaXCamera::feature_int_set(
@@ -564,21 +685,9 @@ result<void> VimbaXCamera::feature_int_set(
   const int64_t value,
   const Module module) const
 {
-  RCLCPP_DEBUG(get_logger(), "%s('%s', %ld)", __FUNCTION__, name.data(), value);
-
   auto const handle = get_module_handle(module);
 
-  auto const err =
-    api_->FeatureIntSet(handle, name.data(), value);
-
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-      vmb_error_to_string(err).data());
-    return error{err};
-  }
-
-  return {};
+  return api_->feature_int_set(handle, name, value);
 }
 
 result<std::array<int64_t, 3>>
@@ -588,38 +697,16 @@ VimbaXCamera::feature_int_info_get(
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
-  std::array<int64_t, 3> value;
-
   auto const handle = get_module_handle(module);
+  auto const result = api_->feature_int_info_get(handle, name);
 
-  auto err =
-    api_->FeatureIntRangeQuery(
-    handle,
-    name.data(),
-    reinterpret_cast<VmbInt64_t *>(&value[0]),
-    reinterpret_cast<VmbInt64_t *>(&value[1]));
-
-  if (err != VmbErrorSuccess) {
+  if (!result) {
     RCLCPP_ERROR(
-      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-      vmb_error_to_string(err).data());
-    return error{err};
+      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, result.error().code,
+      vmb_error_to_string(result.error().code).data());
   }
 
-  err =
-    api_->FeatureIntIncrementQuery(
-    handle,
-    name.data(),
-    reinterpret_cast<VmbInt64_t *>(&value[2]));
-
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-      vmb_error_to_string(err).data());
-    return error{err};
-  }
-
-  return value;
+  return result;
 }
 
 result<_Float64> VimbaXCamera::feature_float_get(
@@ -719,43 +806,14 @@ result<std::string> VimbaXCamera::feature_string_get(
   return feature_string_get(name, get_module_handle(module));
 }
 
+
 result<std::string> VimbaXCamera::feature_string_get(
-  const std::string_view & name, VmbHandle_t handle) const
+  const std::string_view & name,
+  VmbHandle_t handle) const
 {
-  RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
-
-  uint32_t size_filled{};
-  std::string value;
-
-  auto err = api_->FeatureStringGet(handle, name.data(), nullptr, 0, &size_filled);
-
-  if (err != VmbErrorSuccess) {
-    RCLCPP_ERROR(
-      get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-      vmb_error_to_string(err).data());
-    return error{err};
-  } else {
-    char * buf = static_cast<char *>(malloc(size_filled));
-
-    err = api_->FeatureStringGet(handle, name.data(), buf, size_filled, &size_filled);
-
-    if (err == VmbErrorSuccess) {
-      value.assign(buf, size_filled);
-    }
-
-    free(buf);
-    buf = nullptr;
-
-    if (err != VmbErrorSuccess) {
-      RCLCPP_ERROR(
-        get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
-        vmb_error_to_string(err).data());
-      return error{err};
-    }
-  }
-
-  return value;
+  return api_->feature_string_get(handle, name);
 }
+
 
 result<void>
 VimbaXCamera::feature_string_set(
