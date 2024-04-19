@@ -961,7 +961,8 @@ bool VimbaXCameraNode::initialize_bool_feature_services()
       if (is_available_) {
         auto const feature_module = map_module(request->feature_module);
         if (feature_module) {
-          auto const result = camera_->feature_bool_set(request->feature_name, request->value);
+          auto const result = camera_->feature_bool_set(
+            request->feature_name, request->value, *feature_module);
           if (!result) {
             response->set__error(result.error().to_error_msg());
           }
