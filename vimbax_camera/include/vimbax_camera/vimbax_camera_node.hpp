@@ -216,6 +216,7 @@ private:
 
   std::unique_ptr<std::thread> graph_notify_thread_;
   std::atomic_bool stop_threads_{false};
+  std::optional<uint64_t> last_frame_id_{};
 };
 
 }  // namespace vimbax_camera

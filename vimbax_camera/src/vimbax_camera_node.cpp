@@ -965,7 +965,8 @@ bool VimbaXCameraNode::initialize_bool_feature_services()
       if (is_available_) {
         auto const feature_module = map_module(request->feature_module);
         if (feature_module) {
-          auto const result = camera_->feature_bool_set(request->feature_name, request->value, *feature_module);
+          auto const result = camera_->feature_bool_set(
+            request->feature_name, request->value, *feature_module);
           if (!result) {
             response->set__error(result.error().to_error_msg());
           }
@@ -1565,17 +1566,18 @@ result<void> VimbaXCameraNode::start_streaming()
   std::shared_lock camera_lock(camera_mutex_, std::defer_lock);
   std::lock(stream_state_lock, camera_lock);
 
-  auto error = camera_->start_streaming(
+  auto result = camera_->start_streaming(
     buffer_count,
     [this](std::shared_ptr<VimbaXCamera::Frame> frame) {
-      static int64_t lastFrameId = -1;
-      auto const diff = frame->get_frame_id() - lastFrameId;
+      if (last_frame_id_) {
+        auto const diff = frame->get_frame_id() - *last_frame_id_;
 
-      if (diff > 1) {
-        RCLCPP_WARN(get_logger(), "%ld frames missing", diff - 1);
+        if (diff > 1) {
+          RCLCPP_WARN(get_logger(), "%ld frames missing", diff - 1);
+        }
       }
+      last_frame_id_ = frame->get_frame_id();
 
-      lastFrameId = frame->get_frame_id();
       frame->header.set__frame_id(node_->get_parameter(parameter_frame_id).as_string());
 
 
@@ -1612,10 +1614,10 @@ result<void> VimbaXCameraNode::start_streaming()
       }
     });
 
-  if (!error) {
+  if (result) {
     RCLCPP_INFO(get_logger(), "Stream started using %ld buffers", buffer_count);
   }
-  return error;
+  return result;
 }
 
 result<void> VimbaXCameraNode::stop_streaming()
@@ -1629,6 +1631,8 @@ result<void> VimbaXCameraNode::stop_streaming()
   std::lock(stream_state_lock, camera_lock);
 
   auto error = camera_->stop_streaming();
+
+  last_frame_id_ = std::nullopt;
 
   RCLCPP_INFO(get_logger(), "Stream stopped");
   return error;

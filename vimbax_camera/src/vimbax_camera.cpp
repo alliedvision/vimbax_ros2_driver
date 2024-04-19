@@ -498,8 +498,6 @@ result<void> VimbaXCamera::start_streaming(
 
     stream_state_.store(StreamState::kActive);
 
-    RCLCPP_INFO(get_logger(), "Stream started");
-
     return {};
   } else if (expected_state == StreamState::kActive) {
     return {};
