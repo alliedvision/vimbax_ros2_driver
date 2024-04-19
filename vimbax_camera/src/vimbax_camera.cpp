@@ -168,7 +168,14 @@ VimbaXCamera::VimbaXCamera(std::shared_ptr<VmbCAPI> api, VmbHandle_t camera_hand
   }
 
   if (has_feature(SFNCFeatures::GVSPAdjustPacketSize, Module::Stream)) {
-    feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, get_module_handle(Module::Stream));
+    auto const result =
+      feature_command_run(SFNCFeatures::GVSPAdjustPacketSize, get_module_handle(Module::Stream));
+    if (!result) {
+      RCLCPP_INFO(
+        get_logger(),
+        "Packet size adjustment failed with %s",
+        vmb_error_to_string(result.error().code).data());
+    }
   }
 }
 
@@ -176,6 +183,10 @@ VimbaXCamera::~VimbaXCamera()
 {
   if (is_alive()) {
     stop_streaming();
+  } else if (frame_processing_thread_) {
+    frame_processing_enable_.store(false);
+    frame_ready_cv_.notify_all();
+    frame_processing_thread_->join();
   }
 
   if (api_ && camera_handle_) {

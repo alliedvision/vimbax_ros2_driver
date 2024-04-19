@@ -530,11 +530,14 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
           RCLCPP_INFO(
             get_logger(), "%s: Camera '%s' reconnected.", __FUNCTION__, last_camera_id_.c_str());
 
-          if (initialize_camera(true)) {
-            // Notify graph context that a stream restart is required
-            stream_restart_required_ = stream_restart_required;
-            stream_restart_required = false;
-          }
+          std::thread(
+            [this] {
+              if (initialize_camera(true)) {
+                // Notify graph context that a stream restart is required
+                stream_restart_required_ = stream_restart_required;
+                stream_restart_required = false;
+              }
+            }).detach();
         }
       }
     }
