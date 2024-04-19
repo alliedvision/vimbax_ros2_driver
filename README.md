@@ -219,6 +219,13 @@ Only if [automatic stream](#automatic-stream) is enabled.
 | 3 | MODULE_LOCAL_DEVICE | Local Device |
 | 4 | MODULE_STREAM | Stream 0 |
 
+## vimbax_camera_msgs/TriggerInfo
+| Name | Type | Description |
+|------|------|-------------|
+| selector | string | Trigger selector for which the mode and source was read. |
+| mode | string | Trigger mode of the given selector. |
+| source | string | Trigger source of the given selector. |
+
 ## Available services
 
 ### /\<camera node ns>/feature_info_query
@@ -754,8 +761,7 @@ Get status information of the connected camera.
 | height | uint32 | Currently set height of the image. Equals the value of the camera feature "Height" |
 | frame_rate | float64 | Currently set frame rate of the camera |
 | pixel_format | string | Currently set pixel format. Equals the camera feature "PixelFormat" |
-| trigger_mode | string | Current trigger mode |
-| trigger_source | string | Current trigger source |
+| trigger_info | [TriggerInfo](#vimbax_camera_msgstriggerinfo) | Trigger information |
 | ip_address | string | IP address of the camera. <br> **Only valid for GigE vision cameras**
 | mac_address | string | MAC address of the camera. <br> **Only valid for GigE vision cameras**
 

@@ -13,7 +13,6 @@ uint32 width
 uint32 height
 float64 frame_rate
 string pixel_format
-string trigger_mode
-string trigger_source
+TriggerInfo[] trigger_info
 string ip_address
 string mac_address

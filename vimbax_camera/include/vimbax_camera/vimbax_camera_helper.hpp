@@ -59,6 +59,7 @@ struct SFNCFeatures
   static constexpr std::string_view Height = "Height";
   static constexpr std::string_view TriggerMode = "TriggerMode";
   static constexpr std::string_view TriggerSource = "TriggerSource";
+  static constexpr std::string_view TriggerSelector = "TriggerSelector";
   static constexpr std::string_view DeviceFirmwareVersion = "DeviceFirmwareVersion";
   static constexpr std::string_view DeviceUserId = "DeviceUserID";
   static constexpr std::string_view AcquisitionFrameRate = "AcquisitionFrameRate";

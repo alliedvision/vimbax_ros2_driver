@@ -1447,6 +1447,17 @@ bool VimbaXCameraNode::initialize_status_services()
         if (!info) {
           response->set__error(info.error().to_error_msg());
         } else {
+          std::vector<vimbax_camera_msgs::msg::TriggerInfo> trigger_info{};
+
+          std::transform(
+            info->trigger_info.begin(), info->trigger_info.end(), std::back_inserter(trigger_info),
+            [](auto const trigger_info) {
+              return vimbax_camera_msgs::msg::TriggerInfo{}
+              .set__selector(trigger_info.selector)
+              .set__mode(trigger_info.mode)
+              .set__source(trigger_info.source);
+            });
+
           response->set__display_name(info->display_name)
           .set__model_name(info->model_name)
           .set__device_firmware_version(info->firmware_version)
@@ -1460,8 +1471,7 @@ bool VimbaXCameraNode::initialize_status_services()
           .set__height(info->height)
           .set__frame_rate(info->frame_rate)
           .set__pixel_format(info->pixel_format)
-          .set__trigger_mode(info->trigger_mode)
-          .set__trigger_source(info->trigger_source);
+          .set__trigger_info(trigger_info);
 
           if (info->ip_address) {
             response->set__ip_address(*info->ip_address);
