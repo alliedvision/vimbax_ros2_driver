@@ -22,6 +22,12 @@ def generate_launch_description():
             package='vimbax_camera',
             namespace='vimbax_camera_test',
             executable='vimbax_camera_node',
-            name='vimbax_camera_test'
+            name='vimbax_camera_test',
+            parameters=[{
+                # "camera_id": "00:0f:31:00:0e:2f"
+                # "camera_id": "00:0F-31-00-0E-2F"
+                # "camera_id": "169.254.103.205"
+                # "camera_id": "DEV_000F31000E2F"
+            }]
         )
     ])
