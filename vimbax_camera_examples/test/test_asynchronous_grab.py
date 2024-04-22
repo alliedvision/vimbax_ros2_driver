@@ -16,9 +16,6 @@ import launch_pytest
 import launch
 from launch_ros.actions import Node
 from conftest import assert_clean_shutdown
-import logging
-
-LOGGER = logging.getLogger(__name__)
 
 
 @pytest.fixture

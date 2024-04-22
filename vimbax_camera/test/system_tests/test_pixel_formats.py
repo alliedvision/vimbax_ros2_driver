@@ -21,43 +21,53 @@ from time import sleep
 
 # pytest libs
 import pytest
+import launch_pytest
+import launch_ros
+from launch import LaunchDescription
+from launch.actions import ExecuteProcess
 
 # VimbaX_Camera msgs
-from vimbax_camera_msgs.srv import FeatureEnumInfoGet, FeatureEnumSet, StreamStartStop
+from vimbax_camera_msgs.srv import (
+    FeatureEnumInfoGet,
+    FeatureEnumSet,
+    StreamStartStop,
+    FeatureCommandRun,
+)
 from test_helper import check_error
 
-from conftest import vimbax_camera_node, TestNode
-
 from typing import List
+from conftest import TestNode
 
 
 import logging
-LOGGER = logging.getLogger(__name__)
+
+LOGGER = logging.getLogger()
 
 # The required formats are listed in requirement UNIRT-1118
-REQUIRED_PIXEL_FORMATS = {
+REQUIRED_PIXEL_FORMATS = [
     "Mono8",
-    "Mono16",
     "Mono12",
-    "BGR8",
+    "Mono16",
     "RGB8",
-    "BayerBG8",
-    "BayerGB8",
-    "BayerRG8",
+    "BGR8",
     "BayerRG16",
     "BayerRG12",
     "BayerRG10",
+    "BayerRG8",
     "BayerBG16",
     "BayerBG12",
     "BayerBG10",
+    "BayerBG8",
     "BayerGB16",
     "BayerGB12",
     "BayerGB10",
+    "BayerGB8",
     "BayerGR16",
     "BayerGR12",
     "BayerGR10",
+    "BayerGR8",
     "YCBCR422_8",
-}
+]
 
 PFNC_TO_ROS = {
     "Mono8": "mono8",
@@ -85,16 +95,6 @@ PFNC_TO_ROS = {
 }
 
 
-@pytest.fixture(autouse=True)
-def init_and_shutdown_ros():
-    rclpy.init()
-
-    # The test is run here
-    yield
-
-    rclpy.shutdown()
-
-
 class PixelFormatTestNode(TestNode):
     """Custom ROS2 Node to make testing easier."""
 
@@ -114,26 +114,25 @@ class PixelFormatTestNode(TestNode):
             srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_stop"
         )
 
+        self.subscribe_image_raw()
+
         # Magic timeout value
         assert self.__enum_info_get_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
         assert self.__enum_set_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
         assert self.__stream_start_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
         assert self.__stream_stop_srv.wait_for_service(timeout_sec=self.__rcl_timeout_sec)
 
-    def __call_service_sync(self, srv: Service, request):
-        return srv.call(request)
-
     def stop_stream(self) -> StreamStartStop.Response:
-        return self.__call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
+        return self.call_service_sync(self.__stream_stop_srv, StreamStartStop.Request())
 
     def start_stream(self) -> StreamStartStop.Response:
-        return self.__call_service_sync(self.__stream_start_srv, StreamStartStop.Request())
+        return self.call_service_sync(self.__stream_start_srv, StreamStartStop.Request())
 
     def get_supported_pixel_formats(self) -> List[str]:
         """Receives the list of available pixel formats from the camera."""
         req: FeatureEnumInfoGet.Request = FeatureEnumInfoGet.Request()
         req.feature_name = "PixelFormat"
-        res: FeatureEnumInfoGet.Response = self.__call_service_sync(self.__enum_info_get_srv, req)
+        res: FeatureEnumInfoGet.Response = self.call_service_sync(self.__enum_info_get_srv, req)
         check_error(res.error)
 
         return res.available_values
@@ -143,51 +142,98 @@ class PixelFormatTestNode(TestNode):
         req: FeatureEnumSet.Request = FeatureEnumSet.Request()
         req.feature_name = "PixelFormat"
         req.value = format
-        return self.__call_service_sync(self.__enum_set_srv, req)
+        return self.call_service_sync(self.__enum_set_srv, req)
 
     def get_latest_image(self) -> Image:
-        """Spins the default context until an Image is received from the Camera."""
-        return self.wait_for_frame(self.__rcl_timeout_sec)
+        self.clear_queue()
+        return self.wait_for_frame(timeout=self.__rcl_timeout_sec)
 
 
-@pytest.mark.launch(fixture=vimbax_camera_node)
-def test_pixel_formats(launch_context, node_test_id, camera_test_node_name):
+@pytest.fixture(scope="class")
+def pixel_test_node(launch_context):
+    rclpy.init()
 
-    node: PixelFormatTestNode = PixelFormatTestNode(
-        f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
-
-    # We can only test the formats required and supported by the attached camera
-    available_formats = REQUIRED_PIXEL_FORMATS.intersection(
-        set(node.get_supported_pixel_formats())
+    test_node: PixelFormatTestNode = PixelFormatTestNode(
+        "pytest_client_node", "test_pixel_formats", timeout_sec=10.0
     )
 
-    LOGGER.info(f"Available Pixel Formats: {available_formats}")
+    enum_set_client = test_node.create_client(
+        FeatureEnumSet, "/test_pixel_formats/features/enum_set"
+    )
+    command_run_client = test_node.create_client(
+        FeatureCommandRun, "/test_pixel_formats/features/command_run"
+    )
+    enum_set_client.wait_for_service(10)
+    command_run_client.wait_for_service(10)
 
-    for format in available_formats:
+    test_node.call_service_sync(
+        enum_set_client,
+        FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
+    )
+
+    test_node.call_service_sync(
+        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
+    )
+
+    yield test_node
+
+    rclpy.shutdown()
+
+
+@launch_pytest.fixture(scope="class")
+def vimbax_camera_node_class_scope():
+    return LaunchDescription(
+        [
+            ExecuteProcess(
+                cmd=["ros2", "node", "list", "--all"],
+                shell=True,
+                output="both",
+            ),
+            launch_ros.actions.Node(
+                package="vimbax_camera",
+                namespace="/test_pixel_formats",
+                executable="vimbax_camera_node",
+                name="test_pixel_formats",
+            ),
+            launch_pytest.actions.ReadyToTest(),
+        ]
+    )
+
+
+@pytest.mark.launch(fixture=vimbax_camera_node_class_scope)
+class TestPixelFormat:
+    """One VimbaXCamera node is started for all tests."""
+
+    @pytest.mark.parametrize("format", REQUIRED_PIXEL_FORMATS)
+    def test_format(self, format, launch_context, pixel_test_node):
+
+        # The PixelFormat cannot be changed while the camera is streaming
+        check_error(pixel_test_node.stop_stream().error)
+
+        # We can only test the formats required and supported by the attached camera
+        if not (format in pixel_test_node.get_supported_pixel_formats()):
+            pytest.skip(f"{format} is not supported by current camera")
+            return
+
         # Set the pixel format
         LOGGER.info(f"Testing format: {format}")
 
-        check_error(node.set_pixel_format(format).error)
-        node.clear_queue()
-        node.subscribe_image_raw()
+        check_error(pixel_test_node.set_pixel_format(format).error)
+        check_error(pixel_test_node.start_stream().error)
 
-        image: Image = node.get_latest_image()
+        image: Image = pixel_test_node.get_latest_image()
 
-        node.unsubscribe_image_raw()
+        check_error(pixel_test_node.stop_stream().error)
         # Assert the pixel format of the image matches the requested format
         assert image is not None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
         assert image.encoding == PFNC_TO_ROS[format]
         sleep(1)
 
+    def test_invalid_value(self, launch_context, pixel_test_node):
 
-@pytest.mark.launch(fixture=vimbax_camera_node)
-def test_invalid_pixel_format(launch_context, node_test_id, camera_test_node_name):
-
-    node: PixelFormatTestNode = PixelFormatTestNode(
-        f"pytest_client_node_{node_test_id}", camera_test_node_name, timeout_sec=5.0)
-    node.stop_stream()
-    # This should fail
-    res = node.set_pixel_format("")
-    error_msg: str = "Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)"
-    assert res.error.code == -11,  error_msg.format(res.error.code, res.error.text)
+        pixel_test_node.stop_stream()
+        # This should fail
+        res = pixel_test_node.set_pixel_format("")
+        error_msg: str = "Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)"
+        assert res.error.code == -11, error_msg.format(res.error.code, res.error.text)

@@ -28,11 +28,11 @@ from test_helper import check_error
 def test_stream_start_stop_services(test_node: TestNode, launch_context):
     start_service = test_node.create_client(
         StreamStartStop, f"/{test_node.camera_node_name()}/stream_start"
-        )
+    )
     assert start_service.wait_for_service(10)
     stop_service = test_node.create_client(
         StreamStartStop, f"/{test_node.camera_node_name()}/stream_stop"
-        )
+    )
     assert stop_service.wait_for_service(10)
 
 
@@ -45,7 +45,10 @@ def test_stream_auto_stream_start_stop(test_node: TestNode, launch_context):
     assert not status.streaming
     test_node.subscribe_image_raw()
 
+    test_node.clear_queue()
     assert test_node.wait_for_frame(5.0)
+    # Camera needs time to detect graph change
+    time.sleep(2.0)
     status = test_node.call_service_sync(status_service, Status.Request())
     assert status.streaming
     test_node.unsubscribe_image_raw()
@@ -77,11 +80,11 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
 
     start_service = test_node.create_client(
         StreamStartStop, f"/{test_node.camera_node_name()}/stream_start"
-        )
+    )
     assert start_service.wait_for_service(1)
     stop_service = test_node.create_client(
         StreamStartStop, f"/{test_node.camera_node_name()}/stream_stop"
-        )
+    )
     assert stop_service.wait_for_service(1)
 
     status = test_node.call_service_sync(status_service, Status.Request())
@@ -89,7 +92,8 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
     test_node.subscribe_image_raw()
 
     assert test_node.wait_for_frame(10.0)
-
+    # Camera needs time to detect graph change
+    time.sleep(1.0)
     status = test_node.call_service_sync(status_service, Status.Request())
     assert status.streaming
 
@@ -112,4 +116,5 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
     assert test_node.image_queue.empty()
 
     status = test_node.call_service_sync(status_service, Status.Request())
+    assert status is not None, "GetStatus service call did not complete!"
     assert not status.streaming

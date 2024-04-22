@@ -77,7 +77,7 @@ def test_feature_list(test_node: TestNode, launch_context, module: FeatureModule
     assert feature_list_service.wait_for_service(10)
 
     req = FeaturesListGet.Request(feature_module=module)
-    response = feature_list_service.call(req)
+    response = test_node.call_service_sync(feature_list_service, req)
 
     check_error(response.error)
     assert len(response.feature_list) > 0
@@ -95,7 +95,9 @@ def test_feature_list_query(test_node: TestNode, launch_context, module: Feature
     )
     assert feature_info_query_service.wait_for_service(10)
 
-    response = feature_list_service.call(FeaturesListGet.Request(feature_module=module))
+    response = test_node.call_service_sync(
+        feature_list_service, FeaturesListGet.Request(feature_module=module)
+    )
 
     check_error(response.error)
     assert len(response.feature_list) > 0
@@ -103,7 +105,9 @@ def test_feature_list_query(test_node: TestNode, launch_context, module: Feature
     for feature in response.feature_list:
         feature_info_request = FeatureInfoQuery.Request(feature_module=module)
         feature_info_request.feature_names.append(feature)
-        feature_info = feature_info_query_service.call(feature_info_request)
+        feature_info = test_node.call_service_sync(
+            feature_info_query_service, feature_info_request
+        )
 
         check_error(feature_info.error)
         assert len(feature_info.feature_info) == 1
@@ -123,14 +127,16 @@ def test_feature_list_query_all(test_node: TestNode, launch_context, module: Fea
     )
     assert feature_info_query_service.wait_for_service(10)
 
-    response = feature_list_service.call(FeaturesListGet.Request(feature_module=module))
+    response = test_node.call_service_sync(
+        feature_list_service, FeaturesListGet.Request(feature_module=module)
+    )
 
     check_error(response.error)
     assert len(response.feature_list) > 0
 
     feature_info_request = FeatureInfoQuery.Request(feature_module=module)
     feature_info_request.feature_names = response.feature_list
-    feature_info = feature_info_query_service.call(feature_info_request)
+    feature_info = test_node.call_service_sync(feature_info_query_service, feature_info_request)
 
     check_error(feature_info.error)
     assert len(feature_info.feature_info) == len(response.feature_list)
@@ -150,13 +156,15 @@ def test_feature_list_is_query_empty(test_node: TestNode, launch_context, module
     )
     assert feature_info_query_service.wait_for_service(10)
 
-    response = feature_list_service.call(FeaturesListGet.Request(feature_module=module))
+    response = test_node.call_service_sync(
+        feature_list_service, FeaturesListGet.Request(feature_module=module)
+    )
 
     check_error(response.error)
     assert len(response.feature_list) > 0
 
     feature_info_request = FeatureInfoQuery.Request(feature_module=module)
-    feature_info = feature_info_query_service.call(feature_info_request)
+    feature_info = test_node.call_service_sync(feature_info_query_service, feature_info_request)
 
     check_error(feature_info.error)
     assert len(feature_info.feature_info) == len(response.feature_list)
@@ -176,7 +184,9 @@ def test_feature_get_access_mode(test_node: TestNode, launch_context, module: Fe
     )
     assert feature_access_mode_service.wait_for_service(10)
 
-    response = feature_list_service.call(FeaturesListGet.Request(feature_module=module))
+    response = test_node.call_service_sync(
+        feature_list_service, FeaturesListGet.Request(feature_module=module)
+    )
 
     check_error(response.error)
     assert len(response.feature_list) > 0
@@ -184,7 +194,9 @@ def test_feature_get_access_mode(test_node: TestNode, launch_context, module: Fe
     for feature_name in response.feature_list:
         access_mode_request = FeatureAccessModeGet.Request(feature_module=module)
         access_mode_request.feature_name = feature_name
-        access_mode_response = feature_access_mode_service.call(access_mode_request)
+        access_mode_response = test_node.call_service_sync(
+            feature_access_mode_service, access_mode_request
+        )
         check_error(access_mode_response.error)
 
 
@@ -220,8 +232,8 @@ def test_feature_type_info_get(test_node: TestNode, launch_context, module: Feat
     )
     assert feature_raw_info_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -241,21 +253,27 @@ def test_feature_type_info_get(test_node: TestNode, launch_context, module: Feat
             int_info_request = FeatureIntInfoGet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
-            int_info_response = feature_int_info_service.call(int_info_request)
+            int_info_response = test_node.call_service_sync(
+                feature_int_info_service, int_info_request
+            )
             check_error(int_info_response.error)
             assert int_info_response.min <= int_info_response.max
         elif feature_info.data_type == FeatureDataType.FLOAT.value:
             float_info_request = FeatureFloatInfoGet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
-            float_info_response = feature_float_info_service.call(float_info_request)
+            float_info_response = test_node.call_service_sync(
+                feature_float_info_service, float_info_request
+            )
             check_error(float_info_response.error)
             assert float_info_response.min <= float_info_response.max
         elif feature_info.data_type == FeatureDataType.ENUM.value:
             enum_info_request = FeatureEnumInfoGet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
-            enum_info_response = feature_enum_info_service.call(enum_info_request)
+            enum_info_response = test_node.call_service_sync(
+                feature_enum_info_service, enum_info_request
+            )
             check_error(enum_info_response.error)
             for option in enum_info_response.available_values:
                 assert option in enum_info_response.possible_values
@@ -263,14 +281,18 @@ def test_feature_type_info_get(test_node: TestNode, launch_context, module: Feat
             string_info_request = FeatureStringInfoGet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
-            string_info_response = feature_string_info_service.call(string_info_request)
+            string_info_response = test_node.call_service_sync(
+                feature_string_info_service, string_info_request
+            )
             check_error(string_info_response.error)
             assert string_info_response.max_length > 0
         elif feature_info.data_type == FeatureDataType.RAW.value:
             raw_info_request = FeatureRawInfoGet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
-            raw_info_response = feature_raw_info_service.call(raw_info_request)
+            raw_info_response = test_node.call_service_sync(
+                feature_raw_info_service, raw_info_request
+            )
             check_error(raw_info_response.error)
             assert raw_info_response.max_length > 0
 
@@ -291,8 +313,8 @@ def test_feature_int_get(test_node: TestNode, launch_context, module: FeatureMod
     )
     assert feature_int_get_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -308,8 +330,9 @@ def test_feature_int_get(test_node: TestNode, launch_context, module: FeatureMod
     ]
 
     for feature_info in available_features:
-        response = feature_int_get_service.call(
-            FeatureIntGet.Request(feature_name=feature_info.name, feature_module=module)
+        response = test_node.call_service_sync(
+            feature_int_get_service,
+            FeatureIntGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(response.error)
 
@@ -340,8 +363,8 @@ def test_feature_int_set(test_node: TestNode, launch_context, module: FeatureMod
     )
     assert feature_int_info_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -358,13 +381,15 @@ def test_feature_int_set(test_node: TestNode, launch_context, module: FeatureMod
         if feature_info.name in features_ignore:
             continue
 
-        int_get_response = feature_int_get_service.call(
-            FeatureIntGet.Request(feature_name=feature_info.name, feature_module=module)
+        int_get_response = test_node.call_service_sync(
+            feature_int_get_service,
+            FeatureIntGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(int_get_response.error)
 
-        int_info_response = feature_int_info_service.call(
-            FeatureIntInfoGet.Request(feature_name=feature_info.name, feature_module=module)
+        int_info_response = test_node.call_service_sync(
+            feature_int_info_service,
+            FeatureIntInfoGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(int_info_response.error)
 
@@ -377,11 +402,12 @@ def test_feature_int_set(test_node: TestNode, launch_context, module: FeatureMod
             )
             set_request.value = value
 
-            set_response = feature_int_set_service.call(set_request)
+            set_response = test_node.call_service_sync(feature_int_set_service, set_request)
             check_error(set_response.error)
 
-            get_set_response = feature_int_get_service.call(
-                FeatureIntGet.Request(feature_name=feature_info.name, feature_module=module)
+            get_set_response = test_node.call_service_sync(
+                feature_int_get_service,
+                FeatureIntGet.Request(feature_name=feature_info.name, feature_module=module),
             )
             check_error(get_set_response.error)
             assert get_set_response.value == value
@@ -403,8 +429,8 @@ def test_feature_float_get(test_node: TestNode, launch_context, module: FeatureM
     )
     assert feature_float_get_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -420,8 +446,9 @@ def test_feature_float_get(test_node: TestNode, launch_context, module: FeatureM
     ]
 
     for feature_info in available_features:
-        response = feature_float_get_service.call(
-            FeatureFloatGet.Request(feature_name=feature_info.name, feature_module=module)
+        response = test_node.call_service_sync(
+            feature_float_get_service,
+            FeatureFloatGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(response.error)
 
@@ -452,8 +479,8 @@ def test_feature_float_set(test_node: TestNode, launch_context, module: FeatureM
     )
     assert feature_float_info_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -470,13 +497,15 @@ def test_feature_float_set(test_node: TestNode, launch_context, module: FeatureM
         if feature_info.name in features_ignore:
             continue
 
-        float_get_response = feature_float_get_service.call(
-            FeatureFloatGet.Request(feature_name=feature_info.name, feature_module=module)
+        float_get_response = test_node.call_service_sync(
+            feature_float_get_service,
+            FeatureFloatGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(float_get_response.error)
 
-        float_info_response = feature_float_info_service.call(
-            FeatureFloatInfoGet.Request(feature_name=feature_info.name, feature_module=module)
+        float_info_response = test_node.call_service_sync(
+            feature_float_info_service,
+            FeatureFloatInfoGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(float_info_response.error)
 
@@ -489,11 +518,12 @@ def test_feature_float_set(test_node: TestNode, launch_context, module: FeatureM
             )
             set_request.value = value
 
-            set_response = feature_float_set_service.call(set_request)
+            set_response = test_node.call_service_sync(feature_float_set_service, set_request)
             check_error(set_response.error)
 
-            get_set_response = feature_float_get_service.call(
-                FeatureFloatGet.Request(feature_name=feature_info.name, feature_module=module)
+            get_set_response = test_node.call_service_sync(
+                feature_float_get_service,
+                FeatureFloatGet.Request(feature_name=feature_info.name, feature_module=module),
             )
             check_error(get_set_response.error)
             assert get_set_response.value == value
@@ -515,8 +545,8 @@ def test_feature_enum_get(test_node: TestNode, launch_context, module: FeatureMo
     )
     assert feature_enum_get_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -532,8 +562,9 @@ def test_feature_enum_get(test_node: TestNode, launch_context, module: FeatureMo
     ]
 
     for feature_info in available_features:
-        response = feature_enum_get_service.call(
-            FeatureEnumGet.Request(feature_name=feature_info.name, feature_module=module)
+        response = test_node.call_service_sync(
+            feature_enum_get_service,
+            FeatureEnumGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(response.error)
 
@@ -569,8 +600,8 @@ def test_feature_enum_set(test_node: TestNode, launch_context, module: FeatureMo
     )
     assert feature_enum_info_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -587,13 +618,15 @@ def test_feature_enum_set(test_node: TestNode, launch_context, module: FeatureMo
         if feature_info.name in features_ignore:
             continue
 
-        enum_get_response = feature_enum_get_service.call(
-            FeatureEnumGet.Request(feature_name=feature_info.name, feature_module=module)
+        enum_get_response = test_node.call_service_sync(
+            feature_enum_get_service,
+            FeatureEnumGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(enum_get_response.error)
 
-        enum_info_response = feature_enum_info_service.call(
-            FeatureEnumInfoGet.Request(feature_name=feature_info.name, feature_module=module)
+        enum_info_response = test_node.call_service_sync(
+            feature_enum_info_service,
+            FeatureEnumInfoGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(enum_info_response.error)
 
@@ -606,11 +639,12 @@ def test_feature_enum_set(test_node: TestNode, launch_context, module: FeatureMo
             )
             set_request.value = value
 
-            set_response = feature_enum_set_service.call(set_request)
+            set_response = test_node.call_service_sync(feature_enum_set_service, set_request)
             check_error(set_response.error)
 
-            get_set_response = feature_enum_get_service.call(
-                FeatureEnumGet.Request(feature_name=feature_info.name, feature_module=module)
+            get_set_response = test_node.call_service_sync(
+                feature_enum_get_service,
+                FeatureEnumGet.Request(feature_name=feature_info.name, feature_module=module),
             )
             check_error(get_set_response.error)
             assert get_set_response.value == value
@@ -632,8 +666,8 @@ def test_feature_bool_get(test_node: TestNode, launch_context, module: FeatureMo
     )
     assert feature_bool_get_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -649,8 +683,9 @@ def test_feature_bool_get(test_node: TestNode, launch_context, module: FeatureMo
     ]
 
     for feature_info in available_features:
-        response = feature_bool_get_service.call(
-            FeatureBoolGet.Request(feature_name=feature_info.name, feature_module=module)
+        response = test_node.call_service_sync(
+            feature_bool_get_service,
+            FeatureBoolGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(response.error)
 
@@ -677,8 +712,8 @@ def test_feature_bool_set(test_node: TestNode, launch_context, module: FeatureMo
     )
     assert feature_bool_set_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -695,8 +730,9 @@ def test_feature_bool_set(test_node: TestNode, launch_context, module: FeatureMo
         if feature_info.name in features_ignore:
             continue
 
-        default_get_response = feature_bool_get_service.call(
-            FeatureBoolGet.Request(feature_name=feature_info.name, feature_module=module)
+        default_get_response = test_node.call_service_sync(
+            feature_bool_get_service,
+            FeatureBoolGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(default_get_response.error)
 
@@ -709,11 +745,12 @@ def test_feature_bool_set(test_node: TestNode, launch_context, module: FeatureMo
             )
             set_request.value = value
 
-            set_response = feature_bool_set_service.call(set_request)
+            set_response = test_node.call_service_sync(feature_bool_set_service, set_request)
             check_error(set_response.error)
 
-            get_set_response = feature_bool_get_service.call(
-                FeatureBoolGet.Request(feature_name=feature_info.name, feature_module=module)
+            get_set_response = test_node.call_service_sync(
+                feature_bool_get_service,
+                FeatureBoolGet.Request(feature_name=feature_info.name, feature_module=module),
             )
             check_error(get_set_response.error)
 
@@ -734,8 +771,8 @@ def test_feature_string_get(test_node: TestNode, launch_context, module: Feature
     )
     assert feature_string_get_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -751,8 +788,9 @@ def test_feature_string_get(test_node: TestNode, launch_context, module: Feature
     ]
 
     for feature_info in available_features:
-        response = feature_string_get_service.call(
-            FeatureStringGet.Request(feature_name=feature_info.name, feature_module=module)
+        response = test_node.call_service_sync(
+            feature_string_get_service,
+            FeatureStringGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(response.error)
 
@@ -781,8 +819,8 @@ def test_feature_string_set(test_node: TestNode, launch_context, module: Feature
     )
     feature_string_info_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -796,13 +834,15 @@ def test_feature_string_set(test_node: TestNode, launch_context, module: Feature
     ]
 
     for feature_info in available_features:
-        default_response = feature_string_get_service.call(
-            FeatureStringGet.Request(feature_name=feature_info.name, feature_module=module)
+        default_response = test_node.call_service_sync(
+            feature_string_get_service,
+            FeatureStringGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(default_response.error)
 
-        info_response = feature_string_info_service.call(
-            FeatureStringInfoGet.Request(feature_name=feature_info.name, feature_module=module)
+        info_response = test_node.call_service_sync(
+            feature_string_info_service,
+            FeatureStringInfoGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(info_response.error)
 
@@ -817,12 +857,13 @@ def test_feature_string_set(test_node: TestNode, launch_context, module: Feature
                 feature_name=feature_info.name, feature_module=module
             )
             set_request.value = value
-            set_response = feature_string_set_service.call(set_request)
+            set_response = test_node.call_service_sync(feature_string_set_service, set_request)
 
             check_error(set_response.error)
 
-            get_set_response = feature_string_get_service.call(
-                FeatureStringGet.Request(feature_name=feature_info.name, feature_module=module)
+            get_set_response = test_node.call_service_sync(
+                feature_string_get_service,
+                FeatureStringGet.Request(feature_name=feature_info.name, feature_module=module),
             )
 
             check_error(get_set_response.error)
@@ -845,8 +886,8 @@ def test_feature_raw_get(test_node: TestNode, launch_context, module: FeatureMod
     )
     assert feature_raw_get_service.wait_for_service(10)
 
-    feature_info_response = feature_info_query_service.call(
-        FeatureInfoQuery.Request(feature_module=module)
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
     )
 
     check_error(feature_info_response.error)
@@ -862,8 +903,9 @@ def test_feature_raw_get(test_node: TestNode, launch_context, module: FeatureMod
     ]
 
     for feature_info in available_features:
-        response = feature_raw_get_service.call(
-            FeatureRawGet.Request(feature_name=feature_info.name, feature_module=module)
+        response = test_node.call_service_sync(
+            feature_raw_get_service,
+            FeatureRawGet.Request(feature_name=feature_info.name, feature_module=module),
         )
         check_error(response.error)
         assert len(response.buffer) > 0

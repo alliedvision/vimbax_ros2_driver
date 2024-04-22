@@ -38,8 +38,7 @@ def test_genicam_events(test_node: TestNode, launch_context):
     assert command_run_service.wait_for_service(10)
 
     enum_info_request = FeatureEnumInfoGet.Request(feature_name="EventSelector")
-    enum_info_response = enum_info_service.call(enum_info_request)
-
+    enum_info_response = test_node.call_service_sync(enum_info_service, enum_info_request)
     if "Test" not in enum_info_response.available_values:
         pytest.skip("Test event not supported")
 
@@ -60,8 +59,10 @@ def test_genicam_events(test_node: TestNode, launch_context):
 
     assert on_subscription_ready.wait(5)
 
-    run_result = command_run_service.call(
-        FeatureCommandRun.Request(feature_name="TestEventGenerate")
+    run_result = test_node.call_service_sync(
+        command_run_service, FeatureCommandRun.Request(feature_name="TestEventGenerate")
     )
+
+    assert run_result is not None, "The service call timed out"
     assert run_result.error.code == 0
     assert on_event_event.wait(1)
