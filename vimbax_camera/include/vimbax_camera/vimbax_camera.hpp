@@ -59,6 +59,8 @@ public:
 
     int64_t get_frame_id() const;
 
+    uint64_t get_timestamp_ns() const;
+
     void on_frame_ready();
     /* *INDENT-OFF* */
   private:
@@ -72,7 +74,7 @@ public:
     static void vmb_frame_callback(const VmbHandle_t, const VmbHandle_t, VmbFrame_t * frame);
 
     void transform();
-    uint64_t timestamp_to_ns(uint64_t timestamp);
+    uint64_t timestamp_to_ns(uint64_t timestamp) const;
 
     Frame(std::shared_ptr<VimbaXCamera> camera, AllocationMode allocation_mode);
 

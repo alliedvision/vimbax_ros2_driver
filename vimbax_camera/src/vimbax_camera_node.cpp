@@ -286,6 +286,10 @@ bool VimbaXCameraNode::initialize_parameters()
   node_->declare_parameter(
     parameter_command_feature_timeout, 0, command_feature_timeout_param_desc);
 
+  auto const use_ros_time_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
+  .set__description("Use ROS time instead of camera timestamp in image message header");
+  node_->declare_parameter(parameter_use_ros_time, false, use_ros_time_param_desc);
+
   parameter_callback_handle_ = node_->add_on_set_parameters_callback(
     [this](
       const std::vector<rclcpp::Parameter> & params) -> rcl_interfaces::msg::SetParametersResult {
@@ -1575,6 +1579,19 @@ result<void> VimbaXCameraNode::start_streaming()
       last_frame_id_ = frame->get_frame_id();
 
       frame->header.set__frame_id(node_->get_parameter(parameter_frame_id).as_string());
+
+
+      if (node_->get_parameter(parameter_use_ros_time).as_bool()) {
+        frame->header.stamp = node_->now();
+      } else {
+        std::chrono::nanoseconds vmbTimeStamp{frame->get_timestamp_ns()};
+        auto const seconds = std::chrono::floor<std::chrono::seconds>(vmbTimeStamp);
+        auto const nanoseconds =
+        std::chrono::duration_cast<std::chrono::nanoseconds>(vmbTimeStamp - seconds);
+
+        frame->header.stamp.sec = int32_t(seconds.count());
+        frame->header.stamp.nanosec = nanoseconds.count();
+      }
 
       auto const camera_info = [&] {
         auto const loaded_info = camera_info_manager_->getCameraInfo();

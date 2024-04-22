@@ -1716,12 +1716,6 @@ void VimbaXCamera::Frame::on_frame_ready()
   width = vmb_frame_.width;
   height = vmb_frame_.height;
   is_bigendian = false;
-  std::chrono::nanoseconds vmbTimeStamp{timestamp_to_ns(vmb_frame_.timestamp)};
-  auto const seconds = std::chrono::floor<std::chrono::seconds>(vmbTimeStamp);
-  auto const nanoseconds =
-    std::chrono::duration_cast<std::chrono::nanoseconds>(vmbTimeStamp - seconds);
-  header.stamp.sec = int32_t(seconds.count());
-  header.stamp.nanosec = nanoseconds.count();
 
 
   transform();
@@ -1731,7 +1725,7 @@ void VimbaXCamera::Frame::on_frame_ready()
   }
 }
 
-uint64_t VimbaXCamera::Frame::timestamp_to_ns(uint64_t timestamp)
+uint64_t VimbaXCamera::Frame::timestamp_to_ns(uint64_t timestamp) const
 {
   if (!camera_.expired()) {
     auto camera = camera_.lock();
@@ -1884,6 +1878,11 @@ std::string VimbaXCamera::Frame::get_image_encoding() const
 int64_t VimbaXCamera::Frame::get_frame_id() const
 {
   return vmb_frame_.frameID;
+}
+
+uint64_t VimbaXCamera::Frame::get_timestamp_ns() const
+{
+  return timestamp_to_ns(vmb_frame_.timestamp);
 }
 
 }  // namespace vimbax_camera
