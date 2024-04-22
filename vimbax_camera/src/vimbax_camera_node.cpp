@@ -287,7 +287,7 @@ bool VimbaXCameraNode::initialize_parameters()
     parameter_command_feature_timeout, 0, command_feature_timeout_param_desc);
 
   auto const use_ros_time_param_desc = rcl_interfaces::msg::ParameterDescriptor{}
-  .set__description("Use ROS time instead of camera timestamp in Image message header");
+  .set__description("Use ROS time instead of camera timestamp in image message header");
   node_->declare_parameter(parameter_use_ros_time, false, use_ros_time_param_desc);
 
   parameter_callback_handle_ = node_->add_on_set_parameters_callback(
