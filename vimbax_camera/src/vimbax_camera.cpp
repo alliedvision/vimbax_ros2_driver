@@ -530,6 +530,20 @@ result<void> VimbaXCamera::stop_streaming()
       return error{capture_stop_error};
     }
 
+    // Stop frame processing before revoking the frames to avoid requeue errors
+    if (frame_processing_thread_) {
+      frame_processing_enable_ = false;
+      {
+        std::lock_guard guard{frame_ready_queue_mutex_};
+        while (!frame_ready_queue_.empty()) {
+          frame_ready_queue_.pop();
+        }
+      }
+      frame_ready_cv_.notify_all();
+      frame_processing_thread_->join();
+      frame_processing_thread_.reset();
+    }
+
     auto const flush_error = api_->CaptureQueueFlush(camera_handle_);
     if (flush_error != VmbErrorSuccess) {
       RCLCPP_ERROR(
@@ -545,20 +559,7 @@ result<void> VimbaXCamera::stop_streaming()
         (vmb_error_to_string(revoke_error)).data());
       return error{revoke_error};
     }
-
-    if (frame_processing_thread_) {
-      frame_processing_enable_ = false;
-      {
-        std::lock_guard guard{frame_ready_queue_mutex_};
-        while (!frame_ready_queue_.empty()) {
-          frame_ready_queue_.pop();
-        }
-      }
-      frame_ready_cv_.notify_all();
-      frame_processing_thread_->join();
-      frame_processing_thread_.reset();
-    }
-
+  
     frames_.clear();
 
     stream_state_.store(StreamState::kStopped);
