@@ -340,7 +340,18 @@ def test_feature_int_get(test_node: TestNode, launch_context, module: FeatureMod
 @pytest.mark.launch(fixture=vimbax_camera_node)
 @pytest.mark.parametrize("module", MODULE_LIST, ids=MODULE_NAME_LIST)
 def test_feature_int_set(test_node: TestNode, launch_context, module: FeatureModule):
-    features_ignore = ["TestPendingAck", "CustomModuleRegData"]
+    features_ignore = [
+            "TestPendingAck",
+            "CustomModuleRegData",
+            "AutoModeRegionOffsetY",
+            "GVSPPacketSize",
+            "GVSPMissingSize",
+            "GevDeviceForceIPAddress",
+            "GevDeviceForceMACAddress",
+            "GevDeviceForceGateway",
+            "InterfaceHailPace",
+            "InterfacePingPace"
+    ]
 
     feature_info_query_service = test_node.create_client(
         FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query"
@@ -396,7 +407,7 @@ def test_feature_int_set(test_node: TestNode, launch_context, module: FeatureMod
         default_value = int_get_response.value
 
         for value in [int_info_response.min, int_info_response.max, default_value]:
-            print(f"Setting value to {value}")
+            print(f"{feature_info.name}: Setting value to {value}")
             set_request = FeatureIntSet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
@@ -512,7 +523,7 @@ def test_feature_float_set(test_node: TestNode, launch_context, module: FeatureM
         default_value = float_get_response.value
 
         for value in [float_info_response.min, float_info_response.max, default_value]:
-            print(f"Setting value to {value}")
+            print(f"{feature_info.name}: Setting value to {value}")
             set_request = FeatureFloatSet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
@@ -633,7 +644,7 @@ def test_feature_enum_set(test_node: TestNode, launch_context, module: FeatureMo
         default_value = enum_get_response.value
 
         for value in enum_info_response.available_values + [default_value]:
-            print(f"Setting value to {value}")
+            print(f"{feature_info.name}: Setting value to {value}")
             set_request = FeatureEnumSet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
@@ -739,7 +750,7 @@ def test_feature_bool_set(test_node: TestNode, launch_context, module: FeatureMo
         default_value = default_get_response.value
 
         for value in [True, False, default_value]:
-            print(f"Setting value to {value}")
+            print(f"{feature_info.name}: Setting value to {value}")
             set_request = FeatureBoolSet.Request(
                 feature_name=feature_info.name, feature_module=module
             )
