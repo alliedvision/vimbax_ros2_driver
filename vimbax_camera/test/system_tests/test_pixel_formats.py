@@ -66,7 +66,7 @@ REQUIRED_PIXEL_FORMATS = [
     "BayerGR12",
     "BayerGR10",
     "BayerGR8",
-    "YCBCR422_8",
+    "YCbCr422_8_CbYCrY",
 ]
 
 PFNC_TO_ROS = {
@@ -91,7 +91,7 @@ PFNC_TO_ROS = {
     "BayerGR16": "bayer_grbg16",
     "BayerGR12": "bayer_grbg16",
     "BayerGR10": "bayer_grbg16",
-    "YCbCr422_8": "yuv422",
+    "YCbCr422_8_CbYCrY": "yuv422",
 }
 
 
