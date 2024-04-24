@@ -559,7 +559,7 @@ result<void> VimbaXCamera::stop_streaming()
         (vmb_error_to_string(revoke_error)).data());
       return error{revoke_error};
     }
-  
+
     frames_.clear();
 
     stream_state_.store(StreamState::kStopped);
