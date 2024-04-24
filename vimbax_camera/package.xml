@@ -6,7 +6,7 @@
     <description>ROS 2 node package for Vimba X cameras</description>
     <maintainer email="dennis.langenkamp@alliedvision.com">Dennis Langenkamp</maintainer>
     <maintainer email="karsten.hoepke@alliedvision.com">Karsten Höpke</maintainer>
-    <license>Apache-2.0</license>
+    <license>BSD</license>
 
     <buildtool_depend>ament_cmake</buildtool_depend>
 

@@ -5,7 +5,7 @@
   <version>1.0.5</version>
   <description>VmbC interface package</description>
   <maintainer email="karsten.hoepke@alliedvision.com">Karsten Höpke</maintainer>
-  <license>Apache-2.0</license>
+  <license>BSD</license>
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>
 

@@ -5,7 +5,7 @@
   <version>1.0.0</version>
   <description>VimbaX camera examples</description>
   <maintainer email="dennis.langenkamp@alliedvision.com">Dennis Langenkamp</maintainer>
-  <license>Apache-2.0</license>
+  <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
