@@ -512,6 +512,16 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
     }
   }
 
+  std::shared_lock camera_lock(camera_mutex_);
+  auto const camera_connected = (camera_ != nullptr);
+  auto const last_camera_id = last_camera_id_;
+  camera_lock.unlock();
+
+  // When last_camera_id is empty no camera was ever connected so return here.
+  if (last_camera_id.empty()) {
+    return;
+  }
+
   if (err == VmbErrorSuccess) {
     const char * reason = nullptr;
     static bool stream_restart_required = false;
@@ -519,10 +529,10 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
     err = api_->FeatureEnumGet(handle, SFNCFeatures::EventCameraDiscoveryType.data(), &reason);
     if (err == VmbErrorSuccess) {
       if (std::strcmp(reason, "Missing") == 0) {
-        if ((camera_id.find(last_camera_id_) != std::string::npos) && camera_) {
+        if ((camera_id.find(last_camera_id) != std::string::npos) && camera_connected) {
           RCLCPP_ERROR(
             get_logger(), "%s: Camera '%s' disconnected. Waiting for reconnection...",
-            __FUNCTION__, last_camera_id_.c_str());
+            __FUNCTION__, last_camera_id.c_str());
 
           stream_restart_required = camera_->is_streaming();
           std::unique_lock lock{camera_mutex_};
@@ -530,9 +540,9 @@ void VimbaXCameraNode::on_camera_discovery_callback(const VmbHandle_t handle, co
           camera_.reset();
         }
       } else if (std::strcmp(reason, "Detected") == 0) {
-        if (camera_id.find(last_camera_id_) != std::string::npos) {
+        if (camera_id.find(last_camera_id) != std::string::npos && !camera_connected) {
           RCLCPP_INFO(
-            get_logger(), "%s: Camera '%s' reconnected.", __FUNCTION__, last_camera_id_.c_str());
+            get_logger(), "%s: Camera '%s' reconnected.", __FUNCTION__, last_camera_id.c_str());
 
           std::thread(
             [this] {
