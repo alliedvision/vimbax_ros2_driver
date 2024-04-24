@@ -1343,7 +1343,9 @@ VmbFeaturePersistSettings VimbaXCamera::get_default_feature_persist_settings() c
 {
   return {
     VmbFeaturePersistType::VmbFeaturePersistNoLUT,
-    VmbModulePersistFlagsType::VmbModulePersistFlagsRemoteDevice,
+    VmbModulePersistFlagsType::VmbModulePersistFlagsRemoteDevice |
+    VmbModulePersistFlagsType::VmbModulePersistFlagsLocalDevice |
+    VmbModulePersistFlagsType::VmbModulePersistFlagsStreams,
     10,
     VmbLogLevel::VmbLogLevelWarn
   };
