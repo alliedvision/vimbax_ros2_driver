@@ -17,6 +17,7 @@ HARDWARE AND DOCUMENTATION.
 - Nvidia Jetpack 5.x (arm64)
 - Ubuntu 22.04 (x86_64)
 - Allied Vision Alvium cameras
+- Tested ROS 2 RMW implementation: rmw_cyclone_dds 
 
 ## Prerequisites
 - ROS 2 humble is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
@@ -175,6 +176,7 @@ Only if [automatic stream](#automatic-stream) is enabled.
 | camera_frame_id | ROS 2 frame id of the camera. |
 | camera_info_url | Url to ROS 2 camera info file. |
 | command_feature_timeout | Timeout for command features. |
+| use_ros_time | Use ros2 timestamp in Image message header instead of camera timestamp | 
 
 ## Common message types
 
