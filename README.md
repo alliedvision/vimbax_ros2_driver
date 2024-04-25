@@ -45,6 +45,8 @@ Change the the ROS 2 middleware to cyclonedds, because the default middleware is
 source /opt/ros/humble/setup.bash
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
+To get maximum performance please also apply the settings described in [DDS Tuning](https://docs.ros.org/en/humble/How-To-Guides/DDS-tuning.html).
+Especially the settings for the Cyclone DDS section are important, because otherwise you might loose frames. 
 
 To start the Vimba X ROS 2 node run:
 ```shell
@@ -825,6 +827,9 @@ parameter for opening a specific camera.
 ### Camera calibration
 If an error message regarding a missing camera calibration file appears it can be ignored.
 For more information see [ROS2 camera calibration documentation](https://docs.ros.org/en/rolling/p/camera_calibration/tutorial_mono.html).
+
+### Images lost in ROS 2 
+If you are loosing image and don't see any error messages, please make sure that you have applied all settings from the [DDS Tuning Guide](https://docs.ros.org/en/humble/How-To-Guides/DDS-tuning.html).
 
 ### Known issues
 - When using the default ros 2 middleware rmw_fastrtps_cpp the may get unresponsive sporadically if you very often subscribe and unsubscribe to the image_raw topic. This happens due to a deadlock in the middleware implementation. Therefore it is recommended to use rmw_cyclonedds_cpp as ros 2 middleware instead. 
