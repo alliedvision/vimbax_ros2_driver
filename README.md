@@ -142,7 +142,7 @@ The following PFNC pixel formats are supported:
 - BayerBG16
 - BayerGB16
 - BayerGR16
-- YCBCR422_8
+- Any 8-bit YCbCr422 format (e.g. YCbCr422_8)
 
 If an unsupported pixel format is used the stream will not start.
 
