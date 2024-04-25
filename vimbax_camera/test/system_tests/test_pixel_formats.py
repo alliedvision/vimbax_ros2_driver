@@ -30,6 +30,7 @@
 # ROS client lib
 import rclpy
 from rclpy.service import Service
+from rclpy.time import Time
 from sensor_msgs.msg import Image
 
 from time import sleep
@@ -208,7 +209,7 @@ def vimbax_camera_node_class_scope():
                 package="vimbax_camera",
                 namespace="/test_pixel_formats",
                 executable="vimbax_camera_node",
-                arguments=[{
+                parameters=[{
                     "use_ros_time": True
                 }],
                 name="test_pixel_formats",
@@ -242,7 +243,7 @@ class TestPixelFormat:
         # Discard images that were taken before the settings change
         ts = pixel_test_node.get_clock().now()
         image: Image = pixel_test_node.get_latest_image()
-        while rclpy.time.Time.from_msg(image.header.stamp).nanoseconds < ts.nanoseconds:
+        while image is not None and Time.from_msg(image.header.stamp).nanoseconds < ts.nanoseconds:
             image = pixel_test_node.get_latest_image()
 
         check_error(pixel_test_node.stop_stream().error)

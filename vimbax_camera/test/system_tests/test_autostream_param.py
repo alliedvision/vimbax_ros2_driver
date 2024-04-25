@@ -29,6 +29,7 @@
 
 import pytest
 import rclpy
+from rclpy.time import Time
 from rclpy.service import Service
 import launch_pytest
 import launch
@@ -55,7 +56,8 @@ def camera_node_with_autostream(camera_test_node_name):
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
                 namespace=camera_test_node_name,
-                parameters=[{"autostream": 1}],
+                parameters=[{"autostream": 1,
+                             "use_ros_time": True}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -74,7 +76,8 @@ def camera_node_without_autostream(camera_test_node_name):
                 executable="vimbax_camera_node",
                 name=camera_test_node_name,
                 namespace=camera_test_node_name,
-                parameters=[{"autostream": 0}],
+                parameters=[{"autostream": 0,
+                             "use_ros_time": True}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -164,9 +167,12 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name, node_
     assert img is not None
 
     check_error(node.stop_stream().error)
+    ts = node.get_clock().now()
 
     assert node.wait_until_streaming_is(False)
     img = node.get_latest_image(30.0)
+    while img is not None and Time.from_msg(img.header.stamp).nanoseconds <= ts.nanoseconds:
+        img = node.get_latest_image()
     assert img is None
 
 
