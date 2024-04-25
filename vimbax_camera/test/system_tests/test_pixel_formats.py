@@ -208,6 +208,9 @@ def vimbax_camera_node_class_scope():
                 package="vimbax_camera",
                 namespace="/test_pixel_formats",
                 executable="vimbax_camera_node",
+                arguments=[{
+                    "use_ros_time": True
+                }],
                 name="test_pixel_formats",
             ),
             launch_pytest.actions.ReadyToTest(),
@@ -220,7 +223,7 @@ class TestPixelFormat:
     """One VimbaXCamera node is started for all tests."""
 
     @pytest.mark.parametrize("format", REQUIRED_PIXEL_FORMATS)
-    def test_format(self, format, launch_context, pixel_test_node):
+    def test_format(self, format, launch_context, pixel_test_node: PixelFormatTestNode):
 
         # The PixelFormat cannot be changed while the camera is streaming
         check_error(pixel_test_node.stop_stream().error)
@@ -236,7 +239,11 @@ class TestPixelFormat:
         check_error(pixel_test_node.set_pixel_format(format).error)
         check_error(pixel_test_node.start_stream().error)
 
+        # Discard images that were taken before the settings change
+        ts = pixel_test_node.get_clock().now()
         image: Image = pixel_test_node.get_latest_image()
+        while rclpy.time.Time.from_msg(image.header.stamp).nanoseconds < ts.nanoseconds:
+            image = pixel_test_node.get_latest_image()
 
         check_error(pixel_test_node.stop_stream().error)
         # Assert the pixel format of the image matches the requested format
