@@ -1,17 +1,5 @@
 # Vimba X ROS 2 camera driver
 
-## Beta Disclaimer
-
-Please be aware that all code revisions not explicitly listed in the Github Release section are
-considered a **Beta Version**.
-
-For Beta Versions, the following applies in addition to the GPLv2 License:
-
-THE SOFTWARE IS PRELIMINARY AND STILL IN TESTING AND VERIFICATION PHASE AND IS PROVIDED ON AN “AS
-IS” AND “AS AVAILABLE” BASIS AND IS BELIEVED TO CONTAIN DEFECTS. THE PRIMARY PURPOSE OF THIS EARLY
-ACCESS IS TO OBTAIN FEEDBACK ON PERFORMANCE AND THE IDENTIFICATION OF DEFECTS IN THE SOFTWARE,
-HARDWARE AND DOCUMENTATION.
-
 ## Compability
 - ROS 2 humble
 - Nvidia Jetpack 5.x (arm64)
@@ -842,4 +830,15 @@ If you are loosing image and don't see any error messages, please make sure that
 * Type CTRL-SHIFT-b and select "colcon" to build the project
 * Type CTRL-SHIFT-d and select "ROS: Launch" to start debug session
 
+## Beta Disclaimer
+
+Please be aware that all code revisions not explicitly listed in the Github Release section are
+considered a **Beta Version**.
+
+For Beta Versions, the following applies in addition to the BSD 3 Clause License:
+
+THE SOFTWARE IS PRELIMINARY AND STILL IN TESTING AND VERIFICATION PHASE AND IS PROVIDED ON AN “AS
+IS” AND “AS AVAILABLE” BASIS AND IS BELIEVED TO CONTAIN DEFECTS. THE PRIMARY PURPOSE OF THIS EARLY
+ACCESS IS TO OBTAIN FEEDBACK ON PERFORMANCE AND THE IDENTIFICATION OF DEFECTS IN THE SOFTWARE,
+HARDWARE AND DOCUMENTATION.
 
