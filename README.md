@@ -817,10 +817,12 @@ If an error message regarding a missing camera calibration file appears it can b
 For more information see [ROS2 camera calibration documentation](https://docs.ros.org/en/rolling/p/camera_calibration/tutorial_mono.html).
 
 ### Images lost in ROS 2 
-If you are loosing image and don't see any error messages, please make sure that you have applied all settings from the [DDS Tuning Guide](https://docs.ros.org/en/humble/How-To-Guides/DDS-tuning.html).
+If you are losing image and don't see any error messages, please make sure that you have applied all settings from the [DDS Tuning Guide](https://docs.ros.org/en/humble/How-To-Guides/DDS-tuning.html).
 
 ### Known issues
 - When using the default ros 2 middleware rmw_fastrtps_cpp the may get unresponsive sporadically if you very often subscribe and unsubscribe to the image_raw topic. This happens due to a deadlock in the middleware implementation. Therefore it is recommended to use rmw_cyclonedds_cpp as ros 2 middleware instead. 
+- Due to a bug in Vimba X 2023-4, opening a camera by ip address does only work correctly when the camera was discovered before. Otherwise the node might not work correctly. 
+
 
 ### Debug Instructions (VS Code)
 * Install ROS extension (from Microsoft) within VS Code
