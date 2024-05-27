@@ -2,6 +2,9 @@
 Changelog for package vimbax_camera_msgs
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+
 1.0.1 (2024-05-21)
 ------------------
 
