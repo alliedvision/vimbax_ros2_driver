@@ -2,8 +2,8 @@
 Changelog for package vmbc_interface
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.2 (2024-05-27)
+------------------
 * Fixed ROS buildfarm build issues.
 * Updated maintainers.
 * Contributors: Dennis Langenkamp
