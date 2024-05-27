@@ -4,7 +4,8 @@
   <name>vimbax_camera_events</name>
   <version>1.0.1</version>
   <description>Vimba X event support library</description>
-  <maintainer email="dennis.langenkamp@alliedvision.com">dlangenkamp</maintainer>
+  <maintainer email="dennis.langenkamp@alliedvision.com">Dennis Langenkamp</maintainer>
+  <maintainer email="karsten.hoepke@alliedvision.com">Karsten Höpke</maintainer>
   <license>BSD</license>
 
   <buildtool_depend>ament_cmake_ros</buildtool_depend>

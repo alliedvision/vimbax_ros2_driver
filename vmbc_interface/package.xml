@@ -4,6 +4,7 @@
   <name>vmbc_interface</name>
   <version>1.0.1</version>
   <description>VmbC interface package</description>
+  <maintainer email="dennis.langenkamp@alliedvision.com">Dennis Langenkamp</maintainer>
   <maintainer email="karsten.hoepke@alliedvision.com">Karsten Höpke</maintainer>
   <license>BSD</license>
 

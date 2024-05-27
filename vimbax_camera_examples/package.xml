@@ -5,6 +5,7 @@
   <version>1.0.1</version>
   <description>VimbaX camera examples</description>
   <maintainer email="dennis.langenkamp@alliedvision.com">Dennis Langenkamp</maintainer>
+  <maintainer email="karsten.hoepke@alliedvision.com">Karsten Höpke</maintainer>
   <license>BSD</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
