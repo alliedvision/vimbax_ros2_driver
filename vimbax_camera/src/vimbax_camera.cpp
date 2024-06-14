@@ -1418,14 +1418,14 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
     info.height = *height;
   }
 
-  auto const frame_rate = feature_float_get(SFNCFeatures::AcquisitionFrameRate);
-  if (!frame_rate) {
-    if (frame_rate.error().code != VmbErrorNotAvailable) {
-      return frame_rate.error();
-    }
-  } else {
-    info.frame_rate = *frame_rate;
-  }
+  // auto const frame_rate = feature_float_get(SFNCFeatures::AcquisitionFrameRate);
+  // if (!frame_rate) {
+  //   if (frame_rate.error().code != VmbErrorNotAvailable) {
+  //     return frame_rate.error();
+  //   }
+  // } else {
+  //   info.frame_rate = *frame_rate;
+  // }
 
   auto const pixel_format = feature_enum_get(SFNCFeatures::PixelFormat);
   if (!pixel_format) {
