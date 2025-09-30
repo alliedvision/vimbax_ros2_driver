@@ -56,11 +56,11 @@ class EventSubscriber:
         self._base_topic = topic
         self._event_subscribe_client = node.create_client(
             SubscribeEvent,
-            f"{self._base_topic}/_event_subscribe"
+            f'{self._base_topic}/_event_subscribe'
         )
         self._event_unsubscribe_client = node.create_client(
             UnsubscribeEvent,
-            f"{self._base_topic}/_event_unsubscribe"
+            f'{self._base_topic}/_event_unsubscribe'
         )
         self._ros_subscriptions = {}
 
@@ -79,7 +79,7 @@ class EventSubscriber:
                 subscription_future.set_exception(EventSubscribeException(name, error))
             else:
                 subscription = self._node.create_subscription(
-                    self._evt_type, f"{self._base_topic}/event_{name}", on_event, 10)
+                    self._evt_type, f'{self._base_topic}/event_{name}', on_event, 10)
                 self._ros_subscriptions[name] = subscription
                 subscription_future.set_result(EventSubscription(self, name))
 

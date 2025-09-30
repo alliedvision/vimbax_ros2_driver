@@ -26,31 +26,32 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 
 import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
-import argparse
-from .helper import single_service_call, get_module_from_string, build_topic_path
+
+from .helper import build_topic_path, get_module_from_string, single_service_call
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
-    parser.add_argument("feature_name")
-    parser.add_argument("-m", "--module", choices=[
-        "remote_device",
-        "system",
-        "interface",
-        "local_device",
-        "stream"
-    ], default="remote_device", dest="module")
+    parser.add_argument('node_namespace')
+    parser.add_argument('feature_name')
+    parser.add_argument('-m', '--module', choices=[
+        'remote_device',
+        'system',
+        'interface',
+        'local_device',
+        'stream'
+    ], default='remote_device', dest='module')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("vimbax_feature_command_execute_example")
+    node = Node('vimbax_feature_command_execute_example')
 
     feature_service_type = vimbax_camera_msgs.srv.FeatureCommandRun
 
@@ -64,6 +65,6 @@ def main():
                                    topic, request)
 
     if response.error.code == 0:
-        print(f"Successfully executed command {args.feature_name}")
+        print(f'Successfully executed command {args.feature_name}')
     else:
-        print(f"Executing command feature {args.feature_name} failed with {response.error}")
+        print(f'Executing command feature {args.feature_name} failed with {response.error}')

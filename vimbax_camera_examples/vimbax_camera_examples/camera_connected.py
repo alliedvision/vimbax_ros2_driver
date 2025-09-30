@@ -26,23 +26,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 
 import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
-import argparse
-from .helper import single_service_call, build_topic_path
+
+from .helper import build_topic_path, single_service_call
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
+    parser.add_argument('node_namespace')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("_connected_get")
+    node = Node('_connected_get')
 
     # Build topic path from namespace and topic name
     topic: str = build_topic_path(args.node_namespace, '/connected')
@@ -53,6 +54,6 @@ def main():
     response = single_service_call(node, service_type, topic, request)
 
     if response.connected:
-        print("Camera is connected!")
+        print('Camera is connected!')
     else:
-        print("Camera is disconnected!")
+        print('Camera is disconnected!')

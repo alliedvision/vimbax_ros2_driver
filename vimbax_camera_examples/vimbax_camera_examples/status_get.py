@@ -26,33 +26,34 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 
 import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
-import argparse
-from .helper import single_service_call, build_topic_path
+
+from .helper import build_topic_path, single_service_call
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
+    parser.add_argument('node_namespace')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("vimbax_status_get_example")
+    node = Node('vimbax_status_get_example')
 
     service_type = vimbax_camera_msgs.srv.Status
 
     # Build topic path from namespace and topic name
-    topic: str = build_topic_path(args.node_namespace, "/status")
+    topic: str = build_topic_path(args.node_namespace, '/status')
 
     request = service_type.Request()
     response = single_service_call(node, service_type, topic, request)
 
     if response.error.code == 0:
-        print(f"Received status {response}")
+        print(f'Received status {response}')
     else:
-        print(f"Getting status failed with {response.error}")
+        print(f'Getting status failed with {response.error}')

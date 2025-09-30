@@ -28,38 +28,30 @@
 
 
 import os
-
-import pytest
-from pytest import approx
-import warnings
-
-import tempfile
-
 from pathlib import Path
+import tempfile
+import warnings
 import xml.etree.ElementTree as ET
 
-from vimbax_camera_msgs.srv import FeatureInfoQuery
-
+from conftest import TestNode, vimbax_camera_node
+import pytest
+from pytest import approx
+from test_helper import check_error, FeatureDataType, filter_features
 from vimbax_camera_msgs.srv import FeatureAccessModeGet
-
-from vimbax_camera_msgs.srv import SettingsLoadSave
-
 from vimbax_camera_msgs.srv import FeatureFloatGet
-from vimbax_camera_msgs.srv import FeatureFloatSet
 from vimbax_camera_msgs.srv import FeatureFloatInfoGet
-
-from conftest import vimbax_camera_node, TestNode
-
-from test_helper import check_error, filter_features, FeatureDataType
+from vimbax_camera_msgs.srv import FeatureFloatSet
+from vimbax_camera_msgs.srv import FeatureInfoQuery
+from vimbax_camera_msgs.srv import SettingsLoadSave
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_settings_save(test_node: TestNode, launch_context):
     settings_save_service = test_node.create_client(
-        SettingsLoadSave, f"{test_node.camera_node_name()}/settings/save")
+        SettingsLoadSave, f'{test_node.camera_node_name()}/settings/save')
     assert settings_save_service.wait_for_service(10)
 
-    test_file_name = tempfile.mktemp(suffix=".xml")
+    test_file_name = tempfile.mktemp(suffix='.xml')
 
     save_response = settings_save_service.call(SettingsLoadSave.Request(filename=test_file_name))
     check_error(save_response.error)
@@ -73,13 +65,13 @@ def test_settings_save(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_settings_save_load(test_node: TestNode, launch_context):
     settings_save_service = test_node.create_client(
-        SettingsLoadSave, f"{test_node.camera_node_name()}/settings/save")
+        SettingsLoadSave, f'{test_node.camera_node_name()}/settings/save')
     assert settings_save_service.wait_for_service(10)
     settings_load_service = test_node.create_client(
-        SettingsLoadSave, f"{test_node.camera_node_name()}/settings/load")
+        SettingsLoadSave, f'{test_node.camera_node_name()}/settings/load')
     assert settings_load_service.wait_for_service(10)
 
-    test_file_name = tempfile.mktemp(suffix=".xml")
+    test_file_name = tempfile.mktemp(suffix='.xml')
 
     save_response = settings_save_service.call(SettingsLoadSave.Request(filename=test_file_name))
     check_error(save_response.error)
@@ -93,28 +85,28 @@ def test_settings_save_load(test_node: TestNode, launch_context):
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_settings_save_load_float_value_change(test_node: TestNode, launch_context):
     feature_info_query_service = test_node.create_client(
-        FeatureInfoQuery, f"/{test_node.camera_node_name()}/feature_info_query")
+        FeatureInfoQuery, f'/{test_node.camera_node_name()}/feature_info_query')
     assert feature_info_query_service.wait_for_service(10)
     feature_access_mode_service = test_node.create_client(
-        FeatureAccessModeGet, f"/{test_node.camera_node_name()}/features/access_mode_get")
+        FeatureAccessModeGet, f'/{test_node.camera_node_name()}/features/access_mode_get')
     assert feature_access_mode_service.wait_for_service(10)
     settings_save_service = test_node.create_client(
-        SettingsLoadSave, f"{test_node.camera_node_name()}/settings/save")
+        SettingsLoadSave, f'{test_node.camera_node_name()}/settings/save')
     assert settings_save_service.wait_for_service(10)
     settings_load_service = test_node.create_client(
-        SettingsLoadSave, f"{test_node.camera_node_name()}/settings/load")
+        SettingsLoadSave, f'{test_node.camera_node_name()}/settings/load')
     assert settings_load_service.wait_for_service(10)
     feature_float_get_service = test_node.create_client(
-        FeatureFloatGet, f"/{test_node.camera_node_name()}/features/float_get")
+        FeatureFloatGet, f'/{test_node.camera_node_name()}/features/float_get')
     assert feature_float_get_service.wait_for_service(10)
     feature_float_set_service = test_node.create_client(
-        FeatureFloatSet, f"/{test_node.camera_node_name()}/features/float_set")
+        FeatureFloatSet, f'/{test_node.camera_node_name()}/features/float_set')
     assert feature_float_set_service.wait_for_service(10)
     feature_float_info_service = test_node.create_client(
-        FeatureFloatInfoGet, f"/{test_node.camera_node_name()}/features/float_info_get")
+        FeatureFloatInfoGet, f'/{test_node.camera_node_name()}/features/float_info_get')
     assert feature_float_info_service.wait_for_service(10)
 
-    test_file_name = tempfile.mktemp(suffix=".xml")
+    test_file_name = tempfile.mktemp(suffix='.xml')
 
     feature_info_response = feature_info_query_service.call(FeatureInfoQuery.Request())
 
@@ -140,7 +132,7 @@ def test_settings_save_load_float_value_change(test_node: TestNode, launch_conte
         info_response = feature_float_info_service.call(
             FeatureFloatInfoGet.Request(feature_name=feature_name))
         if info_response.error.code == -30:
-            warnings.warn(UserWarning(f"Skipping unavailable feature {feature_name}"))
+            warnings.warn(UserWarning(f'Skipping unavailable feature {feature_name}'))
             continue
 
         check_error(info_response.error)
