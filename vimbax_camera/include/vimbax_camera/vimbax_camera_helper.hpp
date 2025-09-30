@@ -36,9 +36,9 @@
 
 struct feature_float_info
 {
-  _Float64 min;
-  _Float64 max;
-  _Float64 inc;
+  double min;
+  double max;
+  double inc;
   bool inc_available;
 };
 

@@ -733,21 +733,21 @@ VimbaXCamera::feature_int_info_get(
   return result;
 }
 
-result<_Float64> VimbaXCamera::feature_float_get(
+result<double> VimbaXCamera::feature_float_get(
   const std::string_view & name,
   const Module module) const
 {
   return feature_float_get(name, get_module_handle(module));
 }
 
-result<_Float64> VimbaXCamera::feature_float_get(
+result<double> VimbaXCamera::feature_float_get(
   const std::string_view & name, VmbHandle_t handle) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
-  _Float64 value{};
+  double value{};
   auto const err =
-    api_->FeatureFloatGet(handle, name.data(), reinterpret_cast<_Float64 *>(&value));
+    api_->FeatureFloatGet(handle, name.data(), reinterpret_cast<double *>(&value));
 
   if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
@@ -762,7 +762,7 @@ result<_Float64> VimbaXCamera::feature_float_get(
 result<void>
 VimbaXCamera::feature_float_set(
   const std::string_view & name,
-  const _Float64 value,
+  const double value,
   const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', %lf)", __FUNCTION__, name.data(), value);
