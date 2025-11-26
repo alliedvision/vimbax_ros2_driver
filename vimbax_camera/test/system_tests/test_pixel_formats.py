@@ -26,88 +26,83 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import logging
+from time import sleep
+from typing import List
 
+from conftest import TestNode
+from launch import LaunchDescription
+from launch.actions import ExecuteProcess
+import launch_pytest
+import launch_ros
+# pytest libs
+import pytest
 # ROS client lib
 import rclpy
 from rclpy.service import Service
 from rclpy.time import Time
 from sensor_msgs.msg import Image
-
-from time import sleep
-
-# pytest libs
-import pytest
-import launch_pytest
-import launch_ros
-from launch import LaunchDescription
-from launch.actions import ExecuteProcess
-
+from test_helper import check_error
 # VimbaX_Camera msgs
 from vimbax_camera_msgs.srv import (
+    FeatureCommandRun,
     FeatureEnumInfoGet,
     FeatureEnumSet,
     StreamStartStop,
-    FeatureCommandRun,
 )
-from test_helper import check_error
 
-from typing import List
-from conftest import TestNode
-
-
-import logging
 
 LOGGER = logging.getLogger()
 
 # The required formats are listed in requirement UNIRT-1118
 REQUIRED_PIXEL_FORMATS = [
-    "Mono8",
-    "Mono12",
-    "Mono16",
-    "RGB8",
-    "BGR8",
-    "BayerRG16",
-    "BayerRG12",
-    "BayerRG10",
-    "BayerRG8",
-    "BayerBG16",
-    "BayerBG12",
-    "BayerBG10",
-    "BayerBG8",
-    "BayerGB16",
-    "BayerGB12",
-    "BayerGB10",
-    "BayerGB8",
-    "BayerGR16",
-    "BayerGR12",
-    "BayerGR10",
-    "BayerGR8",
-    "YCbCr422_8_CbYCrY",
+    'Mono8',
+    'Mono12',
+    'Mono16',
+    'RGB8',
+    'BGR8',
+    'BayerRG16',
+    'BayerRG12',
+    'BayerRG10',
+    'BayerRG8',
+    'BayerBG16',
+    'BayerBG12',
+    'BayerBG10',
+    'BayerBG8',
+    'BayerGB16',
+    'BayerGB12',
+    'BayerGB10',
+    'BayerGB8',
+    'BayerGR16',
+    'BayerGR12',
+    'BayerGR10',
+    'BayerGR8',
+    'YCbCr422_8_CbYCrY',
 ]
 
 PFNC_TO_ROS = {
-    "Mono8": "mono8",
-    "Mono16": "mono16",
-    "Mono12": "mono16",
-    "BGR8": "bgr8",
-    "RGB8": "rgb8",
-    "BayerBG8": "bayer_bggr8",
-    "BayerGB8": "bayer_gbrg8",
-    "BayerRG8": "bayer_rggb8",
-    "BayerGR8": "bayer_grbg8",
-    "BayerRG16": "bayer_rggb16",
-    "BayerRG12": "bayer_rggb16",
-    "BayerRG10": "bayer_rggb16",
-    "BayerBG16": "bayer_bggr16",
-    "BayerBG12": "bayer_bggr16",
-    "BayerBG10": "bayer_bggr16",
-    "BayerGB16": "bayer_gbrg16",
-    "BayerGB12": "bayer_gbrg16",
-    "BayerGB10": "bayer_gbrg16",
-    "BayerGR16": "bayer_grbg16",
-    "BayerGR12": "bayer_grbg16",
-    "BayerGR10": "bayer_grbg16",
-    "YCbCr422_8_CbYCrY": "yuv422",
+    'Mono8': 'mono8',
+    'Mono16': 'mono16',
+    'Mono12': 'mono16',
+    'BGR8': 'bgr8',
+    'RGB8': 'rgb8',
+    'BayerBG8': 'bayer_bggr8',
+    'BayerGB8': 'bayer_gbrg8',
+    'BayerRG8': 'bayer_rggb8',
+    'BayerGR8': 'bayer_grbg8',
+    'BayerRG16': 'bayer_rggb16',
+    'BayerRG12': 'bayer_rggb16',
+    'BayerRG10': 'bayer_rggb16',
+    'BayerBG16': 'bayer_bggr16',
+    'BayerBG12': 'bayer_bggr16',
+    'BayerBG10': 'bayer_bggr16',
+    'BayerGB16': 'bayer_gbrg16',
+    'BayerGB12': 'bayer_gbrg16',
+    'BayerGB10': 'bayer_gbrg16',
+    'BayerGR16': 'bayer_grbg16',
+    'BayerGR12': 'bayer_grbg16',
+    'BayerGR10': 'bayer_grbg16',
+    'YCbCr422_8_CbYCrY': 'yuv422',
 }
 
 
@@ -118,16 +113,16 @@ class PixelFormatTestNode(TestNode):
         super().__init__(name, test_node_name)
         self.__rcl_timeout_sec = float(timeout_sec)
         self.__enum_info_get_srv: Service = self.create_client(
-            srv_type=FeatureEnumInfoGet, srv_name=f"/{test_node_name}/features/enum_info_get"
+            srv_type=FeatureEnumInfoGet, srv_name=f'/{test_node_name}/features/enum_info_get'
         )
         self.__enum_set_srv: Service = self.create_client(
-            srv_type=FeatureEnumSet, srv_name=f"/{test_node_name}/features/enum_set"
+            srv_type=FeatureEnumSet, srv_name=f'/{test_node_name}/features/enum_set'
         )
         self.__stream_start_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_start"
+            srv_type=StreamStartStop, srv_name=f'/{test_node_name}/stream_start'
         )
         self.__stream_stop_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{test_node_name}/stream_stop"
+            srv_type=StreamStartStop, srv_name=f'/{test_node_name}/stream_stop'
         )
 
         self.subscribe_image_raw()
@@ -147,17 +142,17 @@ class PixelFormatTestNode(TestNode):
     def get_supported_pixel_formats(self) -> List[str]:
         """Receives the list of available pixel formats from the camera."""
         req: FeatureEnumInfoGet.Request = FeatureEnumInfoGet.Request()
-        req.feature_name = "PixelFormat"
+        req.feature_name = 'PixelFormat'
         res: FeatureEnumInfoGet.Response = self.call_service_sync(self.__enum_info_get_srv, req)
         check_error(res.error)
 
         return res.available_values
 
-    def set_pixel_format(self, format: str) -> FeatureEnumSet.Response:
+    def set_pixel_format(self, fmt: str) -> FeatureEnumSet.Response:
         """Set the pixel format published by the camera."""
         req: FeatureEnumSet.Request = FeatureEnumSet.Request()
-        req.feature_name = "PixelFormat"
-        req.value = format
+        req.feature_name = 'PixelFormat'
+        req.value = fmt
         return self.call_service_sync(self.__enum_set_srv, req)
 
     def get_latest_image(self) -> Image:
@@ -165,30 +160,30 @@ class PixelFormatTestNode(TestNode):
         return self.wait_for_frame(timeout=self.__rcl_timeout_sec)
 
 
-@pytest.fixture(scope="class")
+@pytest.fixture(scope='class')
 def pixel_test_node(launch_context):
     rclpy.init()
 
     test_node: PixelFormatTestNode = PixelFormatTestNode(
-        "pytest_client_node", "test_pixel_formats", timeout_sec=10.0
+        'pytest_client_node', 'test_pixel_formats', timeout_sec=10.0
     )
 
     enum_set_client = test_node.create_client(
-        FeatureEnumSet, "/test_pixel_formats/features/enum_set"
+        FeatureEnumSet, '/test_pixel_formats/features/enum_set'
     )
     command_run_client = test_node.create_client(
-        FeatureCommandRun, "/test_pixel_formats/features/command_run"
+        FeatureCommandRun, '/test_pixel_formats/features/command_run'
     )
     enum_set_client.wait_for_service(10)
     command_run_client.wait_for_service(10)
 
     test_node.call_service_sync(
         enum_set_client,
-        FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
+        FeatureEnumSet.Request(feature_name='UserSetSelector', value='UserSetDefault'),
     )
 
     test_node.call_service_sync(
-        command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
+        command_run_client, FeatureCommandRun.Request(feature_name='UserSetLoad')
     )
 
     yield test_node
@@ -196,23 +191,23 @@ def pixel_test_node(launch_context):
     rclpy.shutdown()
 
 
-@launch_pytest.fixture(scope="class")
+@launch_pytest.fixture(scope='class')
 def vimbax_camera_node_class_scope():
     return LaunchDescription(
         [
             ExecuteProcess(
-                cmd=["ros2", "node", "list", "--all"],
+                cmd=['ros2', 'node', 'list', '--all'],
                 shell=True,
-                output="both",
+                output='both',
             ),
             launch_ros.actions.Node(
-                package="vimbax_camera",
-                namespace="/test_pixel_formats",
-                executable="vimbax_camera_node",
+                package='vimbax_camera',
+                namespace='/test_pixel_formats',
+                executable='vimbax_camera_node',
                 parameters=[{
-                    "use_ros_time": True
+                    'use_ros_time': True
                 }],
-                name="test_pixel_formats",
+                name='test_pixel_formats',
             ),
             launch_pytest.actions.ReadyToTest(),
         ]
@@ -223,21 +218,21 @@ def vimbax_camera_node_class_scope():
 class TestPixelFormat:
     """One VimbaXCamera node is started for all tests."""
 
-    @pytest.mark.parametrize("format", REQUIRED_PIXEL_FORMATS)
-    def test_format(self, format, launch_context, pixel_test_node: PixelFormatTestNode):
+    @pytest.mark.parametrize('fmt', REQUIRED_PIXEL_FORMATS)
+    def test_format(self, fmt, launch_context, pixel_test_node: PixelFormatTestNode):
 
         # The PixelFormat cannot be changed while the camera is streaming
         check_error(pixel_test_node.stop_stream().error)
 
         # We can only test the formats required and supported by the attached camera
-        if not (format in pixel_test_node.get_supported_pixel_formats()):
-            pytest.skip(f"{format} is not supported by current camera")
+        if not (fmt in pixel_test_node.get_supported_pixel_formats()):
+            pytest.skip(f'{fmt} is not supported by current camera')
             return
 
         # Set the pixel format
-        LOGGER.info(f"Testing format: {format}")
+        LOGGER.info(f'Testing format: {fmt}')
 
-        check_error(pixel_test_node.set_pixel_format(format).error)
+        check_error(pixel_test_node.set_pixel_format(fmt).error)
         check_error(pixel_test_node.start_stream().error)
 
         # Discard images that were taken before the settings change
@@ -250,13 +245,13 @@ class TestPixelFormat:
         # Assert the pixel format of the image matches the requested format
         assert image is not None
         # Because the ROS and PFNC formats differ in naming the encoding needs to be translated
-        assert image.encoding == PFNC_TO_ROS[format]
+        assert image.encoding == PFNC_TO_ROS[fmt]
         sleep(1)
 
     def test_invalid_value(self, launch_context, pixel_test_node):
 
         pixel_test_node.stop_stream()
         # This should fail
-        res = pixel_test_node.set_pixel_format("")
-        error_msg: str = "Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)"
+        res = pixel_test_node.set_pixel_format('')
+        error_msg: str = 'Unexpected error: {} ({}); Expected -11 (VmbErrorInvalidValue)'
         assert res.error.code == -11, error_msg.format(res.error.code, res.error.text)

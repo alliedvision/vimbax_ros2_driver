@@ -28,7 +28,6 @@
 
 
 from enum import Enum
-
 from typing import List
 
 from vimbax_camera_msgs.msg import Error
@@ -50,11 +49,11 @@ class FeatureDataType(Enum):
     NONE = 8
 
 
-sfnc_namespaces = ["Standard", "Custom"]
+sfnc_namespaces = ['Standard', 'Custom']
 
 features_ignore_map = {
     FeatureDataType.INT.value: [],
-    FeatureDataType.FLOAT.value: ["LvWatchdogTimerDuration", "Gain"],
+    FeatureDataType.FLOAT.value: ['LvWatchdogTimerDuration', 'Gain'],
     FeatureDataType.ENUM.value: [],
     FeatureDataType.STRING.value: [],
     FeatureDataType.BOOL.value: [],
@@ -64,7 +63,7 @@ features_ignore_map = {
 
 
 def check_error(error: Error):
-    assert error.code == 0, f"Unexpected error {error.code} ({error.text})"
+    assert error.code == 0, f'Unexpected error {error.code} ({error.text})'
 
 
 def ensure_access_mode(
@@ -91,9 +90,9 @@ def ensure_access_mode(
 
 
 def check_feature_info(feature_info: FeatureInfo):
-    assert feature_info.name != ""
-    assert feature_info.category != ""
-    assert feature_info.display_name != ""
+    assert feature_info.name != ''
+    assert feature_info.category != ''
+    assert feature_info.display_name != ''
     assert feature_info.sfnc_namespace in sfnc_namespaces
     assert feature_info.data_type > 0 and feature_info.data_type < 9
 
@@ -101,13 +100,13 @@ def check_feature_info(feature_info: FeatureInfo):
 def filter_features(
     features: List[FeatureInfo],
     acces_mode_service,
-    type: FeatureDataType,
+    ty: FeatureDataType,
     readable: bool = True,
     writeable: bool = True,
 ):
     def check(feature: FeatureInfo):
         return (
-            feature.data_type == type.value
+            feature.data_type == ty.value
             and feature.name not in features_ignore_map[feature.data_type]
             and ensure_access_mode(
                 acces_mode_service, feature.name, readable=readable, writeable=writeable

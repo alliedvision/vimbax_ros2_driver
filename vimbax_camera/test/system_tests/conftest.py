@@ -26,29 +26,23 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
-
-import rclpy
-import rclpy.node
-
-import launch_pytest
-import launch
-
-from launch.actions import ExecuteProcess
-
-from launch_ros.actions import Node
-
-from threading import Thread
 
 import queue
 import random
 import string
 import threading
+from threading import Thread
 
+import launch
+from launch.actions import ExecuteProcess
+import launch_pytest
+from launch_ros.actions import Node
+import pytest
+import rclpy
+import rclpy.node
 from sensor_msgs.msg import Image
-
-from vimbax_camera_msgs.srv import FeatureEnumSet
 from vimbax_camera_msgs.srv import FeatureCommandRun
+from vimbax_camera_msgs.srv import FeatureEnumSet
 
 
 class TestNode(rclpy.node.Node):
@@ -87,7 +81,7 @@ class TestNode(rclpy.node.Node):
             self.image_queue.put(image)
 
         self.image_subscribtion = self.create_subscription(
-            Image, f"{self._camera_node_name}/image_raw", callback, 10
+            Image, f'{self._camera_node_name}/image_raw', callback, 10
         )
 
     def clear_queue(self):
@@ -134,7 +128,7 @@ class TestNode(rclpy.node.Node):
         if not future.done():
             event.wait(timeout_sec)
 
-        assert future.done(), f"{type(service.srv_type).__name__} call did not complete!"
+        assert future.done(), f'{type(service.srv_type).__name__} call did not complete!'
 
         return future.result()
 
@@ -143,33 +137,33 @@ class TestNode(rclpy.node.Node):
 
     def load_default_userset(self):
         enum_set_client = self.create_client(
-            FeatureEnumSet, f"{self._camera_node_name}/features/enum_set"
+            FeatureEnumSet, f'{self._camera_node_name}/features/enum_set'
         )
         command_run_client = self.create_client(
-            FeatureCommandRun, f"{self._camera_node_name}/features/command_run"
+            FeatureCommandRun, f'{self._camera_node_name}/features/command_run'
         )
         enum_set_client.wait_for_service(self._rcl_timeout_sec)
         command_run_client.wait_for_service(self._rcl_timeout_sec)
 
         self.call_service_sync(
             enum_set_client,
-            FeatureEnumSet.Request(feature_name="UserSetSelector", value="UserSetDefault"),
+            FeatureEnumSet.Request(feature_name='UserSetSelector', value='UserSetDefault'),
         )
 
         # High timeout: Real cameras need long time to load userset
         self.call_service_sync(
-            command_run_client, FeatureCommandRun.Request(feature_name="UserSetLoad")
+            command_run_client, FeatureCommandRun.Request(feature_name='UserSetLoad')
         )
 
 
 @pytest.fixture
 def node_test_id():
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
 
 @pytest.fixture
 def camera_test_node_name(node_test_id):
-    return f"vimbax_camera_pytest_{node_test_id}"
+    return f'vimbax_camera_pytest_{node_test_id}'
 
 
 @launch_pytest.fixture
@@ -177,14 +171,14 @@ def vimbax_camera_node(camera_test_node_name):
     return launch.LaunchDescription(
         [
             ExecuteProcess(
-                cmd=["ros2", "node", "list", "--all"],
+                cmd=['ros2', 'node', 'list', '--all'],
                 shell=True,
-                output="both",
+                output='both',
             ),
             Node(
-                package="vimbax_camera",
+                package='vimbax_camera',
                 namespace=camera_test_node_name,
-                executable="vimbax_camera_node",
+                executable='vimbax_camera_node',
                 name=camera_test_node_name,
             ),
             # Tell launch when to start the test
@@ -198,7 +192,7 @@ def vimbax_camera_node(camera_test_node_name):
 def test_node(node_test_id, camera_test_node_name):
     if not rclpy.ok():
         rclpy.init()
-    test_node = TestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    test_node = TestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     test_node.load_default_userset()
 

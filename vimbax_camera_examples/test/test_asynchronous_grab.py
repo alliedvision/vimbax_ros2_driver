@@ -26,18 +26,18 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
-import launch_pytest
-import launch
-from launch_ros.actions import Node
 from conftest import assert_clean_shutdown
+import launch
+import launch_pytest
+from launch_ros.actions import Node
+import pytest
 
 
 @pytest.fixture
 def camera_node_action(camera_test_node_name):
     return Node(
-        package="vimbax_camera",
-        executable="vimbax_camera_node",
+        package='vimbax_camera',
+        executable='vimbax_camera_node',
         namespace=camera_test_node_name,
         name=camera_test_node_name,
     )
@@ -48,9 +48,9 @@ def async_grab_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="asynchronous_grab",
-                arguments=["-c", "1", f"/{camera_test_node_name}"],
+                package='vimbax_camera_examples',
+                executable='asynchronous_grab',
+                arguments=['-c', '1', f'/{camera_test_node_name}'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -66,7 +66,7 @@ def test_output(launch_context, camera_test_node_name, async_grab_node):
 
     assert_clean_shutdown(launch_context, action)
 
-    expected = [".", "Received frames 1"]
+    expected = ['.', 'Received frames 1']
     # We dont know how many frames will be lost so ignore that output line
     lines = action.get_stdout().strip().splitlines()[-3:-1]
-    assert expected == lines, "The output should match the expected!"
+    assert expected == lines, 'The output should match the expected!'

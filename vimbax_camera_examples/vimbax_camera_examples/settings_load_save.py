@@ -27,24 +27,26 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+import argparse
+
 import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
-import argparse
-from .helper import single_service_call, build_topic_path
+
+from .helper import build_topic_path, single_service_call
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
-    parser.add_argument("operation", choices=["load", "save"])
-    parser.add_argument("filename")
+    parser.add_argument('node_namespace')
+    parser.add_argument('operation', choices=['load', 'save'])
+    parser.add_argument('filename')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("vimbax_settings_load_save_example")
+    node = Node('vimbax_settings_load_save_example')
 
     service_type = vimbax_camera_msgs.srv.SettingsLoadSave
 
@@ -57,6 +59,6 @@ def main():
                                    topic, request)
 
     if response.error.code == 0:
-        print(f"Settings {args.operation} was successfull")
+        print(f'Settings {args.operation} was successfull')
     else:
-        print(f"Settings {args.operation} failed with {response.error}")
+        print(f'Settings {args.operation} failed with {response.error}')

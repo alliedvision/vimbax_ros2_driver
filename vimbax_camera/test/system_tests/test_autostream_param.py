@@ -26,23 +26,21 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-import pytest
-import rclpy
-from rclpy.time import Time
-from rclpy.service import Service
-import launch_pytest
-import launch
-from launch_ros import actions
-from test_helper import check_error
-from conftest import TestNode
-
-from vimbax_camera_msgs.srv import StreamStartStop
-from vimbax_camera_msgs.srv import Status
-from sensor_msgs.msg import Image
-
 import time
 import warnings
+
+from conftest import TestNode
+import launch
+import launch_pytest
+from launch_ros import actions
+import pytest
+import rclpy
+from rclpy.service import Service
+from rclpy.time import Time
+from sensor_msgs.msg import Image
+from test_helper import check_error
+from vimbax_camera_msgs.srv import Status
+from vimbax_camera_msgs.srv import StreamStartStop
 
 
 # Fixture to launch the vimbax_camera_node
@@ -52,12 +50,12 @@ def camera_node_with_autostream(camera_test_node_name):
     return launch.LaunchDescription(
         [
             actions.Node(
-                package="vimbax_camera",
-                executable="vimbax_camera_node",
+                package='vimbax_camera',
+                executable='vimbax_camera_node',
                 name=camera_test_node_name,
                 namespace=camera_test_node_name,
-                parameters=[{"autostream": 1,
-                             "use_ros_time": True}],
+                parameters=[{'autostream': 1,
+                             'use_ros_time': True}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -72,12 +70,12 @@ def camera_node_without_autostream(camera_test_node_name):
     return launch.LaunchDescription(
         [
             actions.Node(
-                package="vimbax_camera",
-                executable="vimbax_camera_node",
+                package='vimbax_camera',
+                executable='vimbax_camera_node',
                 name=camera_test_node_name,
                 namespace=camera_test_node_name,
-                parameters=[{"autostream": 0,
-                             "use_ros_time": True}],
+                parameters=[{'autostream': 0,
+                             'use_ros_time': True}],
             ),
             # Tell launch when to start the test
             # If no ReadyToTest action is added, one will be appended automatically.
@@ -93,13 +91,13 @@ class StreamAutostreamTestNode(TestNode):
         super().__init__(name, cam_node_name)
         self.__camera_node_name = cam_node_name
         self.__stream_start_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{cam_node_name}/stream_start"
+            srv_type=StreamStartStop, srv_name=f'/{cam_node_name}/stream_start'
         )
         self.__stream_stop_srv: Service = self.create_client(
-            srv_type=StreamStartStop, srv_name=f"/{cam_node_name}/stream_stop"
+            srv_type=StreamStartStop, srv_name=f'/{cam_node_name}/stream_stop'
         )
         self.__status_srv: Service = self.create_client(
-            srv_type=Status, srv_name=f"/{cam_node_name}/status"
+            srv_type=Status, srv_name=f'/{cam_node_name}/status'
         )
 
         assert self.__stream_start_srv.wait_for_service(timeout_sec=self._rcl_timeout_sec)
@@ -138,7 +136,7 @@ class StreamAutostreamTestNode(TestNode):
                 if val == expected:
                     return True
             except AssertionError:
-                warnings.warn("is_streaming(): Status service call did not complete, trying again")
+                warnings.warn('is_streaming(): Status service call did not complete, trying again')
         return False
 
 
@@ -152,7 +150,7 @@ def init_and_shutdown_ros():
 # Verify that node.is_streaming works as intended
 @pytest.mark.launch(fixture=camera_node_without_autostream)
 def test_streaming_status_attribute(launch_context, camera_test_node_name, node_test_id):
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     node.subscribe_image_raw()
 
@@ -181,7 +179,7 @@ def test_streaming_status_attribute(launch_context, camera_test_node_name, node_
 def test_autostream_enabled(launch_context, camera_test_node_name, node_test_id):
 
     # Detecting the graph change can take quite a lot of time therefore timeout needs to be large
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     assert node.wait_until_streaming_is(False)
 
@@ -206,7 +204,7 @@ def test_autostream_enabled_multiple_subscribers(
 ):
 
     # Detecting the graph change can take quite a lot of time therefore timeout needs to be large
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     assert node.wait_until_streaming_is(False)
 
@@ -224,7 +222,7 @@ def test_autostream_enabled_multiple_subscribers(
 
     second_sub = node.create_subscription(
         Image,
-        f"/{camera_test_node_name}/image_raw",
+        f'/{camera_test_node_name}/image_raw',
         discard,
         0,
     )
@@ -250,7 +248,7 @@ def test_autostream_enabled_multiple_subscribers(
 @pytest.mark.launch(fixture=camera_node_with_autostream)
 def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     for i in range(10):
         node.subscribe_image_raw()
@@ -259,18 +257,18 @@ def test_autostream_enabled_sub_unsub_repeat(launch_context, camera_test_node_na
         # node.is_streaming() leeds to race conditions because the service can be called
         # while the streaming starts. Therefore wait for images with the timeout of the node
         img = node.get_latest_image()
-        assert img is not None, f"No image received in iteration {i}"
+        assert img is not None, f'No image received in iteration {i}'
 
         node.unsubscribe_image_raw()
 
-        assert node.wait_until_streaming_is(False), f"Node did not stop streaming in iteration {i}"
+        assert node.wait_until_streaming_is(False), f'Node did not stop streaming in iteration {i}'
 
 
 # Verify that the node starts streaming after the StreamStart service is called
 @pytest.mark.launch(fixture=camera_node_without_autostream)
 def test_autostream_disabled(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     assert node.wait_until_streaming_is(False)
 
@@ -297,7 +295,7 @@ def test_autostream_disabled(launch_context, camera_test_node_name, node_test_id
 @pytest.mark.launch(fixture=camera_node_without_autostream)
 def test_autostream_disabled_sub_unsub_repeat(launch_context, camera_test_node_name, node_test_id):
 
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     for _ in range(10):
         node.subscribe_image_raw()
@@ -326,7 +324,7 @@ def test_autostream_disabled_continue_stream_after_unsub(
     launch_context, camera_test_node_name, node_test_id
 ):
 
-    node = StreamAutostreamTestNode(f"_test_node_{node_test_id}", camera_test_node_name)
+    node = StreamAutostreamTestNode(f'_test_node_{node_test_id}', camera_test_node_name)
 
     check_error(node.start_stream().error)
 
@@ -340,12 +338,12 @@ def test_autostream_disabled_continue_stream_after_unsub(
 
     for i in range(10):
 
-        assert node.wait_until_streaming_is(True), f"Node stopped streaming in iteration {i}"
+        assert node.wait_until_streaming_is(True), f'Node stopped streaming in iteration {i}'
 
         node.subscribe_image_raw()
 
-        assert node.wait_until_streaming_is(True), f"Node stopped streaming in iteration {i}"
+        assert node.wait_until_streaming_is(True), f'Node stopped streaming in iteration {i}'
 
         node.unsubscribe_image_raw()
 
-        assert node.wait_until_streaming_is(True), f"Node stopped streaming in iteration {i}"
+        assert node.wait_until_streaming_is(True), f'Node stopped streaming in iteration {i}'

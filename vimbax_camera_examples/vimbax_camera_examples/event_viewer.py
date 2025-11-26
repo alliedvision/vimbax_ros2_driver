@@ -26,26 +26,26 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 
 import rclpy
 from rclpy.node import Node
-import argparse
-from .helper import build_topic_path
-
-from vimbax_camera_events.event_subscriber import EventSubscriber, EventSubscribeException
+from vimbax_camera_events.event_subscriber import EventSubscribeException, EventSubscriber
 from vimbax_camera_msgs.msg import EventData
+
+from .helper import build_topic_path
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
-    parser.add_argument("events", nargs="+")
+    parser.add_argument('node_namespace')
+    parser.add_argument('events', nargs='+')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("vimbax_feature_command_execute_example")
+    node = Node('vimbax_feature_command_execute_example')
 
     # Build topic path from namespace and topic name
     topic: str = build_topic_path(args.node_namespace, '/events')
@@ -54,7 +54,7 @@ def main():
 
     def print_event_data(event):
         for entry in event.entries:
-            print(f"  {entry.name}: {entry.value}")
+            print(f'  {entry.name}: {entry.value}')
 
     event_subscriptions = []
     pending_subscriptions = set()
@@ -62,7 +62,7 @@ def main():
     for event_name in args.events:
 
         def event_callback(name, data):
-            print(f"Got event {name}")
+            print(f'Got event {name}')
             print_event_data(data)
 
         def on_subscribed(future):
@@ -70,8 +70,8 @@ def main():
             try:
                 event_subscriptions.append(future.result())
             except EventSubscribeException as ex:
-                print(f"Subscribing to event {ex.name} failed with "
-                      f"{ex.error.code} ({ex.error.text})")
+                print(f'Subscribing to event {ex.name} failed with '
+                      f'{ex.error.code} ({ex.error.text})')
                 # Stop executor if no subscription is pending or active
                 if len(pending_subscriptions) == 0 and len(event_subscriptions) == 0:
                     rclpy.shutdown()
