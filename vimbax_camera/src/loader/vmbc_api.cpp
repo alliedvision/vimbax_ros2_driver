@@ -307,7 +307,9 @@ result<std::string> VmbCAPI::feature_string_get(
 
   auto err = FeatureStringGet(handle, name.data(), nullptr, 0, &size_filled);
 
-  if (err != VmbErrorSuccess) {
+  if (err == VmbErrorNotFound) {
+    return error{err};
+  } else if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
       get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
       vmb_error_to_string(err).data());
