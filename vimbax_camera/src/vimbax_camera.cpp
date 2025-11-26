@@ -1384,7 +1384,7 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
   } else {
     info.firmware_version = *firmware_version;
   }
-  
+
 
   info.device_id = camera_info_.cameraIdString;
 
