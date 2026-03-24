@@ -26,22 +26,24 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
-import rclpy
 import random
 import string
-from vimbax_camera_msgs.msg import Error
+
+
 from launch_pytest.tools.process import wait_for_exit_sync
+import pytest
+import rclpy
+from vimbax_camera_msgs.msg import Error
 
 
 @pytest.fixture
 def node_test_id():
-    return "".join(random.choices(string.ascii_lowercase + string.digits, k=8))
+    return ''.join(random.choices(string.ascii_lowercase + string.digits, k=8))
 
 
 @pytest.fixture
 def camera_test_node_name(node_test_id):
-    return f"vimbax_camera_pytest_{node_test_id}"
+    return f'vimbax_camera_pytest_{node_test_id}'
 
 
 @pytest.fixture(autouse=True)
@@ -54,14 +56,14 @@ def init_shutdown_ros():
 
 
 def check_error(error: Error):
-    assert error.code == 0, f"Unexpected error {error.code} ({error.text})"
+    assert error.code == 0, f'Unexpected error {error.code} ({error.text})'
 
 
 def call_service(srv_type, url, req):
-    node = rclpy.create_node("_test_feature_get")
+    node = rclpy.create_node('_test_feature_get')
     client = node.create_client(srv_type, url)
 
-    assert client.wait_for_service(timeout_sec=10.0), f"Service {url} not reachable"
+    assert client.wait_for_service(timeout_sec=10.0), f'Service {url} not reachable'
     fut = client.call_async(req)
     rclpy.spin_until_future_complete(node, future=fut, timeout_sec=10.0)
     assert fut.done()
@@ -76,8 +78,8 @@ def assert_clean_shutdown(launch_context, action):
 
     assert wait_for_exit_sync(
         launch_context, action, timeout=10.0
-    ), "Process did not finish in 10 seconds"
+    ), 'Process did not finish in 10 seconds'
 
-    assert action.return_code is not None, "Process should have exited here!"
+    assert action.return_code is not None, 'Process should have exited here!'
 
-    assert action.return_code == 0, "The Process should not return an error!"
+    assert action.return_code == 0, 'The Process should not return an error!'

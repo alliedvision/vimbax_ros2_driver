@@ -31,8 +31,8 @@
 #endif
 
 #define CHK_SVC(a) {if (!a) { \
-      return false; \
-    }};
+  return false; \
+}};
 
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_components/register_node_macro.hpp>
@@ -177,7 +177,7 @@ bool VimbaXCameraNode::initialize_events()
         }
       } else {
         return vimbax_camera_msgs::msg::Error{}
-        .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
+               .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
       return vimbax_camera_msgs::msg::Error{};
@@ -223,7 +223,7 @@ bool VimbaXCameraNode::initialize_events()
                 res->cbegin(), res->cend(), std::back_inserter(data.entries),
                 [](auto pair) {
                   return vimbax_camera_msgs::msg::EventDataEntry{}
-                  .set__name(pair.first).set__value(pair.second);
+                         .set__name(pair.first).set__value(pair.second);
                 });
             }
 
@@ -235,7 +235,7 @@ bool VimbaXCameraNode::initialize_events()
         }
       } else {
         return vimbax_camera_msgs::msg::Error{}
-        .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
+               .set__code(VmbErrorNotFound).set__text("VmbErrorNotFound");
       }
 
       return vimbax_camera_msgs::msg::Error{};
@@ -311,8 +311,8 @@ bool VimbaXCameraNode::initialize_parameters()
         if (param.get_name() == parameter_buffer_count) {
           if (camera_->is_streaming()) {
             return rcl_interfaces::msg::SetParametersResult{}
-            .set__successful(false)
-            .set__reason("Buffer count change not supported while streaming");
+                   .set__successful(false)
+                   .set__reason("Buffer count change not supported while streaming");
           }
         }
       }
@@ -721,7 +721,7 @@ bool VimbaXCameraNode::initialize_int_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_int_get_service_);
 
@@ -746,7 +746,7 @@ bool VimbaXCameraNode::initialize_int_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_int_set_service_);
 
@@ -774,7 +774,7 @@ bool VimbaXCameraNode::initialize_int_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_int_info_get_service_);
 
@@ -806,7 +806,7 @@ bool VimbaXCameraNode::initialize_float_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_float_get_service_);
 
@@ -831,7 +831,7 @@ bool VimbaXCameraNode::initialize_float_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_float_set_service_);
 
@@ -861,7 +861,7 @@ bool VimbaXCameraNode::initialize_float_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_float_info_get_service_);
 
@@ -892,7 +892,7 @@ bool VimbaXCameraNode::initialize_string_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_string_get_service_);
 
@@ -917,7 +917,7 @@ bool VimbaXCameraNode::initialize_string_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_string_set_service_);
 
@@ -944,7 +944,7 @@ bool VimbaXCameraNode::initialize_string_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_string_info_get_service_);
 
@@ -975,7 +975,7 @@ bool VimbaXCameraNode::initialize_bool_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_bool_get_service_);
 
@@ -1000,7 +1000,7 @@ bool VimbaXCameraNode::initialize_bool_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_bool_set_service_);
 
@@ -1032,7 +1032,7 @@ bool VimbaXCameraNode::initialize_command_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_command_is_done_service_);
 
@@ -1062,7 +1062,7 @@ bool VimbaXCameraNode::initialize_command_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_command_run_service_);
 
@@ -1093,7 +1093,7 @@ bool VimbaXCameraNode::initialize_enum_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_enum_get_service_);
 
@@ -1118,7 +1118,7 @@ bool VimbaXCameraNode::initialize_enum_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_enum_set_service_);
 
@@ -1147,7 +1147,7 @@ bool VimbaXCameraNode::initialize_enum_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_enum_info_get_service_);
 
@@ -1174,7 +1174,7 @@ bool VimbaXCameraNode::initialize_enum_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_enum_as_int_get_service_);
 
@@ -1202,7 +1202,7 @@ bool VimbaXCameraNode::initialize_enum_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_enum_as_string_get_service_);
 
@@ -1235,7 +1235,7 @@ bool VimbaXCameraNode::initialize_raw_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_raw_get_service_);
 
@@ -1261,7 +1261,7 @@ bool VimbaXCameraNode::initialize_raw_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_raw_set_service_);
 
@@ -1287,7 +1287,7 @@ bool VimbaXCameraNode::initialize_raw_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_raw_info_get_service_);
 
@@ -1321,7 +1321,7 @@ bool VimbaXCameraNode::initialize_generic_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_access_mode_get_service_);
 
@@ -1367,14 +1367,14 @@ bool VimbaXCameraNode::initialize_generic_feature_services()
                 .set__flag_modify_write(info.flags.flag_modify_write);
 
                 return vimbax_camera_msgs::msg::FeatureInfo{}
-                .set__name(info.name)
-                .set__category(info.category)
-                .set__display_name(info.display_name)
-                .set__sfnc_namespace(info.sfnc_namespace)
-                .set__unit(info.unit)
-                .set__data_type(info.data_type)
-                .set__flags(flags)
-                .set__polling_time(info.polling_time);
+                       .set__name(info.name)
+                       .set__category(info.category)
+                       .set__display_name(info.display_name)
+                       .set__sfnc_namespace(info.sfnc_namespace)
+                       .set__unit(info.unit)
+                       .set__data_type(info.data_type)
+                       .set__flags(flags)
+                       .set__polling_time(info.polling_time);
               });
           }
         } else {
@@ -1383,7 +1383,7 @@ bool VimbaXCameraNode::initialize_generic_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(feature_info_query_service_);
 
@@ -1409,7 +1409,7 @@ bool VimbaXCameraNode::initialize_generic_feature_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), feature_callback_group_);
+    }, rclcpp::ServicesQoS{}, feature_callback_group_);
 
   CHK_SVC(features_list_get_service_);
 
@@ -1435,7 +1435,7 @@ bool VimbaXCameraNode::initialize_settings_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), settings_load_save_callback_group_);
+    }, rclcpp::ServicesQoS{}, settings_load_save_callback_group_);
 
   CHK_SVC(settings_save_service_);
 
@@ -1454,7 +1454,7 @@ bool VimbaXCameraNode::initialize_settings_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), settings_load_save_callback_group_);
+    }, rclcpp::ServicesQoS{}, settings_load_save_callback_group_);
 
   CHK_SVC(settings_load_service_);
 
@@ -1482,9 +1482,9 @@ bool VimbaXCameraNode::initialize_status_services()
             info->trigger_info.begin(), info->trigger_info.end(), std::back_inserter(trigger_info),
             [](auto const trigger_info) {
               return vimbax_camera_msgs::msg::TriggerInfo{}
-              .set__selector(trigger_info.selector)
-              .set__mode(trigger_info.mode)
-              .set__source(trigger_info.source);
+                     .set__selector(trigger_info.selector)
+                     .set__mode(trigger_info.mode)
+                     .set__source(trigger_info.source);
             });
 
           response->set__display_name(info->display_name)
@@ -1513,7 +1513,7 @@ bool VimbaXCameraNode::initialize_status_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), status_callback_group_);
+    }, rclcpp::ServicesQoS{}, status_callback_group_);
 
   CHK_SVC(status_service_);
 
@@ -1524,7 +1524,7 @@ bool VimbaXCameraNode::initialize_status_services()
     {
       std::shared_lock lock(camera_mutex_);
       response->set__connected(camera_ != nullptr);
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), status_callback_group_);
+    }, rclcpp::ServicesQoS{}, status_callback_group_);
 
   CHK_SVC(connection_status_service_);
 
@@ -1551,7 +1551,7 @@ bool VimbaXCameraNode::initialize_stream_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), stream_start_stop_callback_group_);
+    }, rclcpp::ServicesQoS{}, stream_start_stop_callback_group_);
 
   CHK_SVC(stream_start_service_);
 
@@ -1571,7 +1571,7 @@ bool VimbaXCameraNode::initialize_stream_services()
       } else {
         response->set__error(error{VmbErrorNotFound}.to_error_msg());
       }
-    }, rclcpp::QoS(rclcpp::ServicesQoS()), stream_start_stop_callback_group_);
+    }, rclcpp::ServicesQoS{}, stream_start_stop_callback_group_);
 
   CHK_SVC(stream_stop_service_);
 

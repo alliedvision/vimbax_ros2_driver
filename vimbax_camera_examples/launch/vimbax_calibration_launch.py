@@ -46,6 +46,6 @@ def generate_launch_description():
                 ('/image', '/vimbax_camera_calib/image_raw'),
                 ('/camera/set_camera_info', '/vimbax_camera_calib/set_camera_info'),
             ],
-            arguments=["--size", "9x6", "--square", "0.108"]
+            arguments=['--size', '9x6', '--square', '0.108']
         )
     ])

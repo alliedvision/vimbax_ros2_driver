@@ -26,20 +26,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-import rclpy
-from rclpy.node import Node
-import cv2
-import cv_bridge
-from .helper import build_topic_path
-
-from asyncio import Future
-
 import argparse
-
+from asyncio import Future
 import signal
 
+import cv2
+import cv_bridge
+import rclpy
+from rclpy.node import Node
 from sensor_msgs.msg import Image
+
+from .helper import build_topic_path
 
 
 def main():
@@ -53,23 +50,23 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
+    parser.add_argument('node_namespace')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("_stream_opencv")
+    node = Node('_stream_opencv')
 
     bridge = cv_bridge.CvBridge()
 
     def on_frame(msg: Image):
-        mat = bridge.imgmsg_to_cv2(msg, "rgb8")
-        cv2.imshow("frame", mat)
+        mat = bridge.imgmsg_to_cv2(msg, 'rgb8')
+        cv2.imshow('frame', mat)
         if cv2.waitKey(1) == 0x1B:
             stop_future.set_result(None)
 
-    topic = build_topic_path(args.node_namespace, "image_raw")
+    topic = build_topic_path(args.node_namespace, 'image_raw')
     node.create_subscription(Image, topic, on_frame, 10)
 
     rclpy.spin_until_future_complete(node, stop_future)

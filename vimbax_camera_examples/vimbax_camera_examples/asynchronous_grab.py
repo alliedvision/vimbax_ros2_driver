@@ -27,18 +27,20 @@
 # POSSIBILITY OF SUCH DAMAGE.
 
 
+import argparse
+from asyncio import Future
+import signal
+
+
 import rclpy
+import rclpy.executors
 from rclpy.node import Node
 from rclpy.qos_event import SubscriptionEventCallbacks
-import rclpy.executors
-import signal
-from .helper import build_topic_path
-
-import argparse
-
-from asyncio import Future
 
 from sensor_msgs.msg import Image
+
+from .helper import build_topic_path
+
 
 frames_recv = 0
 lost_frames = 0
@@ -55,26 +57,26 @@ def main():
     signal.signal(signal.SIGTERM, signal_handler)
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
-    parser.add_argument("-i", "--info", action="store_true", help="Show frame infos")
-    parser.add_argument("-c", "--count", type=int, default=0, help="Frame count until stop stream")
+    parser.add_argument('node_namespace')
+    parser.add_argument('-i', '--info', action='store_true', help='Show frame infos')
+    parser.add_argument('-c', '--count', type=int, default=0, help='Frame count until stop stream')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("vimbax_asynchronous_grab_example")
+    node = Node('vimbax_asynchronous_grab_example')
 
     def on_frame(msg: Image):
         global frames_recv
 
         if args.info:
             print(
-                f"Frame id {msg.header.frame_id} Size {msg.width}x{msg.height} "
-                + f"Format {msg.encoding}"
+                f'Frame id {msg.header.frame_id} Size {msg.width}x{msg.height} '
+                + f'Format {msg.encoding}'
             )
         else:
-            print(".", end="", flush=True)
+            print('.', end='', flush=True)
 
         frames_recv += 1
         if args.count > 0 and frames_recv >= args.count:
@@ -85,7 +87,7 @@ def main():
 
     def on_message_lost(message_lost_status):
         global lost_frames
-        print(f"Dropped {message_lost_status.total_count_change} frames")
+        print(f'Dropped {message_lost_status.total_count_change} frames')
         lost_frames = lost_frames + message_lost_status.total_count_change
 
     event_callbacks = SubscriptionEventCallbacks(message_lost=on_message_lost)
@@ -96,5 +98,5 @@ def main():
 
     if not args.info:
         print()
-    print(f"Received frames {frames_recv}")
-    print(f"Dropped {lost_frames}/{lost_frames + frames_recv} frames")
+    print(f'Received frames {frames_recv}')
+    print(f'Dropped {lost_frames}/{lost_frames + frames_recv} frames')

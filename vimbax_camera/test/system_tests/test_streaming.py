@@ -26,34 +26,30 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-
-import pytest
-
 import time
 
-from vimbax_camera_msgs.srv import StreamStartStop
-from vimbax_camera_msgs.srv import Status
-
-from conftest import vimbax_camera_node, TestNode
-
+from conftest import TestNode, vimbax_camera_node
+import pytest
 from test_helper import check_error
+from vimbax_camera_msgs.srv import Status
+from vimbax_camera_msgs.srv import StreamStartStop
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_start_stop_services(test_node: TestNode, launch_context):
     start_service = test_node.create_client(
-        StreamStartStop, f"/{test_node.camera_node_name()}/stream_start"
+        StreamStartStop, f'/{test_node.camera_node_name()}/stream_start'
     )
     assert start_service.wait_for_service(10)
     stop_service = test_node.create_client(
-        StreamStartStop, f"/{test_node.camera_node_name()}/stream_stop"
+        StreamStartStop, f'/{test_node.camera_node_name()}/stream_stop'
     )
     assert stop_service.wait_for_service(10)
 
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_auto_stream_start_stop(test_node: TestNode, launch_context):
-    status_service = test_node.create_client(Status, f"/{test_node.camera_node_name()}/status")
+    status_service = test_node.create_client(Status, f'/{test_node.camera_node_name()}/status')
     assert status_service.wait_for_service(10)
 
     status = test_node.call_service_sync(status_service, Status.Request())
@@ -90,15 +86,15 @@ def test_streaming(test_node: TestNode, launch_context):
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 def test_stream_manual_start_stop(test_node: TestNode, launch_context):
-    status_service = test_node.create_client(Status, f"/{test_node.camera_node_name()}/status")
+    status_service = test_node.create_client(Status, f'/{test_node.camera_node_name()}/status')
     assert status_service.wait_for_service(10)
 
     start_service = test_node.create_client(
-        StreamStartStop, f"/{test_node.camera_node_name()}/stream_start"
+        StreamStartStop, f'/{test_node.camera_node_name()}/stream_start'
     )
     assert start_service.wait_for_service(1)
     stop_service = test_node.create_client(
-        StreamStartStop, f"/{test_node.camera_node_name()}/stream_stop"
+        StreamStartStop, f'/{test_node.camera_node_name()}/stream_stop'
     )
     assert stop_service.wait_for_service(1)
 
@@ -131,5 +127,5 @@ def test_stream_manual_start_stop(test_node: TestNode, launch_context):
     assert test_node.image_queue.empty()
 
     status = test_node.call_service_sync(status_service, Status.Request())
-    assert status is not None, "GetStatus service call did not complete!"
+    assert status is not None, 'GetStatus service call did not complete!'
     assert not status.streaming

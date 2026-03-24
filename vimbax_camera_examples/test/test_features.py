@@ -26,14 +26,16 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
-import launch_pytest
-import launch
-from launch_ros.actions import Node
-from conftest import call_service, assert_clean_shutdown
-from vimbax_camera_msgs.srv import FeatureEnumGet, FeatureEnumInfoGet, FeaturesListGet
 import logging
 from typing import List
+
+from conftest import assert_clean_shutdown, call_service
+import launch
+import launch_pytest
+from launch_ros.actions import Node
+import pytest
+from vimbax_camera_msgs.srv import FeatureEnumGet, FeatureEnumInfoGet, FeaturesListGet
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -41,8 +43,8 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture
 def camera_node_action(camera_test_node_name):
     return Node(
-        package="vimbax_camera",
-        executable="vimbax_camera_node",
+        package='vimbax_camera',
+        executable='vimbax_camera_node',
         namespace=camera_test_node_name,
         name=camera_test_node_name,
     )
@@ -53,9 +55,9 @@ def feature_get_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="feature_get",
-                arguments=[f"/{camera_test_node_name}", "Enum", "PixelFormat"],
+                package='vimbax_camera_examples',
+                executable='feature_get',
+                arguments=[f'/{camera_test_node_name}', 'Enum', 'PixelFormat'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -69,11 +71,11 @@ def test_feature_get(launch_context, camera_test_node_name, feature_get_node):
 
     action = feature_get_node.describe_sub_entities()[0]
 
-    service_name: str = f"/{camera_test_node_name}/features/enum_get"
+    service_name: str = f'/{camera_test_node_name}/features/enum_get'
     res: FeatureEnumGet.Response = call_service(
-        FeatureEnumGet, service_name, FeatureEnumGet.Request(feature_name="PixelFormat")
+        FeatureEnumGet, service_name, FeatureEnumGet.Request(feature_name='PixelFormat')
     )
-    expected: str = f"PixelFormat: {res.value}"
+    expected: str = f'PixelFormat: {res.value}'
 
     assert_clean_shutdown(launch_context, action)
 
@@ -86,9 +88,9 @@ def feature_info_get_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="feature_info_get",
-                arguments=[f"/{camera_test_node_name}", "Enum", "AcquisitionMode"],
+                package='vimbax_camera_examples',
+                executable='feature_info_get',
+                arguments=[f'/{camera_test_node_name}', 'Enum', 'AcquisitionMode'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -102,13 +104,13 @@ def test_feature_info_get(launch_context, camera_test_node_name, feature_info_ge
 
     action = feature_info_get_node.describe_sub_entities()[0]
 
-    service_name: str = f"/{camera_test_node_name}/features/enum_info_get"
+    service_name: str = f'/{camera_test_node_name}/features/enum_info_get'
     res: FeatureEnumInfoGet.Response = call_service(
         FeatureEnumInfoGet,
         service_name,
-        FeatureEnumInfoGet.Request(feature_name="AcquisitionMode"),
+        FeatureEnumInfoGet.Request(feature_name='AcquisitionMode'),
     )
-    expected: str = f"all: {res.possible_values} available: {res.available_values}"
+    expected: str = f'all: {res.possible_values} available: {res.available_values}'
 
     assert_clean_shutdown(launch_context, action)
 
@@ -121,9 +123,9 @@ def feature_set_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="feature_set",
-                arguments=[f"/{camera_test_node_name}", "Enum", "AcquisitionMode", "Continuous"],
+                package='vimbax_camera_examples',
+                executable='feature_set',
+                arguments=[f'/{camera_test_node_name}', 'Enum', 'AcquisitionMode', 'Continuous'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -137,7 +139,7 @@ def test_feature_set(launch_context, camera_test_node_name, feature_set_node):
 
     action = feature_set_node.describe_sub_entities()[0]
 
-    expected = "Changed feature AcquisitionMode to Continuous"
+    expected = 'Changed feature AcquisitionMode to Continuous'
 
     assert_clean_shutdown(launch_context, action)
 
@@ -150,9 +152,9 @@ def execute_command_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="feature_command_execute",
-                arguments=[f"/{camera_test_node_name}", "CounterReset"],
+                package='vimbax_camera_examples',
+                executable='feature_command_execute',
+                arguments=[f'/{camera_test_node_name}', 'CounterReset'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -166,7 +168,7 @@ def test_execute_command(launch_context, camera_test_node_name, execute_command_
 
     action = execute_command_node.describe_sub_entities()[0]
 
-    expected = "Successfully executed command CounterReset"
+    expected = 'Successfully executed command CounterReset'
 
     assert_clean_shutdown(launch_context, action)
 
@@ -179,9 +181,9 @@ def list_features_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="list_features",
-                arguments=[f"/{camera_test_node_name}"],
+                package='vimbax_camera_examples',
+                executable='list_features',
+                arguments=[f'/{camera_test_node_name}'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -199,14 +201,14 @@ def test_list_features(launch_context, camera_test_node_name, list_features_node
 
     lines: List[str] = action.get_stdout().strip().splitlines()
 
-    assert 0 < len(lines), "The output should contain more than 0 lines!"
+    assert 0 < len(lines), 'The output should contain more than 0 lines!'
 
-    feature_names: List[str] = list(filter(lambda x: x.strip().startswith("name:"), lines))
-    feature_names_set = set([x.strip().split()[1] for x in feature_names])
+    feature_names: List[str] = list(filter(lambda x: x.strip().startswith('name:'), lines))
+    feature_names_set = {x.strip().split()[1] for x in feature_names}
 
     res: FeaturesListGet.Result = call_service(
-        FeaturesListGet, f"{camera_test_node_name}/features/list_get", FeaturesListGet.Request()
+        FeaturesListGet, f'{camera_test_node_name}/features/list_get', FeaturesListGet.Request()
     )
 
     diff = set(res.feature_list).difference(feature_names_set)
-    assert 0 == len(diff), "The example should ouput all features!"
+    assert 0 == len(diff), 'The example should ouput all features!'

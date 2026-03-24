@@ -26,25 +26,25 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
+from time import sleep
 
 import rclpy
 from rclpy.node import Node
 import vimbax_camera_msgs.srv
-import argparse
-from .helper import build_topic_path
 
-from time import sleep
+from .helper import build_topic_path
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
+    parser.add_argument('node_namespace')
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("_connected_get")
+    node = Node('_connected_get')
 
     service_type = vimbax_camera_msgs.srv.ConnectionStatus
 
@@ -54,7 +54,7 @@ def main():
     client = node.create_client(service_type, topic)
 
     if not client.wait_for_service(120.0):
-        print("Service got not ready in time")
+        print('Service got not ready in time')
         exit(1)
 
     request = service_type.Request()
@@ -74,9 +74,9 @@ def main():
             response = future.result()
 
             if response.connected and not was_connected:
-                print("Camera connect!")
+                print('Camera connect!')
             elif not response.connected and was_connected:
-                print("Camera disconnect!")
+                print('Camera disconnect!')
 
             was_connected = response.connected
 

@@ -26,15 +26,17 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
-import pytest
-import launch_pytest
-import launch
-from launch_ros.actions import Node
-from conftest import call_service, assert_clean_shutdown
-from vimbax_camera_msgs.srv import StreamStartStop
-from typing import List
 import logging
 import time
+from typing import List
+
+from conftest import assert_clean_shutdown, call_service
+import launch
+import launch_pytest
+from launch_ros.actions import Node
+import pytest
+from vimbax_camera_msgs.srv import StreamStartStop
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -42,8 +44,8 @@ LOGGER = logging.getLogger(__name__)
 @pytest.fixture
 def camera_node_action(camera_test_node_name):
     return Node(
-        package="vimbax_camera",
-        executable="vimbax_camera_node",
+        package='vimbax_camera',
+        executable='vimbax_camera_node',
         namespace=camera_test_node_name,
         name=camera_test_node_name,
     )
@@ -54,9 +56,9 @@ def event_viewer_node(camera_node_action, camera_test_node_name):
     return launch.LaunchDescription(
         [
             Node(
-                package="vimbax_camera_examples",
-                executable="event_viewer",
-                arguments=[f"/{camera_test_node_name}", "AcquisitionStart"],
+                package='vimbax_camera_examples',
+                executable='event_viewer',
+                arguments=[f'/{camera_test_node_name}', 'AcquisitionStart'],
                 cached_output=True,
             ),
             camera_node_action,
@@ -74,7 +76,7 @@ def test_event_viewer(launch_context, camera_test_node_name, event_viewer_node, 
 
     call_service(
         StreamStartStop,
-        f"/{camera_test_node_name}/stream_start",
+        f'/{camera_test_node_name}/stream_start',
         StreamStartStop.Request(),
     )
 

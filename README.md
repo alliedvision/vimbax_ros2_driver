@@ -1,39 +1,38 @@
 # Vimba X ROS 2 camera driver
 
 ## Compability
-- ROS 2 humble
-- Nvidia Jetpack 5.x (arm64)
-- Ubuntu 22.04 (x86_64)
+- ROS 2 
+- Ubuntu 24.04 (x86_64)
 - Allied Vision Alvium cameras
 - Tested ROS 2 RMW implementation: rmw_cyclone_dds 
 
 ## Prerequisites
-- ROS 2 humble is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/humble/Installation.html)
+- ROS 2 jazzy is installed on the system as defined by the [ROS 2 installation instructions](https://docs.ros.org/en/jazzy/Installation.html)
 - For NVIDIA Jetson boards please follow the [NVIDIA ISAAC ROS installation guide](https://nvidia-isaac-ros.github.io/getting_started/isaac_ros_buildfarm_cdn.html#setup)
-- For running the system tests make sure the package "ros-humble-launch-pytests" is installed on your system.
-- [Vimba X 2023-4](https://www.alliedvision.com/en/products/software/vimba-x-sdk/) or later
+- For running the system tests make sure the package "ros-jazzy-launch-pytests" is installed on your system.
+- [Vimba X 2025-3](https://www.alliedvision.com/en/products/software/vimba-x-sdk/) or later
 - For CSI cameras make sure to install the drivers available on [github](https://github.com/alliedvision/linux_nvidia_jetson)
 
 ## Installation
 Download the debian package from the release page and install it using the following command:
 ```
-sudo apt install ros-humble-rmw-cyclonedds-cpp
-sudo apt install ./ros-humble-vimbax-camera-driver.deb 
+sudo apt install ros-jazzy-rmw-cyclonedds-cpp
+sudo apt install ./ros-jazzy-vimbax-camera-driver.deb 
 ```
 
 ## Getting started
 
 Setup the ROS 2 environment:
 ```shell
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 ```
 
 Change the the ROS 2 middleware to cyclonedds, because the default middleware is causing some issues. See [known issuse](#known-issues) for more details.:
 ```shell
-source /opt/ros/humble/setup.bash
+source /opt/ros/jazzy/setup.bash
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ```
-To get maximum performance please also apply the settings described in [DDS Tuning](https://docs.ros.org/en/humble/How-To-Guides/DDS-tuning.html).
+To get maximum performance please also apply the settings described in [DDS Tuning](https://docs.ros.org/en/jazzy/How-To-Guides/DDS-tuning.html).
 Especially the settings for the Cyclone DDS section are important, because otherwise you might loose frames. 
 
 To start the Vimba X ROS 2 node run:
@@ -70,7 +69,7 @@ The following examples are available:
 ## Build Instructions
 1. Setup the ROS2 environment
     ```shell
-    source /opt/ros/humble/setup.bash
+    source /opt/ros/jazzy/setup.bash
     ```
 
 2. Initialize and update rosdep if not already done
@@ -817,7 +816,7 @@ If an error message regarding a missing camera calibration file appears it can b
 For more information see [ROS2 camera calibration documentation](https://docs.ros.org/en/rolling/p/camera_calibration/tutorial_mono.html).
 
 ### Images lost in ROS 2 
-If you are losing image and don't see any error messages, please make sure that you have applied all settings from the [DDS Tuning Guide](https://docs.ros.org/en/humble/How-To-Guides/DDS-tuning.html).
+If you are losing image and don't see any error messages, please make sure that you have applied all settings from the [DDS Tuning Guide](https://docs.ros.org/en/jazzy/How-To-Guides/DDS-tuning.html).
 
 ### Known issues
 - When using the default ros 2 middleware rmw_fastrtps_cpp the may get unresponsive sporadically if you very often subscribe and unsubscribe to the image_raw topic. This happens due to a deadlock in the middleware implementation. Therefore it is recommended to use rmw_cyclonedds_cpp as ros 2 middleware instead. 

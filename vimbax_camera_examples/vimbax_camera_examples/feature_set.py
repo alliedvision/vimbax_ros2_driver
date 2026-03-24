@@ -26,43 +26,43 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+import argparse
 
 import rclpy
 from rclpy.node import Node
 
-import argparse
 from .helper import (
-    single_service_call,
+    build_topic_path,
     feature_type_dict,
     get_module_from_string,
-    build_topic_path,
+    single_service_call,
 )
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("node_namespace")
-    parser.add_argument("feature_type", choices=feature_type_dict.keys())
-    parser.add_argument("feature_name")
-    parser.add_argument("feature_value")
+    parser.add_argument('node_namespace')
+    parser.add_argument('feature_type', choices=feature_type_dict.keys())
+    parser.add_argument('feature_name')
+    parser.add_argument('feature_value')
     parser.add_argument(
-        "-m",
-        "--module",
-        choices=["remote_device", "system", "interface", "local_device", "stream"],
-        default="remote_device",
-        dest="module",
+        '-m',
+        '--module',
+        choices=['remote_device', 'system', 'interface', 'local_device', 'stream'],
+        default='remote_device',
+        dest='module',
     )
 
     (args, rosargs) = parser.parse_known_args()
 
     rclpy.init(args=rosargs)
 
-    node = Node("vimbax_feature_set_example")
+    node = Node('vimbax_feature_set_example')
 
     feature_type = feature_type_dict[args.feature_type]
 
     # Build topic path from namespace and topic name
-    topic: str = build_topic_path(args.node_namespace, f"/{feature_type.service_base_path}_set")
+    topic: str = build_topic_path(args.node_namespace, f'/{feature_type.service_base_path}_set')
 
     request = feature_type.set_service_type.Request()
     request.feature_name = args.feature_name
@@ -71,6 +71,6 @@ def main():
     response = single_service_call(node, feature_type.set_service_type, topic, request)
 
     if response.error.code == 0:
-        print(f"Changed feature {args.feature_name} to {args.feature_value}")
+        print(f'Changed feature {args.feature_name} to {args.feature_value}')
     else:
-        print(f"Setting feature {args.feature_name} value failed with {response.error}")
+        print(f'Setting feature {args.feature_name} value failed with {response.error}')

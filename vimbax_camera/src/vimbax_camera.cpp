@@ -733,23 +733,25 @@ VimbaXCamera::feature_int_info_get(
   return result;
 }
 
-result<_Float64> VimbaXCamera::feature_float_get(
+result<double> VimbaXCamera::feature_float_get(
   const std::string_view & name,
   const Module module) const
 {
   return feature_float_get(name, get_module_handle(module));
 }
 
-result<_Float64> VimbaXCamera::feature_float_get(
+result<double> VimbaXCamera::feature_float_get(
   const std::string_view & name, VmbHandle_t handle) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s')", __FUNCTION__, name.data());
 
-  _Float64 value{};
+  double value{};
   auto const err =
     api_->FeatureFloatGet(handle, name.data(), reinterpret_cast<double *>(&value));
 
-  if (err != VmbErrorSuccess) {
+  if (err == VmbErrorNotFound) {
+    return error{err};
+  } else if (err != VmbErrorSuccess) {
     RCLCPP_ERROR(
       get_logger(), "%s failed with error %d (%s)", __FUNCTION__, err,
       vmb_error_to_string(err).data());
@@ -762,7 +764,7 @@ result<_Float64> VimbaXCamera::feature_float_get(
 result<void>
 VimbaXCamera::feature_float_set(
   const std::string_view & name,
-  const _Float64 value,
+  const double value,
   const Module module) const
 {
   RCLCPP_DEBUG(get_logger(), "%s('%s', %lf)", __FUNCTION__, name.data(), static_cast<double>(value));
@@ -1374,17 +1376,28 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
 
   auto const firmware_version = feature_string_get(SFNCFeatures::DeviceFirmwareVersion);
   if (!firmware_version) {
-    return firmware_version.error();
+    if (firmware_version.error().code != VmbErrorNotFound) {
+      return firmware_version.error();
+    } else {
+      info.firmware_version = "N/A";
+    }
+  } else {
+    info.firmware_version = *firmware_version;
   }
-  info.firmware_version = *firmware_version;
+
 
   info.device_id = camera_info_.cameraIdString;
 
   auto const device_user_id = feature_string_get(SFNCFeatures::DeviceUserId);
   if (!device_user_id) {
-    return device_user_id.error();
+    if (device_user_id.error().code != VmbErrorNotFound) {
+      return device_user_id.error();
+    } else {
+      info.device_user_id = "N/A";
+    }
+  } else {
+    info.device_user_id = *device_user_id;
   }
-  info.device_user_id = *device_user_id;
 
   info.device_serial_number = camera_info_.serialString;
 
@@ -1420,8 +1433,10 @@ result<VimbaXCamera::Info> VimbaXCamera::camera_info_get() const
 
   auto const frame_rate = feature_float_get(SFNCFeatures::AcquisitionFrameRate);
   if (!frame_rate) {
-    if (frame_rate.error().code != VmbErrorNotAvailable) {
+    if (frame_rate.error().code != VmbErrorNotFound) {
       return frame_rate.error();
+    } else {
+      info.frame_rate = 0.0;
     }
   } else {
     info.frame_rate = *frame_rate;
