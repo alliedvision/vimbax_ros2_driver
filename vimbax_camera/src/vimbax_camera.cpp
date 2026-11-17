@@ -1238,15 +1238,15 @@ VimbaXCamera::feature_info_query_list(
     info.sfnc_namespace = std::string(vmb_info.sfncNamespace ? vmb_info.sfncNamespace : "");
     info.unit = std::string(vmb_info.unit ? vmb_info.unit : "");
     info.data_type = static_cast<uint32_t>(vmb_info.featureDataType);
-    info.flags.flag_none = vmb_info.featureDataType == 0;
+    info.flags.flag_none = vmb_info.featureFlags == VmbFeatureFlagsNone;
     info.flags.flag_read =
-      (vmb_info.featureDataType & VmbFeatureFlagsRead) == VmbFeatureFlagsRead;
+      (vmb_info.featureFlags & VmbFeatureFlagsRead) == VmbFeatureFlagsRead;
     info.flags.flag_write = (
-      vmb_info.featureDataType & VmbFeatureFlagsWrite) == VmbFeatureFlagsWrite;
+      vmb_info.featureFlags & VmbFeatureFlagsWrite) == VmbFeatureFlagsWrite;
     info.flags.flag_volatile =
-      (vmb_info.featureDataType & VmbFeatureFlagsVolatile) == VmbFeatureFlagsVolatile;
+      (vmb_info.featureFlags & VmbFeatureFlagsVolatile) == VmbFeatureFlagsVolatile;
     info.flags.flag_modify_write =
-      (vmb_info.featureDataType & VmbFeatureFlagsModifyWrite) == VmbFeatureFlagsModifyWrite;
+      (vmb_info.featureFlags & VmbFeatureFlagsModifyWrite) == VmbFeatureFlagsModifyWrite;
     info.polling_time = vmb_info.pollingTime;
 
     infos.push_back(info);
