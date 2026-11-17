@@ -152,6 +152,42 @@ def test_feature_list_query_all(test_node: TestNode, launch_context, module: Fea
 
 @pytest.mark.launch(fixture=vimbax_camera_node)
 @pytest.mark.parametrize('module', MODULE_LIST, ids=MODULE_NAME_LIST)
+def test_feature_info_flags_match_access_mode(
+    test_node: TestNode, launch_context, module: FeatureModule
+):
+    feature_info_query_service = test_node.create_client(
+        FeatureInfoQuery, f'/{test_node.camera_node_name()}/feature_info_query'
+    )
+    assert feature_info_query_service.wait_for_service(10)
+    feature_access_mode_service = test_node.create_client(
+        FeatureAccessModeGet, f'/{test_node.camera_node_name()}/features/access_mode_get'
+    )
+    assert feature_access_mode_service.wait_for_service(10)
+
+    feature_info_response = test_node.call_service_sync(
+        feature_info_query_service, FeatureInfoQuery.Request(feature_module=module)
+    )
+
+    check_error(feature_info_response.error)
+    assert len(feature_info_response.feature_info) > 0
+
+    for info in feature_info_response.feature_info:
+        access_mode = test_node.call_service_sync(
+            feature_access_mode_service,
+            FeatureAccessModeGet.Request(feature_name=info.name, feature_module=module),
+        )
+        if access_mode.error.code == -17:
+            continue
+        check_error(access_mode.error)
+
+        if access_mode.is_readable:
+            assert info.flags.flag_read, f'{info.name} is readable but flag_read is not set'
+        if access_mode.is_writeable:
+            assert info.flags.flag_write, f'{info.name} is writeable but flag_write is not set'
+
+
+@pytest.mark.launch(fixture=vimbax_camera_node)
+@pytest.mark.parametrize('module', MODULE_LIST, ids=MODULE_NAME_LIST)
 def test_feature_list_is_query_empty(test_node: TestNode, launch_context, module: FeatureModule):
     feature_list_service = test_node.create_client(
         FeaturesListGet, f'/{test_node.camera_node_name()}/features/list_get'

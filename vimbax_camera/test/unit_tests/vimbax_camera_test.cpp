@@ -33,6 +33,8 @@
 
 #include <filesystem>
 #include <fstream>
+#include <string>
+#include <vector>
 
 #include "mocks/library_loader_mock.hpp"
 
@@ -912,6 +914,57 @@ TEST_F(VimbaXCameraOpenedTest, settings_load_valid_ok)
   auto const result = camera_->settings_load(test_xml_path.string());
 
   ASSERT_TRUE(result);
+}
+
+TEST_F(VimbaXCameraOpenedTest, feature_info_query_list_flags)
+{
+  struct TestFeature
+  {
+    std::string name;
+    VmbFeatureData_t data_type;
+    VmbFeatureFlags_t flags;
+  };
+
+  std::vector<TestFeature> const test_features{
+    {"TestFloat", VmbFeatureDataFloat, VmbFeatureFlagsRead | VmbFeatureFlagsWrite},
+    {"TestString", VmbFeatureDataString, VmbFeatureFlagsRead | VmbFeatureFlagsVolatile},
+    {"TestCommand", VmbFeatureDataCommand, VmbFeatureFlagsWrite | VmbFeatureFlagsModifyWrite},
+    {"TestNone", VmbFeatureDataNone, VmbFeatureFlagsNone},
+  };
+
+  std::vector<std::string> names{};
+  for (auto const & feature : test_features) {
+    names.push_back(feature.name);
+
+    EXPECT_CALL(*api_mock_, FeatureInfoQuery(&dummy_handle_, Eq(feature.name), _, _))
+    .Times(1).WillOnce(
+      [feature](auto, auto, VmbFeatureInfo_t * info, auto infoSize) -> int32_t {
+        if (infoSize != sizeof(VmbFeatureInfo)) {
+          return VmbErrorStructSize;
+        }
+        info->featureDataType = feature.data_type;
+        info->featureFlags = feature.flags;
+        return VmbErrorSuccess;
+      });
+  }
+
+  auto const result = camera_->feature_info_query_list(names);
+
+  ASSERT_TRUE(result);
+  ASSERT_EQ(result->size(), test_features.size());
+
+  for (std::size_t i = 0; i < test_features.size(); i++) {
+    auto const & expected = test_features[i];
+    auto const & info = (*result)[i];
+
+    SCOPED_TRACE(expected.name);
+    EXPECT_EQ(info.data_type, expected.data_type);
+    EXPECT_EQ(info.flags.flag_none, expected.flags == VmbFeatureFlagsNone);
+    EXPECT_EQ(info.flags.flag_read, (expected.flags & VmbFeatureFlagsRead) != 0);
+    EXPECT_EQ(info.flags.flag_write, (expected.flags & VmbFeatureFlagsWrite) != 0);
+    EXPECT_EQ(info.flags.flag_volatile, (expected.flags & VmbFeatureFlagsVolatile) != 0);
+    EXPECT_EQ(info.flags.flag_modify_write, (expected.flags & VmbFeatureFlagsModifyWrite) != 0);
+  }
 }
 
 int main(int argc, char ** argv)
