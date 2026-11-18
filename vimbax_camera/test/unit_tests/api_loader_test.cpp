@@ -226,6 +226,38 @@ TEST_F(APILoader, load_destory)
   EXPECT_CALL(*apiMock, Shutdown()).Times(1);
 }
 
+TEST_F(APILoader, feature_string_get_excludes_terminator)
+{
+  ASSERT_EQ(setenv("GENICAM_GENTL64_PATH", "", 1), 0);
+  auto loader = std::make_shared<MockLibraryLoader>();
+  auto mock = APIMock::get_instance();
+  EXPECT_CALL(*loader, build_library_name(_)).WillOnce(Return("VmbCTest"));
+  EXPECT_CALL(*loader, open("VmbCTest")).WillOnce(
+    Return(ByMove(std::make_unique<testing::NiceMock<MockLoadedLibrary>>())));
+  EXPECT_CALL(*mock, Startup(_)).WillOnce(Return(VmbErrorSuccess));
+  EXPECT_CALL(*mock, Shutdown());
+
+  auto api = VmbCAPI::get_instance({}, loader);
+  ASSERT_TRUE(api);
+
+  int handle{};
+  constexpr char firmware[] = "14.1.D83C7207";
+  auto const name = testing::StrEq("DeviceFirmwareVersion");
+  EXPECT_CALL(*mock, FeatureStringGet(&handle, name, nullptr, 0, _)).WillOnce(
+    testing::DoAll(testing::SetArgPointee<4>(sizeof(firmware)), Return(VmbErrorSuccess)));
+  EXPECT_CALL(*mock, FeatureStringGet(&handle, name, testing::NotNull(), sizeof(firmware), _))
+  .WillOnce(
+    testing::DoAll(
+      testing::SetArrayArgument<2>(firmware, firmware + sizeof(firmware)),
+      testing::SetArgPointee<4>(sizeof(firmware)), Return(VmbErrorSuccess)));
+
+  auto const result = api->feature_string_get(&handle, "DeviceFirmwareVersion");
+  ASSERT_TRUE(result);
+  EXPECT_EQ(result->size(), sizeof(firmware) - 1);
+  EXPECT_EQ(result->find('\0'), std::string::npos);
+  EXPECT_EQ(*result, firmware);
+}
+
 int main(int argc, char ** argv)
 {
   testing::InitGoogleTest(&argc, argv);
