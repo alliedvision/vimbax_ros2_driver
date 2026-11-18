@@ -320,7 +320,7 @@ result<std::string> VmbCAPI::feature_string_get(
     err = FeatureStringGet(handle, name.data(), buf, size_filled, &size_filled);
 
     if (err == VmbErrorSuccess) {
-      value.assign(buf, size_filled);
+      value.assign(buf, strnlen(buf, size_filled));
     }
 
     free(buf);
