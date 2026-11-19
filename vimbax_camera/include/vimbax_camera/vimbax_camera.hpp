@@ -189,12 +189,12 @@ public:
     const std::string_view & name,
     const Module module = Module::RemoteDevice) const;
 
-  result<_Float64> feature_float_get(
+  result<double> feature_float_get(
     const std::string_view & name,
     const Module module = Module::RemoteDevice) const;
   result<void> feature_float_set(
     const std::string_view & name,
-    const _Float64 value,
+    const double value,
     const Module module = Module::RemoteDevice) const;
   result<feature_float_info> feature_float_info_get(
     const std::string_view & name,
@@ -303,7 +303,7 @@ private:
 
   result<int64_t> feature_int_get(const std::string_view & name, VmbHandle_t handle) const;
 
-  result<_Float64> feature_float_get(const std::string_view & name, VmbHandle_t handle) const;
+  result<double> feature_float_get(const std::string_view & name, VmbHandle_t handle) const;
 
   result<std::string> feature_enum_get(const std::string_view & name, VmbHandle_t handle) const;
 
